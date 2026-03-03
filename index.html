@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Digit Memory Timer</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --text:#e8eefc;
+      --muted:#a8b3d6;
+      --ok:#44d19b;
+      --bad:#ff6b6b;
+      --border: rgba(255,255,255,.10);
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --radius: 16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    * { box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(106,166,255,.18), transparent 60%),
+                  radial-gradient(1000px 700px at 80% 30%, rgba(68,209,155,.14), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 20px;
+    }
+
+    .app{
+      width:min(920px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      overflow:hidden;
+    }
+
+    header{
+      padding: 18px 20px;
+      background: rgba(255,255,255,.03);
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+
+    header h1{ font-size: 18px; margin:0; }
+    header p{ margin:0; color: var(--muted); font-size: 13px; }
+
+    .pill{
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(0,0,0,.15);
+    }
+
+    main{ padding: 20px; }
+    .screen{ display:none; }
+    .screen.active{ display:block; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 820px){
+      .grid{ grid-template-columns: 1.1fr .9fr; }
+    }
+
+    .card{
+      background: rgba(18,26,43,.78);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+
+    label{ color: var(--muted); font-size: 14px; }
+
+    input[type="number"], input[type="text"]{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 16px;
+      outline: none;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
+    button{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      cursor:pointer;
+      font-weight: 600;
+    }
+
+    button.primary{ background: rgba(106,166,255,.2); }
+    button.good{ background: rgba(68,209,155,.2); }
+    button.danger{ background: rgba(255,107,107,.2); }
+
+    .game-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap:wrap;
+      margin-bottom: 12px;
+    }
+
+    .timer{
+      font-family: var(--mono);
+      font-size: 18px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.16);
+      min-width: 160px;
+      text-align:center;
+    }
+
+    .display{
+      margin-top:12px;
+      min-height:140px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background: rgba(15,23,41,.8);
+      border-radius: var(--radius);
+      border:1px solid var(--border);
+      padding: 18px 14px;
+    }
+
+    .number{
+      font-family: var(--mono);
+      font-size: clamp(28px, 5vw, 60px);
+      letter-spacing: .08em;
+      word-break: break-all;
+      text-align:center;
+    }
+
+    .hidden{
+      opacity:0;
+      filter: blur(10px);
+      pointer-events:none;
+      transform: scale(.98);
+      transition: opacity .12s ease, transform .12s ease, filter .12s ease;
+    }
+
+    .status{ margin-top:10px; min-height:22px; }
+    .status.ok{ color:var(--ok); }
+    .status.bad{ color:var(--bad); }
+
+    .input-row{
+      display:flex;
+      gap:10px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Digit Memory Timer</h1>
+      <p>Auto-hide after your chosen interval • Wrong submit reveals the answer</p>
+    </div>
+    <div class="pill" id="modePill">Home</div>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section class="screen active" id="homeScreen">
+      <div class="grid">
+        <div class="card">
+          <h2>Settings</h2>
+
+          <div class="row" style="margin-top:10px">
+            <label for="digitsInput">Digits:</label>
+            <input id="digitsInput" type="number" min="1" max="200" value="2">
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <label for="intervalInput">Auto-hide after (ms):</label>
+            <input id="intervalInput" type="number" min="50" step="50" value="3000">
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="startBtn">Start</button>
+          </div>
+
+          <p style="color:var(--muted); margin-top:10px; line-height:1.4; font-size:14px">
+            The number will be shown and the timer will start. After your chosen interval,
+            it will automatically hide (stopping the timer). You can still press Hide manually.
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>Controls</h2>
+          <p style="color:var(--muted); line-height:1.5; font-size:14px; margin:0">
+            • Hide manually anytime (button).<br>
+            • Submit with Enter/Done after it hides.<br>
+            • If wrong, the correct answer is revealed and you can press Next.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section class="screen" id="gameScreen">
+      <div class="game-top">
+        <div class="timer" id="timerBox">00:00.000</div>
+        <div class="actions">
+          <button class="primary" id="hideBtn">Hide</button>
+          <button class="good" id="newBtn" disabled>Next</button>
+          <button class="danger" id="homeBtn">Home</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p style="color:var(--muted); margin:0 0 8px 0">
+          Digits: <span id="digitsLabel"></span> • Auto-hide: <span id="intervalLabel"></span> ms
+        </p>
+
+        <div class="display">
+          <div class="number" id="numberText"></div>
+        </div>
+
+        <form class="input-row" id="answerForm" autocomplete="off">
+          <input id="answerInput" type="text" inputmode="numeric" placeholder="Type the number…" disabled>
+          <button id="submitBtn" type="submit" disabled>Submit</button>
+        </form>
+
+        <div class="status" id="statusText"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ---------- Utilities ---------- */
+const pad2 = n => String(n).padStart(2,"0");
+const formatMs = ms => {
+  const m = Math.floor(ms/60000);
+  const s = Math.floor((ms%60000)/1000);
+  const r = ms%1000;
+  return `${pad2(m)}:${pad2(s)}.${String(r).padStart(3,"0")}`;
+};
+
+function randomDigitsString(d){
+  if (d === 1) return String(Math.floor(Math.random()*10));
+  let s = String(Math.floor(Math.random()*9)+1); // first digit 1-9
+  for (let i=1;i<d;i++) s += Math.floor(Math.random()*10);
+  return s;
+}
+
+/* ---------- State ---------- */
+const state = {
+  digits: 2,
+  autoHideMs: 3000,
+  current: "",
+  phase: "show", // show | hidden | done
+  startTime: 0,
+  rafId: 0,
+  elapsed: 0,
+  autoHideTimeoutId: 0
+};
+
+/* ---------- Elements ---------- */
+const homeScreen = document.getElementById("homeScreen");
+const gameScreen = document.getElementById("gameScreen");
+const modePill = document.getElementById("modePill");
+
+const digitsInput = document.getElementById("digitsInput");
+const intervalInput = document.getElementById("intervalInput");
+const startBtn = document.getElementById("startBtn");
+
+const timerBox = document.getElementById("timerBox");
+const hideBtn = document.getElementById("hideBtn");
+const newBtn = document.getElementById("newBtn");
+const homeBtn = document.getElementById("homeBtn");
+
+const digitsLabel = document.getElementById("digitsLabel");
+const intervalLabel = document.getElementById("intervalLabel");
+const numberText = document.getElementById("numberText");
+
+const answerForm = document.getElementById("answerForm");
+const answerInput = document.getElementById("answerInput");
+const submitBtn = document.getElementById("submitBtn");
+const statusText = document.getElementById("statusText");
+
+/* ---------- Screen ---------- */
+function showScreen(which){
+  const home = which === "home";
+  homeScreen.classList.toggle("active", home);
+  gameScreen.classList.toggle("active", !home);
+  modePill.textContent = home ? "Home" : "Game";
+}
+
+/* ---------- Timer ---------- */
+function startTimer(){
+  state.startTime = performance.now();
+  state.rafId = requestAnimationFrame(tick);
+}
+function tick(){
+  const ms = performance.now() - state.startTime;
+  timerBox.textContent = formatMs(ms|0);
+  state.rafId = requestAnimationFrame(tick);
+}
+function stopTimer(){
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  state.rafId = 0;
+  state.elapsed = performance.now() - state.startTime;
+  timerBox.textContent = formatMs(state.elapsed|0);
+}
+
+/* ---------- Auto-hide handling ---------- */
+function clearAutoHide(){
+  if (state.autoHideTimeoutId){
+    clearTimeout(state.autoHideTimeoutId);
+    state.autoHideTimeoutId = 0;
+  }
+}
+function scheduleAutoHide(){
+  clearAutoHide();
+  state.autoHideTimeoutId = setTimeout(() => {
+    // only auto-hide if still showing
+    if (state.phase === "show") hideNumber(true);
+  }, state.autoHideMs);
+}
+
+/* ---------- Game Flow ---------- */
+function resetRound(){
+  clearAutoHide();
+
+  state.current = randomDigitsString(state.digits);
+  state.phase = "show";
+
+  digitsLabel.textContent = state.digits;
+  intervalLabel.textContent = state.autoHideMs;
+
+  numberText.textContent = state.current;
+  numberText.classList.remove("hidden");
+
+  answerInput.value = "";
+  answerInput.disabled = true;
+  submitBtn.disabled = true;
+
+  hideBtn.disabled = false;
+  newBtn.disabled = true;
+
+  statusText.textContent = "Memorize. It will auto-hide, or you can press Hide.";
+  statusText.className = "status";
+
+  timerBox.textContent = "00:00.000";
+  startTimer();
+  scheduleAutoHide();
+}
+
+function hideNumber(auto=false){
+  if (state.phase !== "show") return;
+
+  clearAutoHide();
+  stopTimer();
+
+  state.phase = "hidden";
+  numberText.classList.add("hidden");
+
+  answerInput.disabled = false;
+  submitBtn.disabled = false;
+  answerInput.focus();
+
+  statusText.textContent = auto
+    ? "Auto-hidden. Timer stopped. Type the number and press Enter/Done."
+    : "Hidden. Timer stopped. Type the number and press Enter/Done.";
+  statusText.className = "status";
+}
+
+function lockRound(){
+  state.phase = "done";
+  hideBtn.disabled = true;
+  newBtn.disabled = false;
+  answerInput.disabled = true;
+  submitBtn.disabled = true;
+  numberText.classList.remove("hidden"); // reveal correct answer
+}
+
+function submitAnswer(){
+  if (state.phase !== "hidden") return;
+
+  const guess = answerInput.value.trim();
+  if (guess === state.current){
+    statusText.textContent = `Correct! Time: ${formatMs(state.elapsed|0)}`;
+    statusText.className = "status ok";
+  } else {
+    statusText.textContent = `Wrong. Correct answer: ${state.current} (time: ${formatMs(state.elapsed|0)})`;
+    statusText.className = "status bad";
+  }
+  lockRound();
+}
+
+/* ---------- Events ---------- */
+startBtn.onclick = () => {
+  const d = Math.max(1, Math.floor(Number(digitsInput.value) || 1));
+  const ms = Math.max(50, Math.floor(Number(intervalInput.value) || 0));
+
+  state.digits = d;
+  state.autoHideMs = ms;
+
+  showScreen("game");
+  resetRound();
+};
+
+hideBtn.onclick = () => hideNumber(false);
+newBtn.onclick = resetRound;
+
+homeBtn.onclick = () => {
+  clearAutoHide();
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  state.rafId = 0;
+  showScreen("home");
+};
+
+/* Enter/Done submits via form */
+answerForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  submitAnswer();
+});
+</script>
+</body>
+</html>
