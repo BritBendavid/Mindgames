@@ -122,6 +122,7 @@
     color:var(--muted);
     font-size:12px;
     font-weight:900;
+    text-decoration:none;
   }
 
   .problem{
@@ -191,14 +192,13 @@
 <body>
 <div class="app">
   <header>
-    <h1>Multiplication Trainer</h1>
-    <div class="hint" id="headerHint">Choose digits + number of problems</div>
-  </header>
+  <h1>Multiplication Trainer</h1>
+  <a href="/" class="pill" id="homeSiteBtn">Home</a>
+</header>
 
   <!-- HOME -->
   <section id="homeScreen" class="home">
     <div class="card">
-      <div class="pill" style="margin-bottom:10px;">Home</div>
 
       <h2 style="margin:0 0 6px; font-size:16px;">1) Select digit level</h2>
       <div class="choices" style="margin-bottom:14px;">
@@ -240,7 +240,7 @@
       <section class="card">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
           <span class="pill" id="rangePill">Range: —</span>
-          <button id="homeBtn" type="button">Home</button>
+          <button id="homeBtn" type="button">Back</button>
         </div>
 
         <div class="row" style="margin-top:10px; justify-content:space-between;">
