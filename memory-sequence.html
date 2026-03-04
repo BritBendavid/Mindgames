@@ -155,7 +155,9 @@
         <h1>Memory Sequence Grid</h1>
         <p class="sub">Timer: from leaving Home → clicking “1”.</p>
       </div>
-    <button class="pill" id="modePill">Home</button>
+
+      <!-- CHANGED: Best score pill replaced with a clickable pill linking to your main page -->
+      <button class="pill" id="mainPagePill" type="button">Home</button>
     </header>
 
     <main>
@@ -201,7 +203,7 @@
           </div>
           <div class="actions">
             <button id="restartBtn">Restart</button>
-            <button class="danger" id="homeBtn">Home</button>
+            <button class="danger" id="homeBtn">Back</button>
           </div>
         </div>
 
@@ -246,13 +248,13 @@
     const timeTxt = document.getElementById("timeTxt");
     const statusEl = document.getElementById("status");
 
-    const bestTimeEl = document.getElementById("bestTime");
     const scorePill = document.getElementById("scorePill");
     const scoreTxt = document.getElementById("scoreTxt");
 
-    // ---------- State ----------
-    const BEST_KEY = "msg_best_home_to_1_ms_v1";
+    // CHANGED: new main page pill
+    const mainPagePill = document.getElementById("mainPagePill");
 
+    // ---------- State ----------
     let rows = 4, cols = 4, total = 16;
 
     let labelsVisible = true;
@@ -266,22 +268,6 @@
     let startTime = 0;
     let rafId = 0;
     let lockedElapsedMs = 0;
-
-    // ---------- Best time ----------
-    function loadBest(){
-      const raw = localStorage.getItem(BEST_KEY);
-      const ms = raw ? Number(raw) : NaN;
-      bestTimeEl.textContent = (Number.isFinite(ms) && ms > 0) ? formatSeconds(ms/1000) : "—";
-    }
-    function maybeSaveBest(elapsedMs){
-      const raw = localStorage.getItem(BEST_KEY);
-      const prev = raw ? Number(raw) : NaN;
-      if (!Number.isFinite(prev) || elapsedMs < prev){
-        localStorage.setItem(BEST_KEY, String(elapsedMs));
-        loadBest();
-      }
-    }
-    loadBest();
 
     // ---------- Screen navigation ----------
     function showHome(){
@@ -328,8 +314,6 @@
 
       // Keep the big time display showing the final value
       timeTxt.textContent = formatSeconds(lockedSec);
-
-      maybeSaveBest(lockedElapsedMs);
     }
 
     function stopTimer(){
@@ -448,10 +432,6 @@
       startPreTimer();
     });
 
-    modePill.onclick = () => {
-      window.location.href = "/";
-    };
-  
     restartBtn.addEventListener("click", () => {
       stopTimer();
       buildGame(rows, cols);
@@ -461,6 +441,11 @@
 
     homeBtn.addEventListener("click", () => {
       showHome();
+    });
+
+    // CHANGED: redirect to main page of the website (adjust the URL if needed)
+    mainPagePill.addEventListener("click", () => {
+      window.location.href = "/";
     });
 
     // Start on home
