@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Memory Sequence Grid</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#111a33; --text:#e7ecff; --muted:#a9b4e6;
+      --accent:#7aa7ff; --good:#39d98a; --bad:#ff5c7a; --warn:#ffcc66;
+      --cell:#16214a; --cell2:#1b2a5d; --border:rgba(255,255,255,.12);
+      --shadow:rgba(0,0,0,.35); --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:radial-gradient(1200px 700px at 20% 10%, #14245a 0%, var(--bg) 55%, #070a14 100%);
+      color:var(--text); min-height:100vh; display:grid; place-items:center; padding:18px;
+    }
+    .app{
+      width:min(920px,100%);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--border); border-radius:var(--radius);
+      box-shadow:0 16px 40px var(--shadow); overflow:hidden;
+    }
+    header{
+      padding:16px 18px; display:flex; gap:12px; align-items:center; justify-content:space-between;
+      background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+      border-bottom:1px solid var(--border);
+    }
+    header .title{display:flex; flex-direction:column; gap:2px}
+    header h1{margin:0; font-size:18px; letter-spacing:.2px}
+    header .sub{margin:0; font-size:12px; color:var(--muted)}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px; padding:8px 10px;
+      border:1px solid var(--border); border-radius:999px;
+      background:rgba(0,0,0,.20); font-size:13px; color:var(--muted);
+      user-select:none; white-space:nowrap;
+    }
+    .pill strong{color:var(--text); font-weight:650}
+
+    main{padding:18px}
+    .screen{display:none}
+    .screen.active{display:block}
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid var(--border); border-radius:var(--radius); padding:16px;
+    }
+    .home{display:grid; gap:16px}
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    @media (max-width:720px){ .row{grid-template-columns:1fr} }
+
+    label{display:grid; gap:6px; font-size:13px; color:var(--muted)}
+    input, button{font:inherit}
+    input[type="number"]{
+      width:100%; padding:10px 12px; border-radius:12px;
+      border:1px solid var(--border); background:rgba(0,0,0,.25);
+      color:var(--text); outline:none;
+    }
+    input[type="number"]:focus{
+      border-color:rgba(122,167,255,.55);
+      box-shadow:0 0 0 3px rgba(122,167,255,.16);
+    }
+    .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    button{
+      cursor:pointer; padding:10px 14px; border-radius:12px;
+      border:1px solid var(--border); background:rgba(255,255,255,.06);
+      color:var(--text);
+      transition:transform .03s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    button:hover{background:rgba(255,255,255,.10)}
+    button:active{transform:translateY(1px)}
+    .primary{
+      background:rgba(122,167,255,.18);
+      border-color:rgba(122,167,255,.35);
+    }
+    .primary:hover{background:rgba(122,167,255,.24)}
+    .danger{
+      background:rgba(255,92,122,.14);
+      border-color:rgba(255,92,122,.35);
+    }
+
+    .help{margin:0; color:var(--muted); line-height:1.45; font-size:13px}
+
+    /* Game */
+    .gameTop{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      flex-wrap:wrap; margin-bottom:14px;
+    }
+    .stats{display:flex; gap:10px; flex-wrap:wrap}
+    .status{
+      margin-top:10px; min-height:22px; font-size:13px; color:var(--muted);
+    }
+    .status.good{color:var(--good)}
+    .status.bad{color:var(--bad)}
+    .status.warn{color:var(--warn)}
+
+    .gridWrap{
+      display:grid; place-items:center; padding:8px;
+      border-radius:var(--radius); border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,.10));
+    }
+    .grid{
+      display:grid; gap:10px; width:100%; max-width:760px; padding:10px;
+    }
+    .cell{
+      aspect-ratio:1/1;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:linear-gradient(180deg, var(--cell), var(--cell2));
+      display:grid; place-items:center;
+      font-size:clamp(14px, 2.2vw, 22px);
+      font-weight:800;
+      color:rgba(231,236,255,.95);
+      box-shadow:0 10px 20px rgba(0,0,0,.20);
+      transition:transform .06s ease, filter .15s ease, opacity .15s ease;
+      user-select:none; touch-action:manipulation;
+    }
+    .cell:hover{filter:brightness(1.08)}
+    .cell:active{transform:scale(.98)}
+
+    .cell.hiddenLabel{color:transparent}
+
+    /* Entire box disappears when clicked */
+    .cell.gone{
+      opacity:0;
+      pointer-events:none;
+      transform:scale(.94);
+    }
+
+    .cell.correctTap{
+      outline:3px solid rgba(57,217,138,.55);
+      filter:brightness(1.15);
+    }
+    .cell.wrongTap{
+      outline:3px solid rgba(255,92,122,.55);
+      filter:brightness(1.05);
+      animation:shake 120ms linear 0s 2;
+    }
+    @keyframes shake{
+      0%{transform:translateX(0)}
+      25%{transform:translateX(-3px)}
+      50%{transform:translateX(3px)}
+      75%{transform:translateX(-2px)}
+      100%{transform:translateX(0)}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>Memory Sequence Grid</h1>
+        <p class="sub">Timer: from leaving Home → clicking “1”.</p>
+      </div>
+      <div class="pill">
+        <span>Best (Home→1):</span> <strong id="bestTime">—</strong>
+      </div>
+    </header>
+
+    <main>
+      <!-- HOME -->
+      <section class="screen active" id="homeScreen">
+        <div class="home">
+          <div class="card">
+            <p class="help">
+              Start the game to show the numbered grid. Your timer begins immediately.
+              Click <strong>1</strong> as fast as you can — that stops the timer and locks in your score.
+              After that, labels disappear and you can keep tapping in order for fun.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="row">
+              <label>
+                Rows
+                <input id="rowsInput" type="number" min="2" max="10" value="4" />
+              </label>
+              <label>
+                Columns
+                <input id="colsInput" type="number" min="2" max="10" value="4" />
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="primary" id="startBtn">Start Game</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME -->
+      <section class="screen" id="gameScreen">
+        <div class="gameTop">
+          <div class="stats">
+            <div class="pill">Target: <strong id="nextNum">1</strong></div>
+            <div class="pill">Time: <strong id="timeTxt">0.000s</strong></div>
+            <div class="pill" id="scorePill" style="display:none;">
+              Score: <strong id="scoreTxt">—</strong>
+            </div>
+          </div>
+          <div class="actions">
+            <button id="restartBtn">Restart</button>
+            <button class="danger" id="homeBtn">Home</button>
+          </div>
+        </div>
+
+        <div class="gridWrap">
+          <div class="grid" id="grid"></div>
+        </div>
+
+        <div class="status" id="status"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ---------- Utilities ----------
+    function shuffle(arr){
+      for (let i = arr.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    function clampInt(v, min, max, fallback){
+      const n = Number(v);
+      if (!Number.isFinite(n)) return fallback;
+      return Math.max(min, Math.min(max, Math.trunc(n)));
+    }
+    function formatSeconds(sec){ return `${sec.toFixed(3)}s`; }
+
+    // ---------- Elements ----------
+    const homeScreen = document.getElementById("homeScreen");
+    const gameScreen = document.getElementById("gameScreen");
+
+    const rowsInput = document.getElementById("rowsInput");
+    const colsInput = document.getElementById("colsInput");
+
+    const startBtn = document.getElementById("startBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const homeBtn = document.getElementById("homeBtn");
+
+    const gridEl = document.getElementById("grid");
+    const nextNumEl = document.getElementById("nextNum");
+    const timeTxt = document.getElementById("timeTxt");
+    const statusEl = document.getElementById("status");
+
+    const bestTimeEl = document.getElementById("bestTime");
+    const scorePill = document.getElementById("scorePill");
+    const scoreTxt = document.getElementById("scoreTxt");
+
+    // ---------- State ----------
+    const BEST_KEY = "msg_best_home_to_1_ms_v1";
+
+    let rows = 4, cols = 4, total = 16;
+
+    let labelsVisible = true;
+    let finished = false;
+
+    let nextExpected = 1;
+
+    // Timer is ONLY for "home -> click 1"
+    let preStartTiming = false;   // started when leaving home
+    let timeLocked = false;       // locked when "1" is clicked
+    let startTime = 0;
+    let rafId = 0;
+    let lockedElapsedMs = 0;
+
+    // ---------- Best time ----------
+    function loadBest(){
+      const raw = localStorage.getItem(BEST_KEY);
+      const ms = raw ? Number(raw) : NaN;
+      bestTimeEl.textContent = (Number.isFinite(ms) && ms > 0) ? formatSeconds(ms/1000) : "—";
+    }
+    function maybeSaveBest(elapsedMs){
+      const raw = localStorage.getItem(BEST_KEY);
+      const prev = raw ? Number(raw) : NaN;
+      if (!Number.isFinite(prev) || elapsedMs < prev){
+        localStorage.setItem(BEST_KEY, String(elapsedMs));
+        loadBest();
+      }
+    }
+    loadBest();
+
+    // ---------- Screen navigation ----------
+    function showHome(){
+      stopTimer();
+      homeScreen.classList.add("active");
+      gameScreen.classList.remove("active");
+      status("");
+    }
+    function showGame(){
+      homeScreen.classList.remove("active");
+      gameScreen.classList.add("active");
+    }
+
+    // ---------- Timer ----------
+    function startPreTimer(){
+      preStartTiming = true;
+      timeLocked = false;
+      lockedElapsedMs = 0;
+      scorePill.style.display = "none";
+      scoreTxt.textContent = "—";
+
+      startTime = performance.now();
+
+      function tick(){
+        const now = performance.now();
+        const elapsedSec = (now - startTime) / 1000;
+        timeTxt.textContent = formatSeconds(elapsedSec);
+        if (preStartTiming && !timeLocked) rafId = requestAnimationFrame(tick);
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function lockTimer(){
+      if (!preStartTiming || timeLocked) return;
+      timeLocked = true;
+      preStartTiming = false;
+      stopTimer();
+
+      lockedElapsedMs = Math.max(0, performance.now() - startTime);
+      const lockedSec = lockedElapsedMs / 1000;
+
+      scorePill.style.display = "inline-flex";
+      scoreTxt.textContent = formatSeconds(lockedSec);
+
+      // Keep the big time display showing the final value
+      timeTxt.textContent = formatSeconds(lockedSec);
+
+      maybeSaveBest(lockedElapsedMs);
+    }
+
+    function stopTimer(){
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+
+    // ---------- Game building ----------
+    function buildGame(r, c){
+      rows = r; cols = c; total = rows * cols;
+
+      labelsVisible = true;
+      finished = false;
+      nextExpected = 1;
+      updateNext();
+
+      // Grid columns
+      gridEl.style.gridTemplateColumns = `repeat(${cols}, minmax(52px, 1fr))`;
+
+      // Shuffled labels
+      const nums = Array.from({length: total}, (_, i) => i + 1);
+      shuffle(nums);
+
+      gridEl.innerHTML = "";
+      for (let i = 0; i < total; i++){
+        const num = nums[i];
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "cell";
+        cell.dataset.num = String(num);
+        cell.textContent = String(num);
+        cell.addEventListener("click", onCellClick);
+        gridEl.appendChild(cell);
+      }
+
+      status("Find and click 1 as fast as you can. Timer is running!", "warn");
+    }
+
+    // ---------- UI helpers ----------
+    function updateNext(){
+      nextNumEl.textContent = String(nextExpected);
+    }
+    function status(msg, type=""){
+      statusEl.textContent = msg || "";
+      statusEl.className = "status" + (type ? ` ${type}` : "");
+    }
+    function hideLabels(){
+      labelsVisible = false;
+      [...gridEl.children].forEach(cell => cell.classList.add("hiddenLabel"));
+    }
+    function flashCell(cell, cls){
+      cell.classList.add(cls);
+      setTimeout(() => cell.classList.remove(cls), 260);
+    }
+
+    // ---------- Gameplay ----------
+    function onCellClick(e){
+      const cell = e.currentTarget;
+      const num = Number(cell.dataset.num);
+      if (finished) return;
+
+      // When any correct click happens, the entire box disappears.
+      // Wrong taps do not disappear.
+      const removeCell = () => cell.classList.add("gone");
+
+      // If we haven't clicked 1 yet (timer running), the only goal is speed to 1.
+      if (nextExpected === 1){
+        if (num !== 1){
+          flashCell(cell, "wrongTap");
+          status("Wrong — you’re looking for 1.", "bad");
+          return;
+        }
+
+        // Clicked 1: lock the timer and start memory mode
+        lockTimer();
+        flashCell(cell, "correctTap");
+        removeCell();
+
+        hideLabels();
+        nextExpected = 2;
+        updateNext();
+        status(`Score locked at ${scoreTxt.textContent}. Now tap 2, 3, 4… from memory.`, "good");
+        return;
+      }
+
+      // After 1: memory sequence (no timer)
+      if (num !== nextExpected){
+        flashCell(cell, "wrongTap");
+        status(`Wrong — next is ${nextExpected}.`, "bad");
+        return;
+      }
+
+      flashCell(cell, "correctTap");
+      removeCell();
+      nextExpected++;
+      updateNext();
+
+      if (nextExpected > total){
+        finished = true;
+        status("Nice — you completed the whole sequence!", "good");
+      } else {
+        status(`Good. Next: ${nextExpected}.`, "good");
+      }
+    }
+
+    // ---------- Controls ----------
+    startBtn.addEventListener("click", () => {
+      const r = clampInt(rowsInput.value, 2, 10, 4);
+      const c = clampInt(colsInput.value, 2, 10, 4);
+
+      showGame();
+      buildGame(r, c);
+
+      // Timer starts as soon as we leave home / enter game
+      timeTxt.textContent = "0.000s";
+      startPreTimer();
+    });
+
+    restartBtn.addEventListener("click", () => {
+      stopTimer();
+      buildGame(rows, cols);
+      timeTxt.textContent = "0.000s";
+      startPreTimer();
+    });
+
+    homeBtn.addEventListener("click", () => {
+      showHome();
+    });
+
+    // Start on home
+    showHome();
+  </script>
+</body>
+</html>
