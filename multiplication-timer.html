@@ -1,1 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Multiplication Trainer</title>
 
+<style>
+  :root{
+    --bg:#0b1020; --card:#111a33; --text:#e8ecff;
+    --muted:#aeb7e6; --good:#45d483; --bad:#ff6b6b;
+    --accent:#6aa7ff; --border:rgba(255,255,255,.12);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    background:radial-gradient(1200px 700px at 30% 20%,#162455,var(--bg));
+    color:var(--text);
+    min-height:100vh;
+    display:grid;
+    place-items:center;
+    padding:24px;
+  }
+  .app{
+    width:min(920px,100%);
+    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35);
+  }
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  h1{font-size:18px;margin:0;font-weight:800}
+  .hint{color:var(--muted);font-size:13px}
+
+  .hidden{display:none !important;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:18px;
+  }
+
+  /* Home */
+  .home{display:grid; gap:14px;}
+  .choices{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:12px;
+  }
+  @media (max-width:640px){ .choices{grid-template-columns:1fr;} }
+
+  .choice{
+    text-align:left;
+    padding:14px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.06);
+    color:var(--text);
+    cursor:pointer;
+    font-weight:800;
+    transition:transform .06s ease, background .15s ease;
+  }
+  .choice:hover{background:rgba(255,255,255,.10)}
+  .choice:active{transform:translateY(1px)}
+  .choice small{
+    display:block;
+    margin-top:6px;
+    color:var(--muted);
+    font-weight:700;
+  }
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .row > * { flex: 0 0 auto; }
+
+  label{color:var(--muted); font-size:13px; font-weight:800;}
+  select, input[type="number"]{
+    padding:10px 12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:rgba(0,0,0,.2);
+    color:var(--text);
+    font-size:14px;
+    outline:none;
+  }
+
+  .primary{
+    padding:12px 14px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:rgba(106,167,255,.18);
+    color:var(--text);
+    cursor:pointer;
+    font-weight:900;
+  }
+  .primary:hover{background:rgba(106,167,255,.26)}
+
+  /* Game */
+  .grid{
+    display:grid;
+    grid-template-columns:1.2fr .8fr;
+    gap:16px;
+  }
+  @media(max-width:780px){.grid{grid-template-columns:1fr}}
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.03);
+    color:var(--muted);
+    font-size:12px;
+    font-weight:900;
+  }
+
+  .problem{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:14px;
+    font-size:44px;
+    font-weight:900;
+    margin:10px 0 12px;
+  }
+  .mul{color:var(--accent)}
+  .problem small{font-size:16px;color:var(--muted);font-weight:900}
+
+  .inputRow{display:flex; gap:10px; margin-top:8px;}
+  input#answer{
+    flex:1;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:rgba(0,0,0,.2);
+    color:var(--text);
+    font-size:18px;
+    outline:none;
+  }
+  input#answer:focus{
+    border-color:rgba(106,167,255,.65);
+    box-shadow:0 0 0 4px rgba(106,167,255,.15);
+  }
+
+  button{
+    padding:12px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.06);
+    color:var(--text);
+    cursor:pointer;
+    font-weight:900;
+  }
+  button:hover{background:rgba(255,255,255,.10)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+
+  .status{min-height:22px;font-size:14px;color:var(--muted);margin-top:10px;font-weight:800}
+  .status.good{color:var(--good)}
+  .status.bad{color:var(--bad)}
+
+  .stats{display:grid;gap:10px}
+  .stat{
+    display:flex;
+    justify-content:space-between;
+    padding:10px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    font-size:14px;
+    background:rgba(255,255,255,.03);
+  }
+  .label{color:var(--muted)}
+  .value{font-variant-numeric:tabular-nums;font-weight:900}
+
+  .resultsGrid{
+    display:grid;
+    gap:14px;
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+  <header>
+    <h1>Multiplication Trainer</h1>
+    <div class="hint" id="headerHint">Choose digits + number of problems</div>
+  </header>
+
+  <!-- HOME -->
+  <section id="homeScreen" class="home">
+    <div class="card">
+      <div class="pill" style="margin-bottom:10px;">Home</div>
+
+      <h2 style="margin:0 0 6px; font-size:16px;">1) Select digit level</h2>
+      <div class="choices" style="margin-bottom:14px;">
+        <button class="choice" data-digits="1">1-digit <small>1–9 × 1–9</small></button>
+        <button class="choice" data-digits="2">2-digit <small>10–99 × 10–99</small></button>
+        <button class="choice" data-digits="3">3-digit <small>100–999 × 100–999</small></button>
+        <button class="choice" data-digits="4">4-digit <small>1000–9999 × 1000–9999</small></button>
+      </div>
+
+      <h2 style="margin:0 0 6px; font-size:16px;">2) Select number of problems</h2>
+      <div class="row" style="margin-bottom:8px;">
+        <label for="countPreset">Preset</label>
+        <select id="countPreset">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="custom">Custom…</option>
+        </select>
+
+        <label for="countCustom">Custom</label>
+        <input id="countCustom" type="number" min="1" step="1" value="20" disabled />
+      </div>
+
+      <div class="row">
+        <span class="pill" id="homeSummary">Digits: 2 • Problems: 20</span>
+        <button class="primary" id="goGame" type="button">Continue</button>
+      </div>
+
+      <div style="margin-top:10px; color:var(--muted); font-size:12px; line-height:1.4;">
+        The session ends after you <b>solve</b> the selected number of problems correctly (skips don’t count).
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="gameScreen" class="hidden">
+    <div class="grid">
+      <section class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <span class="pill" id="rangePill">Range: —</span>
+          <button id="homeBtn" type="button">Home</button>
+        </div>
+
+        <div class="row" style="margin-top:10px; justify-content:space-between;">
+          <span class="pill" id="progressPill">Progress: 0/0</span>
+          <span class="pill" id="modePill">—</span>
+        </div>
+
+        <div class="problem" aria-live="polite">
+          <span id="a">—</span>
+          <span class="mul">×</span>
+          <span id="b">—</span>
+          <small id="timer">0.00s</small>
+        </div>
+
+        <div class="inputRow">
+          <input id="answer" disabled inputmode="numeric" autocomplete="off" placeholder="Answer…" />
+          <button id="skip" disabled type="button">Skip</button>
+        </div>
+
+        <div class="status" id="status">Press Start to begin.</div>
+
+        <div class="row" style="margin-top:10px;">
+          <button id="start" type="button">Start</button>
+          <button id="pause" type="button" disabled>Pause</button>
+          <button id="reset" type="button">Reset</button>
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="stats">
+          <div class="stat"><span class="label">Solved</span><span class="value" id="solved">0</span></div>
+          <div class="stat"><span class="label">Last</span><span class="value" id="last">—</span></div>
+          <div class="stat"><span class="label">Average</span><span class="value" id="avg">—</span></div>
+          <div class="stat"><span class="label">Best</span><span class="value" id="best">—</span></div>
+          <div class="stat"><span class="label">Total time</span><span class="value" id="total">0.00s</span></div>
+          <div class="stat"><span class="label">Skipped</span><span class="value" id="skipped">0</span></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="resultsScreen" class="hidden">
+    <div class="resultsGrid">
+      <div class="card">
+        <div class="pill" style="margin-bottom:10px;">Results</div>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+          <h2 style="margin:0; font-size:16px;">Session complete</h2>
+          <span class="pill" id="resultsMode">—</span>
+        </div>
+        <div style="margin-top:6px; color:var(--muted); font-size:13px;">
+          Solved <b id="resultsSolved">0</b> problems.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><span class="label">Problems solved</span><span class="value" id="rSolved">0</span></div>
+          <div class="stat"><span class="label">Skipped</span><span class="value" id="rSkipped">0</span></div>
+          <div class="stat"><span class="label">Total time</span><span class="value" id="rTotal">0.00s</span></div>
+          <div class="stat"><span class="label">Average time</span><span class="value" id="rAvg">—</span></div>
+          <div class="stat"><span class="label">Best time</span><span class="value" id="rBest">—</span></div>
+          <div class="stat"><span class="label">Last time</span><span class="value" id="rLast">—</span></div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="retryBtn" type="button">Retry same settings</button>
+          <button id="resultsHomeBtn" type="button">Home</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  // Screens
+  const homeScreen = $("homeScreen");
+  const gameScreen = $("gameScreen");
+  const resultsScreen = $("resultsScreen");
+  const headerHint = $("headerHint");
+
+  // Home UI
+  const homeSummary = $("homeSummary");
+  const countPreset = $("countPreset");
+  const countCustom = $("countCustom");
+  const goGameBtn = $("goGame");
+
+  // Game UI
+  const aEl = $("a"), bEl = $("b"), timerEl = $("timer");
+  const ansEl = $("answer"), statusEl = $("status");
+  const startBtn = $("start"), pauseBtn = $("pause"), skipBtn = $("skip"), resetBtn = $("reset");
+  const homeBtn = $("homeBtn");
+  const rangePill = $("rangePill"), progressPill = $("progressPill"), modePill = $("modePill");
+
+  // Stats UI
+  const solvedEl = $("solved"), lastEl = $("last"), avgEl = $("avg"),
+        bestEl = $("best"), totalEl = $("total"), skippedEl = $("skipped");
+
+  // Results UI
+  const resultsMode = $("resultsMode");
+  const resultsSolved = $("resultsSolved");
+  const rSolved = $("rSolved"), rSkipped = $("rSkipped"), rTotal = $("rTotal"),
+        rAvg = $("rAvg"), rBest = $("rBest"), rLast = $("rLast");
+  const retryBtn = $("retryBtn"), resultsHomeBtn = $("resultsHomeBtn");
+
+  // Settings
+  let digits = 2;
+  let MIN = 10, MAX = 99;
+  let targetSolved = 20;  // number of correct problems to finish session
+
+  // Problem state
+  let a = 0, b = 0, correct = 0;
+
+  // Timer state (supports pause)
+  let startTime = 0, elapsed = 0, raf = 0;
+  let active = false, paused = false;
+
+  // Stats
+  const stats = { solved: 0, skipped: 0, total: 0, last: null, best: null };
+  const fmt = (ms) => (ms / 1000).toFixed(2) + "s";
+
+  function computeRange(d) {
+    if (d === 1) return { min: 1, max: 9 };
+    return { min: Math.pow(10, d - 1), max: Math.pow(10, d) - 1 };
+  }
+
+  function setDifficulty(d) {
+    digits = d;
+    const r = computeRange(digits);
+    MIN = r.min; MAX = r.max;
+    rangePill.textContent = `Range: ${MIN}–${MAX}`;
+    modePill.textContent = `${digits}-digit • ${targetSolved} problems`;
+    updateHomeSummary();
+  }
+
+  function getSelectedCount() {
+    if (countPreset.value === "custom") {
+      const n = Number(countCustom.value);
+      return Number.isInteger(n) && n > 0 ? n : 1;
+    }
+    return Number(countPreset.value);
+  }
+
+  function updateHomeSummary() {
+    homeSummary.textContent = `Digits: ${digits} • Problems: ${getSelectedCount()}`;
+  }
+
+  function setTargetSolved(n) {
+    targetSolved = n;
+    progressPill.textContent = `Progress: ${stats.solved}/${targetSolved}`;
+    modePill.textContent = `${digits}-digit • ${targetSolved} problems`;
+    updateHomeSummary();
+  }
+
+  function randInt(min, maxInclusive) {
+    return Math.floor(Math.random() * (maxInclusive - min + 1)) + min;
+  }
+
+  function tick() {
+    timerEl.textContent = fmt(elapsed + performance.now() - startTime);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function startTimer() {
+    startTime = performance.now();
+    raf = requestAnimationFrame(tick);
+  }
+
+  function stopTimer() {
+    cancelAnimationFrame(raf);
+    elapsed += performance.now() - startTime;
+  }
+
+  function setStatus(text, kind="") {
+    statusEl.textContent = text;
+    statusEl.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function updateStatsUI() {
+    solvedEl.textContent = stats.solved;
+    skippedEl.textContent = stats.skipped;
+    totalEl.textContent = fmt(stats.total);
+    lastEl.textContent = stats.last == null ? "—" : fmt(stats.last);
+    avgEl.textContent = stats.solved ? fmt(stats.total / stats.solved) : "—";
+    bestEl.textContent = stats.best == null ? "—" : fmt(stats.best);
+    progressPill.textContent = `Progress: ${stats.solved}/${targetSolved}`;
+  }
+
+  function newProblem() {
+    a = randInt(MIN, MAX);
+    b = randInt(MIN, MAX);
+    correct = a * b;
+
+    aEl.textContent = a;
+    bEl.textContent = b;
+
+    ansEl.value = "";
+    elapsed = 0;
+
+    startTimer();
+    ansEl.focus();
+  }
+
+  function endSession() {
+    // Ensure timer is stopped
+    cancelAnimationFrame(raf);
+
+    // Move to results
+    active = false;
+    paused = false;
+
+    // Populate results
+    resultsMode.textContent = `${digits}-digit • ${targetSolved} problems`;
+    resultsSolved.textContent = String(stats.solved);
+
+    rSolved.textContent = String(stats.solved);
+    rSkipped.textContent = String(stats.skipped);
+    rTotal.textContent = fmt(stats.total);
+    rAvg.textContent = stats.solved ? fmt(stats.total / stats.solved) : "—";
+    rBest.textContent = stats.best == null ? "—" : fmt(stats.best);
+    rLast.textContent = stats.last == null ? "—" : fmt(stats.last);
+
+    // Show results screen
+    gameScreen.classList.add("hidden");
+    resultsScreen.classList.remove("hidden");
+    headerHint.textContent = "Session complete";
+  }
+
+  function start() {
+    if (active) return;
+    active = true;
+    paused = false;
+
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    pauseBtn.textContent = "Pause";
+    skipBtn.disabled = false;
+    ansEl.disabled = false;
+
+    setStatus("Solve!", "");
+    newProblem();
+  }
+
+  function togglePause() {
+    if (!active) return;
+
+    if (!paused) {
+      paused = true;
+      stopTimer();
+      ansEl.disabled = true;
+      skipBtn.disabled = true; // hard pause
+      pauseBtn.textContent = "Resume";
+      setStatus("Paused", "");
+    } else {
+      paused = false;
+      startTimer();
+      ansEl.disabled = false;
+      skipBtn.disabled = false;
+      pauseBtn.textContent = "Pause";
+      setStatus("Solve!", "");
+      ansEl.focus();
+    }
+  }
+
+  function submit() {
+    if (!active || paused) return;
+
+    const raw = ansEl.value.trim();
+    const v = Number(raw);
+    if (!raw.length || !Number.isFinite(v) || !Number.isInteger(v)) return;
+
+    if (v === correct) {
+      stopTimer();
+      const t = elapsed;
+
+      stats.solved++;
+      stats.total += t;
+      stats.last = t;
+      stats.best = stats.best == null ? t : Math.min(stats.best, t);
+
+      updateStatsUI();
+      setStatus(`Correct! Time: ${fmt(t)}`, "good");
+
+      // Finish condition: solved targetSolved problems
+      if (stats.solved >= targetSolved) {
+        setTimeout(endSession, 350);
+        return;
+      }
+
+      elapsed = 0;
+      setTimeout(() => {
+        if (active && !paused) newProblem();
+      }, 350);
+    } else {
+      setStatus("Try again.", "bad");
+    }
+  }
+
+  function skip() {
+    if (!active || paused) return;
+    stats.skipped++;
+    updateStatsUI();
+    setStatus(`Skipped (was ${correct})`, "");
+    elapsed = 0;
+    newProblem();
+  }
+
+  function resetStatsAndStateUI() {
+    cancelAnimationFrame(raf);
+    active = false;
+    paused = false;
+    elapsed = 0;
+
+    aEl.textContent = "—";
+    bEl.textContent = "—";
+    timerEl.textContent = "0.00s";
+    ansEl.value = "";
+
+    ansEl.disabled = true;
+    skipBtn.disabled = true;
+    pauseBtn.disabled = true;
+    pauseBtn.textContent = "Pause";
+    startBtn.disabled = false;
+
+    Object.assign(stats, { solved: 0, skipped: 0, total: 0, last: null, best: null });
+    updateStatsUI();
+    setStatus("Press Start to begin.", "");
+  }
+
+  function goHome() {
+    resetStatsAndStateUI();
+    resultsScreen.classList.add("hidden");
+    gameScreen.classList.add("hidden");
+    homeScreen.classList.remove("hidden");
+    headerHint.textContent = "Choose digits + number of problems";
+    updateHomeSummary();
+  }
+
+  function goGame() {
+    homeScreen.classList.add("hidden");
+    resultsScreen.classList.add("hidden");
+    gameScreen.classList.remove("hidden");
+    headerHint.textContent = `${digits}-digit • ${targetSolved} problems`;
+    resetStatsAndStateUI(); // clean start for this session settings
+    modePill.textContent = `${digits}-digit • ${targetSolved} problems`;
+    rangePill.textContent = `Range: ${MIN}–${MAX}`;
+    progressPill.textContent = `Progress: 0/${targetSolved}`;
+  }
+
+  // ---- Home wiring ----
+  document.querySelectorAll(".choice").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const d = Number(btn.dataset.digits);
+      setDifficulty(d);
+    });
+  });
+
+  countPreset.addEventListener("change", () => {
+    if (countPreset.value === "custom") {
+      countCustom.disabled = false;
+      countCustom.focus();
+    } else {
+      countCustom.disabled = true;
+      countCustom.value = countPreset.value;
+    }
+    updateHomeSummary();
+  });
+
+  countCustom.addEventListener("input", () => {
+    updateHomeSummary();
+  });
+
+  goGameBtn.addEventListener("click", () => {
+    const n = getSelectedCount();
+    setTargetSolved(n);
+    goGame();
+  });
+
+  // ---- Game wiring ----
+  startBtn.addEventListener("click", start);
+  pauseBtn.addEventListener("click", togglePause);
+  skipBtn.addEventListener("click", skip);
+  resetBtn.addEventListener("click", resetStatsAndStateUI);
+  homeBtn.addEventListener("click", goHome);
+
+  ansEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submit();
+  });
+
+  // ---- Results wiring ----
+  retryBtn.addEventListener("click", () => {
+    goGame();
+  });
+  resultsHomeBtn.addEventListener("click", goHome);
+
+  // Init defaults
+  setDifficulty(2);
+  countCustom.value = "20";
+  setTargetSolved(20);
+  updateHomeSummary();
+  goHome(); // ensure we start on home
+})();
+</script>
+</body>
+</html>
