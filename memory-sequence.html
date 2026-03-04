@@ -155,9 +155,7 @@
         <h1>Memory Sequence Grid</h1>
         <p class="sub">Timer: from leaving Home → clicking “1”.</p>
       </div>
-      <div class="pill">
-        <span>Best (Home→1):</span> <strong id="bestTime">—</strong>
-      </div>
+    <button class="pill" id="modePill">Home</button>
     </header>
 
     <main>
@@ -450,6 +448,10 @@
       startPreTimer();
     });
 
+    modePill.addEventListener("click", () => {
+      window.location.href = "/";
+    });
+  
     restartBtn.addEventListener("click", () => {
       stopTimer();
       buildGame(rows, cols);
