@@ -241,7 +241,7 @@
         <div class="actions">
           <button class="primary" id="hideBtn">Hide</button>
           <button class="good" id="newBtn" disabled>Next</button>
-          <button class="danger" id="homeBtn">Home</button>
+          <button class="danger" id="homeBtn">Back</button>
         </div>
       </div>
 
@@ -322,7 +322,6 @@ function showScreen(which){
   const home = which === "home";
   homeScreen.classList.toggle("active", home);
   gameScreen.classList.toggle("active", !home);
-  modePill.textContent = home ? "Home" : "Game";
 }
 
 /* ---------- Timer ---------- */
