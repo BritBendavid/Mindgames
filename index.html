@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brit Never Misses</title>
+  <style>
+    :root{
+      --bg0:#070a14;
+      --bg1:#0b1220;
+      --text:#e9eefc;
+      --muted:#b8c4e6;
+      --border:rgba(255,255,255,.10);
+      --shadow:0 18px 60px rgba(0,0,0,.45);
+      --ring:0 0 0 4px rgba(122,162,255,.18);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(122,162,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 85% 85%, rgba(121,255,215,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 40%, var(--bg0));
+      padding: 28px 18px 56px;
+    }
+
+    .wrap{max-width:980px;margin:0 auto}
+    .hero{padding: 26px 8px 18px}
+    .brand{
+      display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+      margin-bottom: 10px;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:14px;
+      background: linear-gradient(135deg, rgba(122,162,255,.35), rgba(121,255,215,.20));
+      border:1px solid var(--border);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      display:grid;place-items:center;
+    }
+    .logo span{font-size:22px}
+    h1{
+      margin:0;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing:.2px;
+    }
+    .tag{
+      display:inline-flex;align-items:center;gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: rgba(233,238,252,.85);
+      font-size: 13px;
+      user-select:none;
+    }
+    .sub{
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 70ch;
+      font-size: 15.5px;
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .panel-head{
+      padding: 16px 18px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .panel-head h2{
+      margin:0;
+      font-size: 14px;
+      color: rgba(233,238,252,.85);
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+
+    /* Horizontal dropdown buttons row */
+    .cat-row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .category-btn{
+      width:100%;
+      text-align:left;
+      border:1px solid rgba(255,255,255,.06);
+      background: rgba(0,0,0,.10);
+      color: var(--text);
+      padding: 14px 14px;
+      border-radius: 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      cursor:pointer;
+      transition: background .18s ease, transform .10s ease, border-color .18s ease;
+    }
+    .category-btn:hover{
+      background: rgba(255,255,255,.05);
+      border-color: rgba(122,162,255,.28);
+      transform: translateY(-2px);
+    }
+    .category-btn:focus-visible{outline:none; box-shadow: var(--ring)}
+    .cat-left{display:flex;align-items:center;gap:12px;min-width:0}
+    .cat-ico{
+      width:44px;height:44px;border-radius:14px;
+      background: linear-gradient(135deg, rgba(122,162,255,.22), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      display:grid;place-items:center;
+      flex: 0 0 auto;
+    }
+    .cat-ico span{font-size:20px}
+    .cat-meta{min-width:0}
+    .cat-title{
+      margin:0;
+      font-size: 18px;
+      letter-spacing:.2px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .cat-desc{
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.45;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .chev{
+      width:38px;height:38px;border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.20);
+      display:grid;place-items:center;
+      transition: transform .22s ease;
+      flex: 0 0 auto;
+    }
+
+    /* TWO roll-down areas side-by-side */
+    .roll-row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 0 12px 12px;
+    }
+
+    /* Roll-down content */
+    .roll{
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 16px;
+      background: rgba(0,0,0,.10);
+      overflow:hidden;
+
+      display:grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows .28s ease;
+    }
+    .roll > .roll-inner{overflow:hidden}
+    .roll.open{grid-template-rows: 1fr}
+
+    .games{
+      padding: 12px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .game-card{
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.20);
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      cursor:pointer;
+      transition: transform .10s ease, background .18s ease, border-color .18s ease;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .game-card:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.05);
+      border-color: rgba(122,162,255,.35);
+    }
+    .game-card:focus-visible{outline:none; box-shadow: var(--ring)}
+    .game-top{display:flex;align-items:center;gap:10px}
+    .game-ico{
+      width:38px;height:38px;border-radius:13px;
+      border:1px solid var(--border);
+      background: linear-gradient(135deg, rgba(121,255,215,.14), rgba(122,162,255,.12));
+      display:grid;place-items:center;
+      flex:0 0 auto;
+    }
+    .game-ico span{font-size:18px}
+    .game-title{margin:0;font-size: 15.5px;letter-spacing:.1px}
+    .game-desc{
+      margin:0;
+      color: rgba(233,238,252,.78);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .pill{
+      align-self:flex-start;
+      font-size: 12px;
+      color: rgba(233,238,252,.85);
+      border: 1px solid rgba(122,162,255,.38);
+      background: rgba(122,162,255,.12);
+      padding: 5px 9px;
+      border-radius: 999px;
+    }
+
+    /* Disabled card */
+    .game-card.disabled{
+      cursor:not-allowed;
+      opacity:.75;
+    }
+    .game-card.disabled:hover{
+      transform:none;
+      background: rgba(0,0,0,.20);
+      border-color: var(--border);
+    }
+    .pill.disabled{
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: rgba(233,238,252,.70);
+    }
+
+    footer{
+      margin-top: 18px;
+      text-align:center;
+      color: rgba(233,238,252,.52);
+      font-size: 12.5px;
+    }
+
+    @media (max-width: 900px){
+      .cat-row{grid-template-columns:1fr}
+      .roll-row{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero" aria-label="Welcome">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><span>🧩</span></div>
+        <h1>Brit Never Misses</h1>
+        <span class="tag">Train memory • speed • focus</span>
+      </div>
+      <p class="sub">
+        Click a link group below to expand it, then choose a game.
+      </p>
+    </section>
+
+    <section class="panel" aria-label="My Links">
+      <div class="panel-head">
+        <h2>My Links</h2>
+      </div>
+
+      <!-- Horizontal buttons -->
+      <div class="cat-row">
+        <button class="category-btn" id="mindBtn" type="button" aria-expanded="false" aria-controls="mindRoll">
+          <div class="cat-left">
+            <div class="cat-ico" aria-hidden="true"><span>🧠</span></div>
+            <div class="cat-meta">
+              <div class="cat-title">Mind Games</div>
+              <div class="cat-desc">Memory challenges, sequences, mental math</div>
+            </div>
+          </div>
+          <div class="chev" aria-hidden="true" id="mindChev">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </button>
+
+        <button class="category-btn" id="otherBtn" type="button" aria-expanded="false" aria-controls="otherRoll">
+          <div class="cat-left">
+            <div class="cat-ico" aria-hidden="true"><span>✨</span></div>
+            <div class="cat-meta">
+              <div class="cat-title">Other</div>
+              <div class="cat-desc">More things coming soon</div>
+            </div>
+          </div>
+          <div class="chev" aria-hidden="true" id="otherChev">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </button>
+      </div>
+
+      <!-- Roll-downs SIDE-BY-SIDE (horizontal to each other) -->
+      <div class="roll-row">
+        <!-- Mind Games roll-down -->
+        <div class="roll" id="mindRoll">
+          <div class="roll-inner">
+            <div class="games" role="group" aria-label="Mind Games list">
+              <div class="game-card" tabindex="0" role="button" data-href="digit-memory.html" aria-label="Start Digit Memory">
+                <div class="game-top">
+                  <div class="game-ico" aria-hidden="true"><span>🔢</span></div>
+                  <h3 class="game-title">Digit Memory</h3>
+                </div>
+                <p class="game-desc">Memorize a number, hide it, and type it back.</p>
+                <span class="pill">Working memory</span>
+              </div>
+
+              <div class="game-card" tabindex="0" role="button" data-href="memory-sequence.html" aria-label="Start Memory Sequence">
+                <div class="game-top">
+                  <div class="game-ico" aria-hidden="true"><span>🧱</span></div>
+                  <h3 class="game-title">Memory Sequence</h3>
+                </div>
+                <p class="game-desc">Remember the grid order and tap the sequence correctly.</p>
+                <span class="pill">Pattern recall</span>
+              </div>
+
+              <div class="game-card" tabindex="0" role="button" data-href="multiplication-timer.html" aria-label="Start Multiplication Timer">
+                <div class="game-top">
+                  <div class="game-ico" aria-hidden="true"><span>✖️</span></div>
+                  <h3 class="game-title">Multiplication Timer</h3>
+                </div>
+                <p class="game-desc">Solve multiplication problems quickly and track your time.</p>
+                <span class="pill">Mental math</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Other roll-down -->
+        <div class="roll" id="otherRoll">
+          <div class="roll-inner">
+            <div class="games" role="group" aria-label="Other list">
+              <div class="game-card disabled" tabindex="0" role="button" aria-label="TBA (coming soon)" data-href="">
+                <div class="game-top">
+                  <div class="game-ico" aria-hidden="true"><span>🕒</span></div>
+                  <h3 class="game-title">TBA</h3>
+                </div>
+                <p class="game-desc">Coming soon.</p>
+                <span class="pill disabled">No link yet</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      © <span id="year"></span> Brit Never Misses
+    </footer>
+  </div>
+
+  <script>
+    const mindBtn = document.getElementById("mindBtn");
+    const otherBtn = document.getElementById("otherBtn");
+    const mindRoll = document.getElementById("mindRoll");
+    const otherRoll = document.getElementById("otherRoll");
+    const mindChev = document.getElementById("mindChev");
+    const otherChev = document.getElementById("otherChev");
+
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    function setOpen(rollEl, btnEl, chevEl, open) {
+      rollEl.classList.toggle("open", open);
+      btnEl.setAttribute("aria-expanded", String(open));
+      chevEl.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
+    }
+
+    function toggle(rollEl, btnEl, chevEl) {
+      const isOpen = rollEl.classList.contains("open");
+      setOpen(rollEl, btnEl, chevEl, !isOpen);
+    }
+
+    mindBtn.addEventListener("click", () => toggle(mindRoll, mindBtn, mindChev));
+    otherBtn.addEventListener("click", () => toggle(otherRoll, otherBtn, otherChev));
+
+    function goTo(href) {
+      if (!href) return;
+      window.location.href = href;
+    }
+
+    document.querySelectorAll(".game-card").forEach(card => {
+      const href = card.dataset.href || "";
+      const isDisabled = card.classList.contains("disabled") || !href;
+
+      card.addEventListener("click", () => {
+        if (isDisabled) return;
+        goTo(href);
+      });
+
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (isDisabled) return;
+          goTo(href);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
