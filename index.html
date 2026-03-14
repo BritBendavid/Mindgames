@@ -93,6 +93,45 @@
       border-color:rgba(122,162,255,.4);
     }
     .signin-link:focus-visible{outline:none; box-shadow: var(--ring)}
+    
+    .account-menu-wrap{
+  position:relative;
+}
+
+.account-dropdown{
+  position:absolute;
+  top:calc(100% + 10px);
+  right:0;
+  min-width:180px;
+  background:#0f172a;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
+  padding:8px;
+  display:none;
+  z-index:1001;
+}
+
+.account-dropdown.open{
+  display:block;
+}
+
+.account-dropdown-item{
+  width:100%;
+  text-align:left;
+  border:0;
+  background:transparent;
+  color:#e9eefc;
+  padding:10px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:600;
+}
+
+.account-dropdown-item:hover{
+  background:rgba(255,255,255,.06);
+}
 
     .panel{
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
@@ -428,7 +467,18 @@
           <span class="tag">Train memory • speed • focus</span>
         </div>
 
-        <a id="signInLink" href="#" class="signin-link" onclick="openSignIn(event)">Sign In</a>
+        <div class="account-menu-wrap">
+  <a id="signInLink" href="#" class="signin-link" onclick="handleAccountClick(event)">Sign In</a>
+
+  <div id="accountDropdown" class="account-dropdown">
+    <button type="button" class="account-dropdown-item" onclick="goToStats()">
+      My Stats
+    </button>
+    <button type="button" class="account-dropdown-item" onclick="logOut()">
+      Log Out
+    </button>
+  </div>
+</div>
       </div>
 
       <p class="sub">
@@ -683,6 +733,13 @@ showPasswordToggle.addEventListener("change", () => {
     window.addEventListener("click", (event) => {
       const modal = document.getElementById("signinModal");
       if (event.target === modal) closeSignIn();
+  const dropdown = document.getElementById("accountDropdown");
+  const wrap = document.querySelector(".account-menu-wrap");
+
+  if (wrap && !wrap.contains(event.target)) {
+    dropdown.classList.remove("open");
+  }
+
     });
 
     document.getElementById("toggleAuthModeBtn").addEventListener("click", () => {
@@ -762,6 +819,7 @@ showPasswordToggle.addEventListener("change", () => {
         // Update UI: show the logged-in email
         const me = await supabaseClient.auth.getUser();
         if (me.data && me.data.user){
+          isLoggedIn = true;
           const link = document.getElementById("signInLink");
           link.textContent = me.data.user.email;
         }
@@ -774,10 +832,44 @@ showPasswordToggle.addEventListener("change", () => {
     (async () => {
       const me = await supabaseClient.auth.getUser();
       if (me.data && me.data.user){
-        document.getElementById("signInLink").textContent = me.data.user.email;
+        isLoggedIn = true;
+document.getElementById("signInLink").textContent = me.data.user.email;
       }
     })(); 
     
+    let isLoggedIn = false;
+
+function handleAccountClick(e){
+  e.preventDefault();
+
+  if (!isLoggedIn){
+    openSignIn(e);
+    return;
+  }
+
+  const dropdown = document.getElementById("accountDropdown");
+  dropdown.classList.toggle("open");
+}
+
+function closeAccountDropdown(){
+  document.getElementById("accountDropdown").classList.remove("open");
+}
+
+function goToStats(){
+  window.location.href = "my-stats.html";
+}
+
+async function logOut(){
+  try {
+    await supabaseClient.auth.signOut();
+  } catch (err) {
+    console.error(err);
+  }
+
+  isLoggedIn = false;
+  document.getElementById("signInLink").textContent = "Sign In";
+  closeAccountDropdown();
+}
 
   </script>
 </body>
