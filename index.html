@@ -673,7 +673,7 @@
       // Placeholder until wired to a provider (Supabase/Firebase/etc.)
       showAuthError("Auth backend not connected yet. Wire this to Supabase Auth to enable real sign-in.");
     }
-
+*/
     document.getElementById("authSubmitBtn").addEventListener("click", authSubmit);
 
     // Enter submits
@@ -681,7 +681,7 @@
       document.getElementById(id).addEventListener("keydown", (e) => {
         if (e.key === "Enter") authSubmit();
       });
-    });*/
+    });
 
     /* =========================
        OPTIONAL: Supabase Auth wiring
