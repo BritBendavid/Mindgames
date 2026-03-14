@@ -694,7 +694,7 @@
     const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
     async function authSubmit(){
       clearAuthError();
@@ -712,9 +712,9 @@
       try {
         let resp;
         if (authMode === "login"){
-          resp = await supabase.auth.signInWithPassword({ email: usernameOrEmail, password });
+          resp = await supabaseClient.auth.signInWithPassword({ email: usernameOrEmail, password });
         } else {
-          resp = await supabase.auth.signUp({ email: usernameOrEmail, password });
+          resp = await supabaseClient.auth.signUp({ email: usernameOrEmail, password });
         }
 
         if (resp.error){
@@ -725,7 +725,7 @@
         closeSignIn();
 
         // Update UI: show the logged-in email
-        const me = await supabase.auth.getUser();
+        const me = await supabaseClient.auth.getUser();
         if (me.data && me.data.user){
           const link = document.getElementById("signInLink");
           link.textContent = me.data.user.email;
@@ -737,11 +737,11 @@
 
     // keep user label on refresh
     (async () => {
-      const me = await supabase.auth.getUser();
+      const me = await supabaseClient.auth.getUser();
       if (me.data && me.data.user){
         document.getElementById("signInLink").textContent = me.data.user.email;
       }
-    })();
+    })(); 
     
 
   </script>
