@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Brit Never Misses</title>
+
   <style>
     :root{
       --bg0:#070a14;
@@ -30,25 +31,19 @@
 
     .wrap{max-width:980px;margin:0 auto}
     .hero{padding: 26px 8px 18px}
-    .signin-link{
-  margin-left:auto;
-  text-decoration:none;
-  color:#e9eefc;
-  font-weight:600;
-  padding:8px 14px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.15);
-  background:rgba(255,255,255,.05);
-  transition:0.2s;
-}
-
-.signin-link:hover{
-  background:rgba(122,162,255,.15);
-  border-color:rgba(122,162,255,.4);
-}
     .brand{
-      display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
       margin-bottom: 10px;
+    }
+    .brand-left{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
     }
     .logo{
       width:44px;height:44px;border-radius:14px;
@@ -80,6 +75,24 @@
       max-width: 70ch;
       font-size: 15.5px;
     }
+
+    /* Sign-in link (button style) */
+    .signin-link{
+      text-decoration:none;
+      color:#e9eefc;
+      font-weight:700;
+      padding:8px 14px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.05);
+      transition:0.2s;
+      white-space:nowrap;
+    }
+    .signin-link:hover{
+      background:rgba(122,162,255,.15);
+      border-color:rgba(122,162,255,.4);
+    }
+    .signin-link:focus-visible{outline:none; box-shadow: var(--ring)}
 
     .panel{
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
@@ -260,79 +273,143 @@
       .cat-row{grid-template-columns:1fr}
       .roll-row{grid-template-columns:1fr}
     }
-    
-    /* Modal background */
-.modal{
-  display:none;
-  position:fixed;
-  z-index:1000;
-  left:0;
-  top:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.6);
-  backdrop-filter: blur(6px);
-}
 
-/* Modal box */
-.modal-content{
-  background:#0f172a;
-  margin:12% auto;
-  padding:30px;
-  border-radius:14px;
-  width:320px;
-  text-align:center;
-  border:1px solid rgba(255,255,255,.1);
-}
+    /* =========================
+       SIGN-IN MODAL
+       ========================= */
+    .modal{
+      display:none;
+      position:fixed;
+      z-index:1000;
+      left:0;
+      top:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      padding: 18px;
+    }
 
-/* Close button */
-.close{
-  float:right;
-  font-size:22px;
-  cursor:pointer;
-}
+    .modal-content{
+      background: #0f172a;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      width: min(420px, 100%);
+      margin: 10vh auto 0;
+      padding: 18px 18px 16px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.55);
+    }
 
-/* Inputs */
-.signin-input{
-  width:100%;
-  padding:10px;
-  margin:10px 0;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,.15);
-  background:#020617;
-  color:white;
-}
+    .modal-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
 
-/* Sign in button */
-.signin-btn{
-  width:100%;
-  padding:10px;
-  margin-top:10px;
-  border-radius:8px;
-  border:none;
-  background:#7aa2ff;
-  color:white;
-  font-weight:600;
-  cursor:pointer;
-}
+    .modal h2{
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: .2px;
+    }
 
-.signin-btn:hover{
-  opacity:.9;
-}
+    .close{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color: rgba(233,238,252,.9);
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 0;
+      display:grid;
+      place-items:center;
+    }
+    .close:focus-visible{outline:none; box-shadow: var(--ring)}
+
+    .signin-input{
+      width:100%;
+      padding: 11px 12px;
+      margin: 10px 0 0;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.15);
+      background:#020617;
+      color:white;
+      font-size: 14.5px;
+    }
+    .signin-input:focus{
+      outline:none;
+      box-shadow: var(--ring);
+      border-color: rgba(122,162,255,.45);
+    }
+
+    .auth-error{
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,180,180,.35);
+      background: rgba(255,180,180,.10);
+      color: rgba(255,220,220,.95);
+      font-size: 13px;
+      text-align: left;
+      display:none;
+    }
+
+    .signin-btn{
+      width:100%;
+      padding: 11px 12px;
+      margin-top: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(122,162,255,.45);
+      background: rgba(122,162,255,.18);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+      transition: .15s;
+      font-size: 14.5px;
+    }
+    .signin-btn:hover{filter: brightness(1.08)}
+    .signin-btn:active{transform: translateY(1px)}
+    .signin-btn:focus-visible{outline:none; box-shadow: var(--ring)}
+    .signin-btn[disabled]{opacity:.6; cursor:not-allowed}
+
+    .link-btn{
+      margin-top: 10px;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: rgba(233,238,252,.85);
+      cursor: pointer;
+      font-weight: 700;
+      padding: 10px 0 0;
+      text-align:center;
+    }
+    .link-btn:hover{text-decoration: underline}
+
+    .hint{
+      margin-top: 10px;
+      color: rgba(233,238,252,.62);
+      font-size: 12.5px;
+      line-height: 1.5;
+      text-align:center;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <section class="hero" aria-label="Welcome">
-    <div class="brand">
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-    <div class="logo"><span>🧩</span></div>
-    <h1>Brit Never Misses</h1>
-    <span class="tag">Train memory • speed • focus</span>
-  </div>
+      <div class="brand">
+        <div class="brand-left">
+          <div class="logo" aria-hidden="true"><span>🧩</span></div>
+          <h1>Brit Never Misses</h1>
+          <span class="tag">Train memory • speed • focus</span>
+        </div>
 
-  <a href="#" class="signin-link" onclick="openSignIn(event)">Sign In</a>
-</div>
+        <a id="signInLink" href="#" class="signin-link" onclick="openSignIn(event)">Sign In</a>
+      </div>
+
       <p class="sub">
         Click a link group below to expand it, then choose a game.
       </p>
@@ -376,7 +453,7 @@
         </button>
       </div>
 
-      <!-- Roll-downs SIDE-BY-SIDE (horizontal to each other) -->
+      <!-- Roll-downs SIDE-BY-SIDE -->
       <div class="roll-row">
         <!-- Mind Games roll-down -->
         <div class="roll" id="mindRoll">
@@ -434,22 +511,39 @@
       © <span id="year"></span> Brit Never Misses
     </footer>
   </div>
-        <div id="signinModal" class="modal">
-  <div class="modal-content">
 
-    <span class="close" onclick="closeSignIn()">&times;</span>
+  <!-- SIGN-IN MODAL -->
+  <div id="signinModal" class="modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label="Sign in">
+      <div class="modal-top">
+        <h2 id="authTitle">Sign In</h2>
+        <button class="close" type="button" id="closeSignInBtn" aria-label="Close">×</button>
+      </div>
 
-    <h2>Sign In</h2>
+      <input id="authUsername" type="text" placeholder="Email or Username" class="signin-input" autocomplete="username">
+      <input id="authPassword" type="password" placeholder="Password" class="signin-input" autocomplete="current-password">
 
-    <input type="text" placeholder="Email" class="signin-input">
-    <input type="password" placeholder="Password" class="signin-input">
+      <div id="authError" class="auth-error"></div>
 
-    <button class="signin-btn">Sign In</button>
+      <button class="signin-btn" id="authSubmitBtn" type="button">Sign In</button>
 
+      <button class="link-btn" id="toggleAuthModeBtn" type="button">
+        Don’t have an account? Create one
+      </button>
+
+      <div class="hint">
+        If you’re using Supabase Auth, you’ll paste your Project URL and Publishable key into the JS section.
+      </div>
+    </div>
   </div>
-</div>
+
+  <!-- Supabase JS (optional; leave commented until you're ready) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
+    /* =========================
+       BASIC UI / NAV
+       ========================= */
     const mindBtn = document.getElementById("mindBtn");
     const otherBtn = document.getElementById("otherBtn");
     const mindRoll = document.getElementById("mindRoll");
@@ -495,22 +589,161 @@
         }
       });
     });
+
+    /* =========================
+       SIGN-IN MODAL (UI)
+       ========================= */
+    let authMode = "login"; // "login" or "signup"
+
     function openSignIn(e){
-  e.preventDefault();
-  document.getElementById("signinModal").style.display = "block";
-}
+      e.preventDefault();
+      const modal = document.getElementById("signinModal");
+      modal.style.display = "block";
+      modal.setAttribute("aria-hidden", "false");
+      clearAuthError();
+      syncAuthUI();
+      document.getElementById("authUsername").focus();
+    }
 
-function closeSignIn(){
-  document.getElementById("signinModal").style.display = "none";
-}
+    function closeSignIn(){
+      const modal = document.getElementById("signinModal");
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
+    }
 
-/* Close if user clicks outside */
-window.onclick = function(event){
-  const modal = document.getElementById("signinModal");
-  if(event.target === modal){
-    modal.style.display = "none";
-  }
-}
+    function clearAuthError(){
+      const el = document.getElementById("authError");
+      el.style.display = "none";
+      el.textContent = "";
+    }
+
+    function showAuthError(msg){
+      const el = document.getElementById("authError");
+      el.textContent = msg;
+      el.style.display = "block";
+    }
+
+    function syncAuthUI(){
+      const title = document.getElementById("authTitle");
+      const btn = document.getElementById("authSubmitBtn");
+      const toggleBtn = document.getElementById("toggleAuthModeBtn");
+      const pass = document.getElementById("authPassword");
+
+      if (authMode === "login"){
+        title.textContent = "Sign In";
+        btn.textContent = "Sign In";
+        toggleBtn.textContent = "Don’t have an account? Create one";
+        pass.autocomplete = "current-password";
+      } else {
+        title.textContent = "Create Account";
+        btn.textContent = "Create Account";
+        toggleBtn.textContent = "Already have an account? Sign in";
+        pass.autocomplete = "new-password";
+      }
+    }
+
+    document.getElementById("closeSignInBtn").addEventListener("click", closeSignIn);
+
+    // Click outside to close
+    window.addEventListener("click", (event) => {
+      const modal = document.getElementById("signinModal");
+      if (event.target === modal) closeSignIn();
+    });
+
+    document.getElementById("toggleAuthModeBtn").addEventListener("click", () => {
+      authMode = authMode === "login" ? "signup" : "login";
+      clearAuthError();
+      syncAuthUI();
+    });
+
+    /* =========================
+       AUTH HOOK (placeholder)
+       - Replace this with Supabase integration
+       ========================= */
+/*    async function authSubmit(){
+      clearAuthError();
+      const username = document.getElementById("authUsername").value.trim();
+      const password = document.getElementById("authPassword").value;
+
+      if (!username || !password){
+        showAuthError("Please enter a username/email and password.");
+        return;
+      }
+
+      // Placeholder until wired to a provider (Supabase/Firebase/etc.)
+      showAuthError("Auth backend not connected yet. Wire this to Supabase Auth to enable real sign-in.");
+    }
+
+    document.getElementById("authSubmitBtn").addEventListener("click", authSubmit);
+
+    // Enter submits
+    ["authUsername","authPassword"].forEach(id => {
+      document.getElementById(id).addEventListener("keydown", (e) => {
+        if (e.key === "Enter") authSubmit();
+      });
+    });*/
+
+    /* =========================
+       OPTIONAL: Supabase Auth wiring
+       1) Uncomment the supabase-js script tag above
+       2) Fill in SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY
+       3) Uncomment the supabase code block below and delete the placeholder authSubmit()
+       ========================= */
+
+    
+    const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    async function authSubmit(){
+      clearAuthError();
+      const usernameOrEmail = document.getElementById("authUsername").value.trim();
+      const password = document.getElementById("authPassword").value;
+
+      if (!usernameOrEmail || !password){
+        showAuthError("Please enter an email and password.");
+        return;
+      }
+
+      const btn = document.getElementById("authSubmitBtn");
+      btn.disabled = true;
+
+      try {
+        let resp;
+        if (authMode === "login"){
+          resp = await supabase.auth.signInWithPassword({ email: usernameOrEmail, password });
+        } else {
+          resp = await supabase.auth.signUp({ email: usernameOrEmail, password });
+        }
+
+        if (resp.error){
+          showAuthError(resp.error.message);
+          return;
+        }
+
+        closeSignIn();
+
+        // Update UI: show the logged-in email
+        const me = await supabase.auth.getUser();
+        if (me.data && me.data.user){
+          const link = document.getElementById("signInLink");
+          link.textContent = me.data.user.email;
+        }
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // keep user label on refresh
+    (async () => {
+      const me = await supabase.auth.getUser();
+      if (me.data && me.data.user){
+        document.getElementById("signInLink").textContent = me.data.user.email;
+      }
+    })();
+    
+
   </script>
 </body>
 </html>
