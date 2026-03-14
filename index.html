@@ -313,6 +313,27 @@
       font-size: 18px;
       letter-spacing: .2px;
     }
+    
+    .show-password-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+  color: rgba(233,238,252,.82);
+  font-size: 13.5px;
+  user-select:none;
+}
+
+.show-password-row input{
+  margin:0;
+  width:16px;
+  height:16px;
+  cursor:pointer;
+}
+
+.show-password-row span{
+  cursor:pointer;
+}
 
     .close{
       border: 1px solid rgba(255,255,255,.12);
@@ -522,6 +543,11 @@
 
       <input id="authUsername" type="text" placeholder="Email or Username" class="signin-input" autocomplete="username">
       <input id="authPassword" type="password" placeholder="Password" class="signin-input" autocomplete="current-password">
+      
+      <label class="show-password-row">
+  <input type="checkbox" id="showPasswordToggle">
+  <span>Show password</span>
+</label>
 
       <div id="authError" class="auth-error"></div>
 
@@ -609,7 +635,16 @@
       const modal = document.getElementById("signinModal");
       modal.style.display = "none";
       modal.setAttribute("aria-hidden", "true");
+      document.getElementById("showPasswordToggle").checked = false;
+document.getElementById("authPassword").type = "password";
     }
+    
+    const showPasswordToggle = document.getElementById("showPasswordToggle");
+const authPassword = document.getElementById("authPassword");
+
+showPasswordToggle.addEventListener("change", () => {
+  authPassword.type = showPasswordToggle.checked ? "text" : "password";
+});
 
     function clearAuthError(){
       const el = document.getElementById("authError");
