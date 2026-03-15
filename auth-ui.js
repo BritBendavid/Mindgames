@@ -20,10 +20,6 @@ function injectAuthModal() {
           <button class="close" type="button" id="closeSignInBtn" aria-label="Close">×</button>
         </div>
 
-        <div id="displayNameRow">
-          <input id="authDisplayName" type="text" placeholder="Username" class="signin-input">
-        </div>
-
         <input id="authUsername" type="text" placeholder="Email or Username" class="signin-input" autocomplete="username">
         <input id="authPassword" type="password" placeholder="Password" class="signin-input" autocomplete="current-password">
 
@@ -84,7 +80,7 @@ function openSignIn(e) {
   const modal = document.getElementById("signinModal");
   if (!modal) return;
 
-  modal.style.display = "flex";
+  modal.style.display = "block";
   modal.setAttribute("aria-hidden", "false");
 
   clearAuthError();
@@ -113,24 +109,19 @@ function syncAuthUI() {
   const btn = document.getElementById("authSubmitBtn");
   const toggleBtn = document.getElementById("toggleAuthModeBtn");
   const pass = document.getElementById("authPassword");
-  const displayNameRow = document.getElementById("displayNameRow");
-  const displayNameInput = document.getElementById("authDisplayName");
 
-  if (!title || !btn || !toggleBtn || !pass || !displayNameRow || !displayNameInput) return;
+  if (!title || !btn || !toggleBtn || !pass) return;
 
   if (authMode === "login") {
     title.textContent = "Sign In";
     btn.textContent = "Sign In";
     toggleBtn.textContent = "Don’t have an account? Create one";
     pass.autocomplete = "current-password";
-    displayNameRow.style.display = "none";
-    displayNameInput.value = "";
   } else {
     title.textContent = "Create Account";
     btn.textContent = "Create Account";
     toggleBtn.textContent = "Already have an account? Sign in";
     pass.autocomplete = "new-password";
-    displayNameRow.style.display = "block";
   }
 }
 
@@ -175,16 +166,10 @@ async function authSubmit() {
 
   const usernameOrEmail = document.getElementById("authUsername")?.value.trim() || "";
   const password = document.getElementById("authPassword")?.value || "";
-  const displayName = document.getElementById("authDisplayName")?.value.trim() || "";
   const btn = document.getElementById("authSubmitBtn");
 
   if (!usernameOrEmail || !password) {
     showAuthError("Please enter an email and password.");
-    return;
-  }
-
-  if (authMode === "signup" && !displayName) {
-    showAuthError("Please enter a username.");
     return;
   }
 
@@ -216,12 +201,7 @@ async function authSubmit() {
     } else {
       resp = await supabaseClient.auth.signUp({
         email: usernameOrEmail,
-        password,
-        options: {
-          data: {
-            username: displayName
-          }
-        }
+        password
       });
 
       if (resp.error) {
@@ -287,7 +267,7 @@ function initAuthUI() {
     });
   }
 
-  ["authUsername", "authPassword", "authDisplayName"].forEach((id) => {
+  ["authUsername", "authPassword"].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
 
