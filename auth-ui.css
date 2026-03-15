@@ -240,15 +240,28 @@ Toggle login/signup link
 ----------------------------- */
 
 .link-btn{
-      margin-top: 10px;
-      width: 100%;
-      border: 0;
-      background: transparent;
-      color: rgba(233,238,252,.85);
-      cursor: pointer;
-      font-weight: 600;
-      padding: 10px 0 0;
-      text-align:center;
-    }
+  margin-top:10px;
+  width:100%;
+  border:0;
+  background:transparent;
+  color:rgba(233,238,252,.85);
+  cursor:pointer;
+  font-weight:600;
+  font-size:13px;
+  padding:10px 0 0;
+  text-align:center;
+  outline:none;
+  box-shadow:none;
+}
 
-    .link-btn:hover{text-decoration: underline}
+.link-btn:hover{
+  text-decoration:underline;
+}
+
+.link-btn:focus,
+.link-btn:active,
+.link-btn:focus-visible{
+  background:transparent;
+  outline:none;
+  box-shadow:none;
+}
