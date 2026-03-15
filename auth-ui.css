@@ -1,0 +1,255 @@
+/* -----------------------------
+Account menu (top right)
+----------------------------- */
+
+.account-menu-wrap{
+  position:relative;
+}
+
+.signin-link{
+  color:#e9eefc;
+  text-decoration:none;
+  font-weight:600;
+  font-size:14px;
+  padding:8px 14px;
+  border-radius:10px;
+  transition:background .15s ease;
+}
+
+.signin-link:hover{
+  background:rgba(255,255,255,.06);
+}
+
+
+/* -----------------------------
+Account dropdown
+----------------------------- */
+
+.account-dropdown{
+  position:absolute;
+  top:calc(100% + 10px);
+  right:0;
+  min-width:180px;
+  background:#0f172a;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
+  padding:8px;
+  display:none;
+  z-index:1001;
+}
+
+.account-dropdown.open{
+  display:block;
+}
+
+.account-dropdown-item{
+  width:100%;
+  text-align:left;
+  border:0;
+  background:transparent;
+  color:#e9eefc;
+  padding:10px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:600;
+}
+
+.account-dropdown-item:hover{
+  background:rgba(255,255,255,.06);
+}
+
+
+/* -----------------------------
+Modal background
+----------------------------- */
+
+.modal{
+  display:none;
+  position:fixed;
+  z-index:1000;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  backdrop-filter:blur(6px);
+  align-items:center;
+  justify-content:center;
+}
+
+
+/* -----------------------------
+Modal box
+----------------------------- */
+
+.modal-content{
+  width:360px;
+  background:#0b1220;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  padding:28px 26px 26px;
+  box-shadow:0 20px 60px rgba(0,0,0,.55);
+  color:#e9eefc;
+  font-family:system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+
+/* -----------------------------
+Modal header
+----------------------------- */
+
+.modal-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+}
+
+.modal-top h2{
+  margin:0;
+  font-size:22px;
+  font-weight:700;
+}
+
+
+/* -----------------------------
+Close button
+----------------------------- */
+
+.close{
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.18);
+  color:rgba(233,238,252,.9);
+  width:34px;
+  height:34px;
+  border-radius:12px;
+  cursor:pointer;
+  font-size:18px;
+}
+
+.close:hover{
+  background:rgba(255,255,255,.06);
+}
+
+
+/* -----------------------------
+Input fields
+----------------------------- */
+
+.signin-input{
+  width:100%;
+  margin-top:12px;
+  padding:12px 14px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background:#0f172a;
+  color:#e9eefc;
+  font-size:14px;
+  outline:none;
+}
+
+.signin-input::placeholder{
+  color:rgba(233,238,252,.45);
+}
+
+.signin-input:focus{
+  border-color:rgba(100,140,255,.6);
+}
+
+
+/* -----------------------------
+Show password toggle
+----------------------------- */
+
+.show-password-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+  color:rgba(233,238,252,.82);
+  font-size:13.5px;
+  user-select:none;
+}
+
+.show-password-row input{
+  margin:0;
+  width:16px;
+  height:16px;
+  cursor:pointer;
+}
+
+.show-password-row span{
+  cursor:pointer;
+}
+
+
+/* -----------------------------
+Auth error / success box
+----------------------------- */
+
+.auth-error{
+  margin-top:12px;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid rgba(255,180,180,.35);
+  background:rgba(255,180,180,.10);
+  color:rgba(255,220,220,.95);
+  font-size:13px;
+  display:none;
+}
+
+
+/* -----------------------------
+Primary auth button
+----------------------------- */
+
+.signin-btn{
+  width:100%;
+  margin-top:16px;
+  padding:12px;
+  border-radius:12px;
+  border:0;
+  background:#4f6bff;
+  color:white;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition:background .15s ease;
+}
+
+.signin-btn:hover{
+  background:#3d57e6;
+}
+
+.signin-btn:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+}
+
+
+/* -----------------------------
+Toggle login/signup link
+----------------------------- */
+
+.link-btn{
+  margin-top:10px;
+  width:100%;
+  border:0;
+  background:transparent;
+  color:rgba(233,238,252,.85);
+  cursor:pointer;
+  font-weight:600;
+  padding:10px 0 0;
+}
+
+.link-btn:hover{
+  text-decoration:underline;
+}
+
+
+/* -----------------------------
+Username row (hidden by default)
+----------------------------- */
+
+#displayNameRow{
+  display:none;
+}
