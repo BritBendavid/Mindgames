@@ -121,22 +121,19 @@ Close button
 ----------------------------- */
 
 .close{
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.18);
-  color:rgba(233,238,252,.9);
-  width:34px;
-  height:34px;
-  border-radius:12px;
-  cursor:pointer;
-  font-size:18px;
-  line-height:0;
-  display:grid;
-  place-items:center;
-}
-
-.close:hover{
-  background:rgba(255,255,255,.06);
-}
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color: rgba(233,238,252,.9);
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 0;
+      display:grid;
+      place-items:center;
+    }
+    .close:focus-visible{outline:none; box-shadow: var(--ring)}
 
 /* -----------------------------
 Input fields
