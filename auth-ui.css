@@ -1,25 +1,33 @@
 /* -----------------------------
-Account menu (top right)
+Top-right account area
 ----------------------------- */
 
 .account-menu-wrap{
   position:relative;
+  margin-left:auto;
+  display:flex;
+  align-items:center;
 }
 
 .signin-link{
-  color:#e9eefc;
   text-decoration:none;
-  font-weight:600;
-  font-size:14px;
+  color:#e9eefc;
+  font-weight:700;
   padding:8px 14px;
-  border-radius:10px;
-  transition:background .15s ease;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.05);
+  transition:0.2s;
+  white-space:nowrap;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
 }
 
 .signin-link:hover{
-  background:rgba(255,255,255,.06);
+  background:rgba(122,162,255,.15);
+  border-color:rgba(122,162,255,.4);
 }
-
 
 /* -----------------------------
 Account dropdown
@@ -60,7 +68,6 @@ Account dropdown
   background:rgba(255,255,255,.06);
 }
 
-
 /* -----------------------------
 Modal background
 ----------------------------- */
@@ -72,26 +79,24 @@ Modal background
   inset:0;
   background:rgba(0,0,0,.55);
   backdrop-filter:blur(6px);
-  align-items:center;
-  justify-content:center;
+  padding:18px;
 }
-
 
 /* -----------------------------
 Modal box
 ----------------------------- */
 
 .modal-content{
-  width:360px;
-  background:#0b1220;
-  border-radius:18px;
-  border:1px solid rgba(255,255,255,.12);
-  padding:28px 26px 26px;
-  box-shadow:0 20px 60px rgba(0,0,0,.55);
+  background:#0f172a;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  width:min(420px, 100%);
+  margin:10vh auto 0;
+  padding:18px 18px 16px;
+  box-shadow:0 22px 70px rgba(0,0,0,.55);
   color:#e9eefc;
   font-family:system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-
 
 /* -----------------------------
 Modal header
@@ -99,17 +104,17 @@ Modal header
 
 .modal-top{
   display:flex;
-  justify-content:space-between;
   align-items:center;
-  margin-bottom:14px;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
 }
 
-.modal-top h2{
+.modal h2{
   margin:0;
-  font-size:22px;
-  font-weight:700;
+  font-size:18px;
+  letter-spacing:.2px;
 }
-
 
 /* -----------------------------
 Close button
@@ -124,12 +129,14 @@ Close button
   border-radius:12px;
   cursor:pointer;
   font-size:18px;
+  line-height:0;
+  display:grid;
+  place-items:center;
 }
 
 .close:hover{
   background:rgba(255,255,255,.06);
 }
-
 
 /* -----------------------------
 Input fields
@@ -137,13 +144,13 @@ Input fields
 
 .signin-input{
   width:100%;
-  margin-top:12px;
-  padding:12px 14px;
+  padding:11px 12px;
+  margin:10px 0 0;
   border-radius:12px;
-  border:1px solid rgba(255,255,255,.12);
-  background:#0f172a;
-  color:#e9eefc;
-  font-size:14px;
+  border:1px solid rgba(255,255,255,.15);
+  background:#020617;
+  color:white;
+  font-size:14.5px;
   outline:none;
 }
 
@@ -152,9 +159,9 @@ Input fields
 }
 
 .signin-input:focus{
-  border-color:rgba(100,140,255,.6);
+  border-color:rgba(122,162,255,.45);
+  box-shadow:0 0 0 4px rgba(122,162,255,.18);
 }
-
 
 /* -----------------------------
 Show password toggle
@@ -181,22 +188,21 @@ Show password toggle
   cursor:pointer;
 }
 
-
 /* -----------------------------
 Auth error / success box
 ----------------------------- */
 
 .auth-error{
-  margin-top:12px;
+  margin:10px 0 0;
   padding:10px 12px;
-  border-radius:10px;
+  border-radius:12px;
   border:1px solid rgba(255,180,180,.35);
   background:rgba(255,180,180,.10);
   color:rgba(255,220,220,.95);
   font-size:13px;
+  text-align:left;
   display:none;
 }
-
 
 /* -----------------------------
 Primary auth button
@@ -204,27 +210,30 @@ Primary auth button
 
 .signin-btn{
   width:100%;
-  margin-top:16px;
-  padding:12px;
+  padding:11px 12px;
+  margin-top:12px;
   border-radius:12px;
-  border:0;
-  background:#4f6bff;
+  border:1px solid rgba(122,162,255,.45);
+  background:rgba(122,162,255,.18);
   color:white;
-  font-size:14px;
-  font-weight:700;
+  font-size:14.5px;
+  font-weight:800;
   cursor:pointer;
-  transition:background .15s ease;
+  transition:.15s;
 }
 
 .signin-btn:hover{
-  background:#3d57e6;
+  filter:brightness(1.08);
+}
+
+.signin-btn:active{
+  transform:translateY(1px);
 }
 
 .signin-btn:disabled{
-  opacity:.65;
+  opacity:.6;
   cursor:not-allowed;
 }
-
 
 /* -----------------------------
 Toggle login/signup link
@@ -237,19 +246,11 @@ Toggle login/signup link
   background:transparent;
   color:rgba(233,238,252,.85);
   cursor:pointer;
-  font-weight:600;
+  font-weight:700;
   padding:10px 0 0;
+  text-align:center;
 }
 
 .link-btn:hover{
   text-decoration:underline;
-}
-
-
-/* -----------------------------
-Username row (hidden by default)
------------------------------ */
-
-#displayNameRow{
-  display:none;
 }
