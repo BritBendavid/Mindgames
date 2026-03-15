@@ -257,11 +257,3 @@ Toggle login/signup link
 .link-btn:hover{
   text-decoration:underline;
 }
-
-.link-btn:focus,
-.link-btn:active,
-.link-btn:focus-visible{
-  background:transparent;
-  outline:none;
-  box-shadow:none;
-}
