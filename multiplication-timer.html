@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="auth-ui.css">
 <title>Multiplication Trainer</title>
 
 <style>
@@ -190,6 +191,14 @@
 </head>
 
 <body>
+  <div class="account-menu-wrap">
+  <a id="signInLink" href="#" class="signin-link">Sign In</a>
+
+  <div id="accountDropdown" class="account-dropdown">
+    <button type="button" class="account-dropdown-item" data-account-action="stats">My Stats</button>
+    <button type="button" class="account-dropdown-item" data-account-action="logout">Log Out</button>
+  </div>
+</div>
 <div class="app">
   <header>
   <h1>Multiplication Trainer</h1>
@@ -647,5 +656,7 @@
   goHome(); // ensure we start on home
 })();
 </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth-ui.js" defer></script>
 </body>
 </html>
