@@ -3,10 +3,10 @@ Top-right account area
 ----------------------------- */
 
 .account-menu-wrap{
-  position:relative;
-  margin-left:auto;
-  display:flex;
-  align-items:center;
+  position:absolute;
+  top:28px;
+  right:18px;
+  z-index:50;
 }
 
 .signin-link{
@@ -246,11 +246,22 @@ Toggle login/signup link
   background:transparent;
   color:rgba(233,238,252,.85);
   cursor:pointer;
-  font-weight:700;
-  padding:10px 0 0;
+  font-weight:600;
+  font-size:13px;
+  padding:6px 0 0;
   text-align:center;
+  outline:none;
+  box-shadow:none;
 }
 
 .link-btn:hover{
   text-decoration:underline;
+}
+
+.link-btn:focus,
+.link-btn:active,
+.link-btn:focus-visible{
+  background:transparent;
+  outline:none;
+  box-shadow:none;
 }
