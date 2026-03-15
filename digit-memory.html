@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="auth-ui.css">
   <title>Digit Memory Timer</title>
   <style>
     :root{
@@ -187,6 +188,14 @@
   </style>
 </head>
 <body>
+  <div class="account-menu-wrap">
+  <a id="signInLink" href="#" class="signin-link">Sign In</a>
+
+  <div id="accountDropdown" class="account-dropdown">
+    <button type="button" class="account-dropdown-item" data-account-action="stats">My Stats</button>
+    <button type="button" class="account-dropdown-item" data-account-action="logout">Log Out</button>
+  </div>
+</div>
 <div class="app">
   <header>
     <div>
@@ -458,5 +467,7 @@ answerForm.addEventListener("submit", (e) => {
   submitAnswer();
 });
 </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth-ui.js" defer></script>
 </body>
 </html>
