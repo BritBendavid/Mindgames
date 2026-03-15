@@ -1,5 +1,5 @@
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_PUBLISHABLE_KEY = "YOUR_PUBLISHABLE_KEY";
+const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
@@ -8,6 +8,43 @@ const supabaseClient = window.supabase.createClient(
 
 let authMode = "login";
 let isLoggedIn = false;
+
+function injectAuthModal() {
+  if (document.getElementById("signinModal")) return;
+
+  const modalHtml = `
+    <div id="signinModal" class="modal" aria-hidden="true">
+      <div class="modal-content" role="dialog" aria-modal="true" aria-label="Sign in">
+        <div class="modal-top">
+          <h2 id="authTitle">Sign In</h2>
+          <button class="close" type="button" id="closeSignInBtn" aria-label="Close">×</button>
+        </div>
+
+        <div id="displayNameRow">
+          <input id="authDisplayName" type="text" placeholder="Username" class="signin-input">
+        </div>
+
+        <input id="authUsername" type="text" placeholder="Email or Username" class="signin-input" autocomplete="username">
+        <input id="authPassword" type="password" placeholder="Password" class="signin-input" autocomplete="current-password">
+
+        <label class="show-password-row">
+          <input type="checkbox" id="showPasswordToggle">
+          <span>Show password</span>
+        </label>
+
+        <div id="authError" class="auth-error"></div>
+
+        <button class="signin-btn" id="authSubmitBtn" type="button">Sign In</button>
+
+        <button class="link-btn" id="toggleAuthModeBtn" type="button">
+          Don’t have an account? Create one
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+}
 
 function getDisplayName(user) {
   return user?.user_metadata?.username || user?.email || "Sign In";
@@ -18,6 +55,9 @@ function clearAuthError() {
   if (!el) return;
   el.style.display = "none";
   el.textContent = "";
+  el.style.borderColor = "rgba(255,180,180,.35)";
+  el.style.background = "rgba(255,180,180,.10)";
+  el.style.color = "rgba(255,220,220,.95)";
 }
 
 function showAuthError(msg, success = false) {
@@ -40,11 +80,13 @@ function showAuthError(msg, success = false) {
 
 function openSignIn(e) {
   if (e) e.preventDefault();
+
   const modal = document.getElementById("signinModal");
   if (!modal) return;
 
-  modal.style.display = "block";
+  modal.style.display = "flex";
   modal.setAttribute("aria-hidden", "false");
+
   clearAuthError();
   syncAuthUI();
 
@@ -121,8 +163,10 @@ async function logOut() {
   }
 
   isLoggedIn = false;
+
   const link = document.getElementById("signInLink");
   if (link) link.textContent = "Sign In";
+
   closeAccountDropdown();
 }
 
@@ -208,6 +252,8 @@ async function restoreUser() {
 }
 
 function initAuthUI() {
+  injectAuthModal();
+
   const signInLink = document.getElementById("signInLink");
   const closeBtn = document.getElementById("closeSignInBtn");
   const toggleModeBtn = document.getElementById("toggleAuthModeBtn");
@@ -241,19 +287,20 @@ function initAuthUI() {
     });
   }
 
-  ["authUsername", "authPassword", "authDisplayName"].forEach(id => {
+  ["authUsername", "authPassword", "authDisplayName"].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
+
     el.addEventListener("keydown", (e) => {
       if (e.key === "Enter") authSubmit();
     });
   });
 
-  document.querySelectorAll("[data-account-action='stats']").forEach(btn => {
+  document.querySelectorAll("[data-account-action='stats']").forEach((btn) => {
     btn.addEventListener("click", goToStats);
   });
 
-  document.querySelectorAll("[data-account-action='logout']").forEach(btn => {
+  document.querySelectorAll("[data-account-action='logout']").forEach((btn) => {
     btn.addEventListener("click", logOut);
   });
 
