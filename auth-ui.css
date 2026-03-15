@@ -265,3 +265,55 @@ Toggle login/signup link
   outline:none;
   box-shadow:none;
 }
+
+/* Modal font isolation */
+.modal-content{
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  color: #e9eefc !important;
+}
+
+/* Make all modal text/UI inherit only from modal-content */
+.modal-content,
+.modal-content *{
+  font-family: inherit !important;
+  color: inherit;
+}
+
+/* Keep element-specific sizing where needed */
+.modal h2{
+  font-size:18px !important;
+  font-weight:700 !important;
+}
+
+.signin-input{
+  font-size:14.5px !important;
+  font-weight:400 !important;
+}
+
+.signin-btn{
+  font-size:14.5px !important;
+  font-weight:800 !important;
+}
+
+.link-btn{
+  font-size:13px !important;
+  font-weight:600 !important;
+}
+
+.auth-error{
+  font-size:13px !important;
+  font-weight:400 !important;
+}
+
+.show-password-row{
+  font-size:13.5px !important;
+  font-weight:400 !important;
+}
+
+.account-dropdown-item{
+  font-size:14px !important;
+  font-weight:600 !important;
+}
