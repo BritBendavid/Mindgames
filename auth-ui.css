@@ -238,16 +238,3 @@ Primary auth button
 /* -----------------------------
 Toggle login/signup link
 ----------------------------- */
-
-.link-btn{
-      margin-top: 10px;
-      width: 100%;
-      border: 0;
-      background: transparent;
-      color: rgba(233,238,252,.85);
-      cursor: pointer;
-      font-weight: 700;
-      padding: 10px 0 0;
-      text-align:center;
-    }
-    .link-btn:hover{text-decoration: underline}
