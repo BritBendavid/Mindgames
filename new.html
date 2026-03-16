@@ -6,7 +6,7 @@
 
 <title>shebolet</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;600&family=Cormorant+Garamond:wght@500&display=swap" rel="stylesheet">
 
 <style>
 
@@ -17,93 +17,133 @@ padding:0;
 }
 
 body{
-height:100vh;
-font-family:'Inter', sans-serif;
-color:#111;
 
-/* black / white artistic split */
-background:
-linear-gradient(135deg,#ffffff 0%,#ffffff 50%,#000000 50%,#000000 100%);
+font-family:'Inter', sans-serif;
+min-height:100vh;
 overflow:hidden;
+
+/* abstract black / white background */
+
+background:
+radial-gradient(circle at 10% 20%, rgba(0,0,0,0.06) 0%, transparent 40%),
+radial-gradient(circle at 90% 80%, rgba(0,0,0,0.08) 0%, transparent 45%),
+radial-gradient(circle at 70% 30%, rgba(0,0,0,0.04) 0%, transparent 50%),
+linear-gradient(180deg,#ffffff,#f4f4f4);
+
 }
 
-/* top navigation */
+/* navigation */
 
 .topbar{
+
 position:absolute;
 top:30px;
 left:40px;
 right:40px;
+
 display:flex;
 justify-content:space-between;
+
 font-weight:600;
 z-index:10;
+
 }
 
 .topbar a{
+
 text-decoration:none;
 color:#111;
 transition:opacity .2s;
+
 }
 
 .topbar a:hover{
 opacity:.6;
 }
 
-/* brand */
+/* title */
 
 .brand{
+
 position:absolute;
 top:90px;
 width:100%;
+
 text-align:center;
+
 font-family:'Playfair Display', serif;
 font-size:3.2rem;
 letter-spacing:.08em;
+
+color:#111;
+
 }
 
-/* center section */
+/* center */
 
 .center{
-height:100%;
+
 display:flex;
-align-items:center;
 justify-content:center;
+align-items:center;
+
+height:100vh;
+
 }
 
+/* content area */
+
 .language-box{
+
 text-align:center;
+margin-top:120px;
+
+padding:40px 50px;
+
+background:rgba(255,255,255,0.7);
+backdrop-filter:blur(6px);
+
+border-radius:18px;
+
+box-shadow:0 20px 50px rgba(0,0,0,0.08);
 
 opacity:0;
 transform:translateY(20px);
 transition:opacity 1.2s ease, transform 1.2s ease;
+
 }
 
 .language-box.show{
+
 opacity:1;
 transform:translateY(0);
+
 }
 
 .language-title{
-font-size:1.5rem;
-margin-bottom:30px;
-font-weight:600;
+
+font-family:'Cormorant Garamond', serif;
+font-size:2rem;
+margin-bottom:32px;
+
 }
 
 /* language buttons */
 
 .languages{
+
 display:flex;
-gap:30px;
-justify-content:center;
+gap:28px;
+
 }
 
 .lang-btn{
+
 width:180px;
 height:120px;
 
 border:2px solid #111;
-border-radius:10px;
+border-radius:12px;
 
 background:white;
 
@@ -112,28 +152,35 @@ flex-direction:column;
 justify-content:center;
 align-items:center;
 
-cursor:pointer;
-
 font-size:1.1rem;
 font-weight:600;
+
+cursor:pointer;
 
 transition:
 transform .25s,
 background .25s,
 color .25s,
 box-shadow .25s;
+
 }
 
-.lang-btn span.flag{
+.lang-btn span{
+
 font-size:28px;
 margin-bottom:8px;
+
 }
 
 .lang-btn:hover{
-transform:translateY(-4px);
+
 background:#111;
 color:white;
-box-shadow:0 10px 20px rgba(0,0,0,.15);
+
+transform:translateY(-4px);
+
+box-shadow:0 12px 24px rgba(0,0,0,.18);
+
 }
 
 /* responsive */
@@ -142,7 +189,6 @@ box-shadow:0 10px 20px rgba(0,0,0,.15);
 
 .languages{
 flex-direction:column;
-gap:20px;
 }
 
 }
@@ -170,12 +216,12 @@ Select Language
 <div class="languages">
 
 <div class="lang-btn">
-<span class="flag">🇺🇸</span>
+<span>🇺🇸</span>
 English
 </div>
 
 <div class="lang-btn">
-<span class="flag">🇮🇱</span>
+<span>🇮🇱</span>
 עברית
 </div>
 
