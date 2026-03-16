@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>shebolet</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+box-sizing:border-box;
+margin:0;
+padding:0;
+}
+
+body{
+height:100vh;
+font-family:'Inter', sans-serif;
+color:#111;
+
+/* black / white artistic split */
+background:
+linear-gradient(135deg,#ffffff 0%,#ffffff 50%,#000000 50%,#000000 100%);
+overflow:hidden;
+}
+
+/* top navigation */
+
+.topbar{
+position:absolute;
+top:30px;
+left:40px;
+right:40px;
+display:flex;
+justify-content:space-between;
+font-weight:600;
+z-index:10;
+}
+
+.topbar a{
+text-decoration:none;
+color:#111;
+transition:opacity .2s;
+}
+
+.topbar a:hover{
+opacity:.6;
+}
+
+/* brand */
+
+.brand{
+position:absolute;
+top:90px;
+width:100%;
+text-align:center;
+font-family:'Playfair Display', serif;
+font-size:3.2rem;
+letter-spacing:.08em;
+}
+
+/* center section */
+
+.center{
+height:100%;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.language-box{
+text-align:center;
+
+opacity:0;
+transform:translateY(20px);
+transition:opacity 1.2s ease, transform 1.2s ease;
+}
+
+.language-box.show{
+opacity:1;
+transform:translateY(0);
+}
+
+.language-title{
+font-size:1.5rem;
+margin-bottom:30px;
+font-weight:600;
+}
+
+/* language buttons */
+
+.languages{
+display:flex;
+gap:30px;
+justify-content:center;
+}
+
+.lang-btn{
+width:180px;
+height:120px;
+
+border:2px solid #111;
+border-radius:10px;
+
+background:white;
+
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+
+cursor:pointer;
+
+font-size:1.1rem;
+font-weight:600;
+
+transition:
+transform .25s,
+background .25s,
+color .25s,
+box-shadow .25s;
+}
+
+.lang-btn span.flag{
+font-size:28px;
+margin-bottom:8px;
+}
+
+.lang-btn:hover{
+transform:translateY(-4px);
+background:#111;
+color:white;
+box-shadow:0 10px 20px rgba(0,0,0,.15);
+}
+
+/* responsive */
+
+@media (max-width:700px){
+
+.languages{
+flex-direction:column;
+gap:20px;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+<a href="#">About Us</a>
+<a href="#">Sign In</a>
+</div>
+
+<div class="brand">shebolet</div>
+
+<div class="center">
+
+<div class="language-box" id="languageBox">
+
+<div class="language-title">
+Select Language
+</div>
+
+<div class="languages">
+
+<div class="lang-btn">
+<span class="flag">🇺🇸</span>
+English
+</div>
+
+<div class="lang-btn">
+<span class="flag">🇮🇱</span>
+עברית
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+window.addEventListener("load",()=>{
+
+setTimeout(()=>{
+document.getElementById("languageBox").classList.add("show")
+},400)
+
+})
+
+</script>
+
+</body>
+</html>
