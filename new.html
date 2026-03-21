@@ -44,7 +44,7 @@ body::before {
 
 .top-bar {
   position: relative;
-  z-index: 2;
+  z-index: 1000;
   width: 100%;
   padding: 28px 42px;
   display: flex;
@@ -203,6 +203,7 @@ body::before {
 /* Keep dropdown anchored to the same top-right auth area */
 .top-right {
   position: relative;
+  z-index: 1001;
 }
 
 #signin-button,
@@ -384,12 +385,14 @@ body::before {
 /* User dropdown */
 #user-menu-container {
   position: relative;
+  z-index: 1002;
 }
 
 #user-dropdown {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
+  z-index: 1003;
   min-width: 170px;
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -454,7 +457,7 @@ body::before {
 
         <div id="user-dropdown" class="hidden">
           <button id="my-progress-button">My Progress</button>
-          <button id="logout-button">Lg Out</button>
+          <button id="logout-button">Log Out</button>
         </div>
       </div>
     </div>
@@ -727,6 +730,10 @@ async function signInWithGoogle() {
 signinButton?.addEventListener("click", openModal);
 
 closeButton?.addEventListener("click", closeModal);
+
+userDropdown?.addEventListener("click", (e) => {
+  e.stopPropagation();
+});
 
 modal?.addEventListener("click", (e) => {
   if (e.target === modal) {
