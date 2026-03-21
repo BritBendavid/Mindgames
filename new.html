@@ -457,7 +457,7 @@ body::before {
 
         <div id="user-dropdown" class="hidden">
           <button id="my-progress-button">My Progress</button>
-          <button id="logout-button">Log Out</button>
+          <button id="logout-button">Lg Out</button>
         </div>
       </div>
     </div>
@@ -851,7 +851,7 @@ myProgressButton?.addEventListener("click", () => {
 });
 
 /* Log out */
-/*  logoutButton?.addEventListener("click", async () => {
+  logoutButton?.addEventListener("click", async () => {
   const { error } = await supabaseClient.auth.signOut({ scope: "local" });
 
   if (error) {
@@ -862,10 +862,6 @@ myProgressButton?.addEventListener("click", () => {
   userDropdown.classList.add("hidden");
   showSignedOutUI();
   window.location.reload();
-});*/
-
-logoutButton?.addEventListener("click", () => {
-  window.location.href = "my-progress.html";
 });
 
 function showSignedOutUI() {
