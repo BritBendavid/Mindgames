@@ -417,19 +417,24 @@ body::before {
 }
 
 .auth-show-password {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin: -2px 0 12px;
-  font-size: 0.92rem;
-  color: #333;
+  gap: 6px;
+  margin: -2px 0 10px;
+  font-size: 0.78rem;
+  color: #444;
   cursor: pointer;
   user-select: none;
 }
 
 .auth-show-password input {
-  width: auto;
+  width: 13px;
+  height: 13px;
   margin: 0;
+}
+
+.auth-show-password span {
+  line-height: 1;
 }
 
 </style>
@@ -839,8 +844,8 @@ myProgressButton?.addEventListener("click", () => {
 });
 
 /* Log out */
-logoutButton?.addEventListener("click", async () => {
-  const { error } = await supabaseClient.auth.signOut();
+  logoutButton?.addEventListener("click", async () => {
+  const { error } = await supabaseClient.auth.signOut({ scope: "local" });
 
   if (error) {
     console.error("Logout error:", error);
@@ -849,12 +854,14 @@ logoutButton?.addEventListener("click", async () => {
 
   userDropdown.classList.add("hidden");
   showSignedOutUI();
+  window.location.reload();
 });
 
 function showSignedOutUI() {
   signinButton.classList.remove("hidden");
   userMenuContainer.classList.add("hidden");
   userDropdown.classList.add("hidden");
+  userMenuButton.textContent = "";
 }
 
 async function showSignedInUIFromSession(session) {
