@@ -807,24 +807,22 @@ signupSubmit?.addEventListener("click", async () => {
     return;
   }
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password
-  });
-
-  if (error) {
-    setMessage(error.message, true);
-    return;
-  }
-
-  if (data.user) {
-    const profileError = await createProfile(data.user.id, username);
-
-    if (profileError) {
-      setMessage(profileError.message, true);
-      return;
+const { error } = await supabaseClient.auth.signUp({
+  email,
+  password,
+  options: {
+    emailRedirectTo: window.location.href,
+    data: {
+      username
     }
   }
+});
+
+if (error) {
+  setMessage(error.message, true);
+  return;
+}
+  
   setMessage("Account created. Check your email if confirmation is enabled.");
   showSigninTab();
 });
