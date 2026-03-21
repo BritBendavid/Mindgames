@@ -679,12 +679,10 @@ async function updateAuthUI() {
 }
 
 async function signInWithGoogle() {
-  const redirectTo = window.location.href;
-
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo
+      redirectTo: window.location.href
     }
   });
 
@@ -812,13 +810,54 @@ logoutButton?.addEventListener("click", async () => {
   await updateAuthUI();
 });
 
-/* Keep UI synced */
-supabaseClient.auth.onAuthStateChange(async () => {
-  await updateAuthUI();
+function showSignedOutUI() {
+  signinButton.classList.remove("hidden");
+  userMenuContainer.classList.add("hidden");
+  userDropdown.classList.add("hidden");
+}
+
+async function showSignedInUIFromSession(session) {
+  const user = session?.user;
+
+  if (!user) {
+    showSignedOutUI();
+    return;
+  }
+
+  const username = await getDisplayUsername(user);
+
+  userMenuButton.textContent = username || "Account";
+  signinButton.classList.add("hidden");
+  userMenuContainer.classList.remove("hidden");
+}
+
+async function initializeAuthUI() {
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    console.error("Session load error:", error);
+    showSignedOutUI();
+    return;
+  }
+
+  if (data.session?.user) {
+    await showSignedInUIFromSession(data.session);
+  } else {
+    showSignedOutUI();
+  }
+}
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  setTimeout(async () => {
+    if (session?.user) {
+      await showSignedInUIFromSession(session);
+    } else {
+      showSignedOutUI();
+    }
+  }, 0);
 });
 
-/* Initial load */
-updateAuthUI();
+initializeAuthUI();
     
   </script>
 </body>
