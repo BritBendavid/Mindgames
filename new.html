@@ -447,7 +447,7 @@ body::before {
 
     <div class="top-right">
       <!-- This keeps the same auth position -->
-      <button id="signin-button" class="top-link signin-link" onclick="alert('logout button clicked')>Sign In</button>
+      <button id="signin-button" class="top-link signin-link">Sign In</button>
 
       <div id="user-menu-container" class="hidden">
         <button id="user-menu-button" class="top-link signin-link"></button>
@@ -465,7 +465,7 @@ body::before {
     <p class="language-prompt">Select a language</p>
 
     <div class="language-buttons">
-      <button class="language-btn">🇺🇸 English</button>
+      <button class="language-btn" onclick="alert('logout button clicked')>🇺🇸 English</button>
       <button class="language-btn">🇮🇱 Hebrew</button>
     </div>
   </main>
