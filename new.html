@@ -524,12 +524,37 @@ body::before {
     </div>
   </div>
 
+  <div id="debug-status" style="
+  position:fixed;
+  bottom:10px;
+  left:10px;
+  padding:6px 10px;
+  background:black;
+  color:white;
+  font-size:12px;
+  border-radius:6px;
+  opacity:0;
+  transition:opacity 0.2s;
+  z-index:9999;
+">
+</div>
+
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- New auth JS -->
   <script>
 
+function showDebug(message) {
+  const el = document.getElementById("debug-status");
+  el.textContent = message;
+  el.style.opacity = "1";
+
+  setTimeout(() => {
+    el.style.opacity = "0";
+  }, 1500);
+}
+    
 const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
 
@@ -844,17 +869,31 @@ myProgressButton?.addEventListener("click", () => {
 });
 
 /* Log out */
-  logoutButton?.addEventListener("click", async () => {
-  const { error } = await supabaseClient.auth.signOut({ scope: "local" });
+  logoutButton?.addEventListener("click", function () {
 
-  if (error) {
-    console.error("Logout error:", error);
-    return;
-  }
+  showDebug("Logout clicked");
 
-  userDropdown.classList.add("hidden");
+  // Force clear UI immediately
   showSignedOutUI();
-  window.location.reload();
+
+  // Clear ALL possible session storage manually
+  localStorage.clear();
+  sessionStorage.clear();
+
+  // Attempt Supabase logout (non-blocking)
+  supabaseClient.auth.signOut({ scope: "local" })
+    .then(() => {
+      showDebug("Supabase signed out");
+    })
+    .catch(() => {
+      showDebug("Supabase error (ignored)");
+    });
+
+  // Force reload after short delay so debug is visible
+  setTimeout(() => {
+    location.href = location.origin;
+  }, 500);
+
 });
 
 function showSignedOutUI() {
