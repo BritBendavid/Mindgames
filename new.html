@@ -447,7 +447,7 @@ body::before {
 
     <div class="top-right">
       <!-- This keeps the same auth position -->
-      <button id="signin-button" class="top-link signin-link">Sign In</button>
+      <button id="signin-button" class="top-link signin-link" onclick="alert('logout button clicked')>Sign In</button>
 
       <div id="user-menu-container" class="hidden">
         <button id="user-menu-button" class="top-link signin-link"></button>
@@ -524,36 +524,11 @@ body::before {
     </div>
   </div>
 
-  <div id="debug-status" style="
-  position:fixed;
-  bottom:10px;
-  left:10px;
-  padding:6px 10px;
-  background:black;
-  color:white;
-  font-size:12px;
-  border-radius:6px;
-  opacity:0;
-  transition:opacity 0.2s;
-  z-index:9999;
-">
-</div>
-
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- New auth JS -->
   <script>
-
-function showDebug(message) {
-  const el = document.getElementById("debug-status");
-  el.textContent = message;
-  el.style.opacity = "1";
-
-  setTimeout(() => {
-    el.style.opacity = "0";
-  }, 1500);
-}
     
 const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
@@ -863,6 +838,10 @@ document.addEventListener("click", (e) => {
   }
 });
 
+userDropdown?.addEventListener("click", (e) => {
+  e.stopPropagation();
+});
+
 /* My progress */
 myProgressButton?.addEventListener("click", () => {
   window.location.href = "my-progress.html";
@@ -870,8 +849,6 @@ myProgressButton?.addEventListener("click", () => {
 
 /* Log out */
   logoutButton?.addEventListener("click", function () {
-
-  showDebug("Logout clicked");
 
   // Force clear UI immediately
   showSignedOutUI();
@@ -883,10 +860,8 @@ myProgressButton?.addEventListener("click", () => {
   // Attempt Supabase logout (non-blocking)
   supabaseClient.auth.signOut({ scope: "local" })
     .then(() => {
-      showDebug("Supabase signed out");
     })
     .catch(() => {
-      showDebug("Supabase error (ignored)");
     });
 
   // Force reload after short delay so debug is visible
