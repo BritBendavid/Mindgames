@@ -1,247 +1,826 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>shiiboulet</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;600&family=Cormorant+Garamond:wght@500&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shebolet</title>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-*{
-box-sizing:border-box;
-margin:0;
-padding:0;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-body{
-
-font-family:'Inter', sans-serif;
-min-height:100vh;
-overflow:hidden;
-
-/* abstract black / white background */
-
-background:
-radial-gradient(circle at 10% 20%, rgba(0,0,0,0.06) 0%, transparent 40%),
-radial-gradient(circle at 90% 80%, rgba(0,0,0,0.08) 0%, transparent 45%),
-radial-gradient(circle at 70% 30%, rgba(0,0,0,0.04) 0%, transparent 50%),
-linear-gradient(180deg,#ffffff,#f4f4f4);
-
+html,
+body {
+  min-height: 100%;
 }
 
-/* navigation */
-
-.topbar{
-
-position:absolute;
-top:30px;
-left:40px;
-right:40px;
-
-display:flex;
-justify-content:space-between;
-
-font-weight:600;
-z-index:10;
-
+body {
+  font-family: 'Inter', sans-serif;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 18%, transparent 38%),
+    radial-gradient(circle at 85% 30%, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.015) 16%, transparent 34%),
+    radial-gradient(circle at 50% 78%, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 20%, transparent 40%),
+    linear-gradient(135deg, #050505 0%, #111111 38%, #1a1a1a 58%, #0a0a0a 100%);
+  overflow-x: hidden;
+  position: relative;
 }
 
-.topbar a{
-
-text-decoration:none;
-color:#111;
-transition:opacity .2s;
-
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.035) 20%, transparent 40%),
+    linear-gradient(300deg, transparent 0%, rgba(255,255,255,0.025) 18%, transparent 36%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.topbar a:hover{
-opacity:.6;
+.top-bar {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 28px 42px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* title */
-
-.brand{
-
-position:absolute;
-top:90px;
-width:100%;
-
-text-align:center;
-
-font-family:'Playfair Display', serif;
-font-size:3.2rem;
-letter-spacing:.08em;
-
-color:#111;
-
+.top-left,
+.top-right {
+  display: flex;
+  align-items: center;
 }
 
-/* center */
-
-.center{
-
-display:flex;
-justify-content:center;
-align-items:center;
-
-height:100vh;
-
+.top-link,
+.signin-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.98rem;
+  font-weight: 500;
+  color: #f5f5f5;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-/* content area */
-
-.language-box{
-
-text-align:center;
-margin-top:120px;
-
-padding:40px 50px;
-
-background:rgba(255,255,255,0.7);
-backdrop-filter:blur(6px);
-
-border-radius:18px;
-
-box-shadow:0 20px 50px rgba(0,0,0,0.08);
-
-opacity:0;
-transform:translateY(20px);
-transition:opacity 1.2s ease, transform 1.2s ease;
-
+.top-link:hover,
+.signin-link:hover {
+  opacity: 0.78;
+  transform: translateY(-1px);
 }
 
-.language-box.show{
-
-opacity:1;
-transform:translateY(0);
-
+#signin-button,
+#user-menu-button {
+  background: none;
+  border: none;
+  color: #f5f5f5;
+  font: inherit;
+  cursor: pointer;
 }
 
-.language-title{
-
-font-family:'Cormorant Garamond', serif;
-font-size:2rem;
-margin-bottom:32px;
-
+.hero {
+  position: relative;
+  z-index: 2;
+  min-height: calc(100vh - 90px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 24px 90px;
+  text-align: center;
 }
 
-/* language buttons */
-
-.languages{
-
-display:flex;
-gap:28px;
-
+.site-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(4.2rem, 10vw, 6.8rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  line-height: 0.95;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeRise 0.9s ease forwards;
 }
 
-.lang-btn{
-
-width:180px;
-height:120px;
-
-border:2px solid #111;
-border-radius:12px;
-
-background:white;
-
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-
-font-size:1.1rem;
-font-weight:600;
-
-cursor:pointer;
-
-transition:
-transform .25s,
-background .25s,
-color .25s,
-box-shadow .25s;
-
+.language-prompt {
+  margin-top: 38px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 600;
+  color: #f1f1f1;
+  letter-spacing: 0.03em;
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeRise 0.9s ease 0.22s forwards;
 }
 
-.lang-btn span{
-
-font-size:28px;
-margin-bottom:8px;
-
+.language-buttons {
+  margin-top: 30px;
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(18px);
+  animation: fadeRise 0.9s ease 0.42s forwards;
 }
 
-.lang-btn:hover{
-
-background:#111;
-color:white;
-
-transform:translateY(-4px);
-
-box-shadow:0 12px 24px rgba(0,0,0,.18);
-
+.language-btn {
+  min-width: 185px;
+  padding: 16px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.1);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-/* responsive */
-
-@media (max-width:700px){
-
-.languages{
-flex-direction:column;
+.language-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.16);
+  border-color: rgba(255,255,255,0.34);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.26);
 }
 
+.language-btn:active {
+  transform: translateY(0);
+}
+
+@keyframes fadeRise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 700px) {
+  .top-bar {
+    padding: 22px 20px;
+  }
+
+  .hero {
+    padding: 30px 18px 72px;
+  }
+
+  .language-buttons {
+    gap: 12px;
+  }
+
+  .language-btn {
+    min-width: 150px;
+    padding: 14px 18px;
+    font-size: 0.95rem;
+  }
+
+  .language-prompt {
+    margin-top: 30px;
+  }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Keep dropdown anchored to the same top-right auth area */
+.top-right {
+  position: relative;
+}
+
+#signin-button,
+#user-menu-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Modal overlay */
+#signin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.42);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+  z-index: 5000;
+}
+
+#signin-modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Modal box */
+#signin-modal {
+  position: relative;
+  width: min(92vw, 380px);
+  background: rgba(255, 255, 255, 0.96);
+  color: #111;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  padding: 26px 24px 20px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+  transform: translateY(14px) scale(0.985);
+  transition: transform 0.28s ease;
+  box-sizing: border-box;
+}
+
+#signin-modal-overlay.active #signin-modal {
+  transform: translateY(0) scale(1);
+}
+
+#signin-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #222;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#signin-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+#signin-modal h2 {
+  margin: 4px 0 18px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+#auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #d6d6d6;
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.auth-tab.active {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.auth-view input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  padding: 12px 13px;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  outline: none;
+}
+
+.auth-view input:focus {
+  border-color: #777;
+}
+
+#signin-submit,
+#signup-submit,
+.google-btn {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font: inherit;
+  cursor: pointer;
+  transition: 0.2s ease;
+  box-sizing: border-box;
+}
+
+#signin-submit,
+#signup-submit {
+  border: none;
+  background: #111;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+#signin-submit:hover,
+#signup-submit:hover {
+  opacity: 0.92;
+}
+
+.google-btn {
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  color: #111;
+}
+
+.google-btn:hover {
+  background: #f7f7f7;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 12px;
+  color: #666;
+  font-size: 0.92rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e5e5;
+}
+
+#auth-message {
+  min-height: 22px;
+  margin: 12px 0 2px;
+  text-align: center;
+  font-size: 0.92rem;
+  color: #333;
+}
+
+/* User dropdown */
+#user-menu-container {
+  position: relative;
+}
+
+#user-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 170px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.14);
+  padding: 8px;
+  z-index: 4500;
+  backdrop-filter: blur(10px);
+}
+
+#user-dropdown button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #111;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+#user-dropdown button:hover {
+  background: rgba(0, 0, 0, 0.06);
 }
 
 </style>
 </head>
-
 <body>
+  <header class="top-bar">
+    <div class="top-left">
+      <a href="about.html" class="top-link">About Us</a>
+    </div>
 
-<div class="topbar">
-<a href="#">About Us</a>
-<a href="#">Sign In</a>
-</div>
+    <div class="top-right">
+      <!-- This keeps the same auth position -->
+      <button id="signin-button" class="top-link signin-link">Sign In</button>
 
-<div class="brand">shiiboulet</div>
+      <div id="user-menu-container" class="hidden">
+        <button id="user-menu-button" class="top-link signin-link"></button>
 
-<div class="center">
+        <div id="user-dropdown" class="hidden">
+          <button id="my-progress-button">My Progress</button>
+          <button id="logout-button">Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
 
-<div class="language-box" id="languageBox">
+  <main class="hero">
+    <h1 class="site-title">shebolet</h1>
+    <p class="language-prompt">Select a language</p>
 
-<div class="language-title">
-Select Language
-</div>
+    <div class="language-buttons">
+      <button class="language-btn">🇺🇸 English</button>
+      <button class="language-btn">🇮🇱 Hebrew</button>
+    </div>
+  </main>
 
-<div class="languages">
+  <!-- Sign in / create account modal -->
+  <div id="signin-modal-overlay">
+    <div id="signin-modal">
+      <button id="signin-close" type="button" aria-label="Close">&times;</button>
 
-<div class="lang-btn">
-<span>🇺🇸</span>
-English
-</div>
+      <div id="auth-tabs">
+        <button id="tab-signin" class="auth-tab active" type="button">Sign In</button>
+        <button id="tab-signup" class="auth-tab" type="button">Create Account</button>
+      </div>
 
-<div class="lang-btn">
-<span>🇮🇱</span>
-עברית
-</div>
+      <div id="signin-view" class="auth-view">
+        <h2>Sign In</h2>
 
-</div>
+        <input id="signin-email" type="email" placeholder="Email" autocomplete="email" />
+        <input id="signin-password" type="password" placeholder="Password" autocomplete="current-password" />
 
-</div>
+        <button id="signin-submit" type="button">Sign In</button>
 
-</div>
+        <div class="auth-divider"><span>or</span></div>
 
-<script>
+        <button id="google-signin-button" class="google-btn" type="button">
+          Sign in with Google
+        </button>
+      </div>
 
-window.addEventListener("load",()=>{
+      <div id="signup-view" class="auth-view hidden">
+        <h2>Create Account</h2>
 
-setTimeout(()=>{
-document.getElementById("languageBox").classList.add("show")
-},400)
+        <input id="signup-username" type="text" placeholder="Username" autocomplete="username" />
+        <input id="signup-email" type="email" placeholder="Email" autocomplete="email" />
+        <input id="signup-password" type="password" placeholder="Password" autocomplete="new-password" />
 
-})
+        <button id="signup-submit" type="button">Create Account</button>
 
-</script>
+        <div class="auth-divider"><span>or</span></div>
 
+        <button id="google-signin-signup-button" class="google-btn" type="button">
+          Continue with Google
+        </button>
+      </div>
+
+      <p id="auth-message"></p>
+    </div>
+  </div>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- New auth JS -->
+  <script>
+
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* Header elements */
+const signinButton = document.getElementById("signin-button");
+const userMenuContainer = document.getElementById("user-menu-container");
+const userMenuButton = document.getElementById("user-menu-button");
+const userDropdown = document.getElementById("user-dropdown");
+const myProgressButton = document.getElementById("my-progress-button");
+const logoutButton = document.getElementById("logout-button");
+
+/* Modal elements */
+const modal = document.getElementById("signin-modal-overlay");
+const closeButton = document.getElementById("signin-close");
+const authMessage = document.getElementById("auth-message");
+
+const tabSignin = document.getElementById("tab-signin");
+const tabSignup = document.getElementById("tab-signup");
+const signinView = document.getElementById("signin-view");
+const signupView = document.getElementById("signup-view");
+
+const signinEmail = document.getElementById("signin-email");
+const signinPassword = document.getElementById("signin-password");
+const signinSubmit = document.getElementById("signin-submit");
+
+const signupUsername = document.getElementById("signup-username");
+const signupEmail = document.getElementById("signup-email");
+const signupPassword = document.getElementById("signup-password");
+const signupSubmit = document.getElementById("signup-submit");
+
+const googleSigninButton = document.getElementById("google-signin-button");
+const googleSigninSignupButton = document.getElementById("google-signin-signup-button");
+
+function setMessage(message, isError = false) {
+  authMessage.textContent = message;
+  authMessage.style.color = isError ? "#b00020" : "#333";
+}
+
+function openModal() {
+  modal.classList.add("active");
+  setMessage("");
+}
+
+function closeModal() {
+  modal.classList.remove("active");
+  setMessage("");
+}
+
+function showSigninTab() {
+  tabSignin.classList.add("active");
+  tabSignup.classList.remove("active");
+  signinView.classList.remove("hidden");
+  signupView.classList.add("hidden");
+  setMessage("");
+}
+
+function showSignupTab() {
+  tabSignup.classList.add("active");
+  tabSignin.classList.remove("active");
+  signupView.classList.remove("hidden");
+  signinView.classList.add("hidden");
+  setMessage("");
+}
+
+function cleanUsernameValue(username) {
+  return username.trim();
+}
+
+function normalizeGoogleUsername(base) {
+  return (base || "user")
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 24) || "user";
+}
+
+async function getProfile(userId) {
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("username")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Profile fetch error:", error);
+    return null;
+  }
+
+  return data;
+}
+
+async function createProfile(userId, username) {
+  const { error } = await supabaseClient
+    .from("profiles")
+    .insert({
+      id: userId,
+      username: cleanUsernameValue(username)
+    });
+
+  return error;
+}
+
+async function usernameExists(username) {
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("username")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Username check error:", error);
+    return false;
+  }
+
+  return !!data;
+}
+
+async function createUniqueGoogleProfile(user) {
+  const rawBase =
+    user.user_metadata?.user_name ||
+    user.user_metadata?.full_name ||
+    user.email?.split("@")[0] ||
+    "user";
+
+  const base = normalizeGoogleUsername(rawBase);
+  let candidate = base;
+  let count = 1;
+
+  while (true) {
+    const error = await createProfile(user.id, candidate);
+
+    if (!error) {
+      return candidate;
+    }
+
+    const errorText = String(error.message || "").toLowerCase();
+
+    if (!errorText.includes("duplicate")) {
+      console.error("Google profile creation error:", error);
+      return user.email?.split("@")[0] || "Account";
+    }
+
+    candidate = `${base}${count}`;
+    count += 1;
+  }
+}
+
+async function getDisplayUsername(user) {
+  let profile = await getProfile(user.id);
+
+  if (profile?.username) {
+    return profile.username;
+  }
+
+  return await createUniqueGoogleProfile(user);
+}
+
+async function updateAuthUI() {
+  const {
+    data: { user }
+  } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    signinButton.classList.remove("hidden");
+    userMenuContainer.classList.add("hidden");
+    userDropdown.classList.add("hidden");
+    return;
+  }
+
+  const username = await getDisplayUsername(user);
+
+  userMenuButton.textContent = username || "Account";
+  signinButton.classList.add("hidden");
+  userMenuContainer.classList.remove("hidden");
+}
+
+async function signInWithGoogle() {
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo
+    }
+  });
+
+  if (error) {
+    setMessage(error.message, true);
+  }
+}
+
+/* Open/close modal */
+signinButton?.addEventListener("click", openModal);
+
+closeButton?.addEventListener("click", closeModal);
+
+modal?.addEventListener("click", (e) => {
+  if (e.target === modal) {
+    closeModal();
+  }
+});
+
+/* Tab switching */
+tabSignin?.addEventListener("click", showSigninTab);
+tabSignup?.addEventListener("click", showSignupTab);
+
+/* Sign in */
+signinSubmit?.addEventListener("click", async () => {
+  const email = signinEmail.value.trim();
+  const password = signinPassword.value;
+
+  if (!email || !password) {
+    setMessage("Please enter your email and password.", true);
+    return;
+  }
+
+  setMessage("Signing in...");
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    setMessage(error.message, true);
+    return;
+  }
+
+  closeModal();
+  await updateAuthUI();
+});
+
+/* Create account */
+signupSubmit?.addEventListener("click", async () => {
+  const username = cleanUsernameValue(signupUsername.value);
+  const email = signupEmail.value.trim();
+  const password = signupPassword.value;
+
+  if (!username || !email || !password) {
+    setMessage("Please fill in username, email, and password.", true);
+    return;
+  }
+
+  if (!/^[a-zA-Z0-9_]{3,24}$/.test(username)) {
+    setMessage(
+      "Username must be 3–24 characters and use only letters, numbers, or underscores.",
+      true
+    );
+    return;
+  }
+
+  setMessage("Creating account...");
+
+  const taken = await usernameExists(username);
+
+  if (taken) {
+    setMessage("That username is already taken.", true);
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    setMessage(error.message, true);
+    return;
+  }
+
+  if (data.user) {
+    const profileError = await createProfile(data.user.id, username);
+
+    if (profileError) {
+      setMessage(profileError.message, true);
+      return;
+    }
+  }
+
+  setMessage("Account created. Check your email if confirmation is enabled.");
+  showSigninTab();
+});
+
+/* Google sign in */
+googleSigninButton?.addEventListener("click", signInWithGoogle);
+googleSigninSignupButton?.addEventListener("click", signInWithGoogle);
+
+/* Dropdown */
+userMenuButton?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  userDropdown.classList.toggle("hidden");
+});
+
+document.addEventListener("click", (e) => {
+  if (!userMenuContainer.contains(e.target)) {
+    userDropdown.classList.add("hidden");
+  }
+});
+
+/* My progress */
+myProgressButton?.addEventListener("click", () => {
+  window.location.href = "my-progress.html";
+});
+
+/* Log out */
+logoutButton?.addEventListener("click", async () => {
+  await supabaseClient.auth.signOut();
+  userDropdown.classList.add("hidden");
+  await updateAuthUI();
+});
+
+/* Keep UI synced */
+supabaseClient.auth.onAuthStateChange(async () => {
+  await updateAuthUI();
+});
+
+/* Initial load */
+updateAuthUI();
+    
+  </script>
 </body>
 </html>
