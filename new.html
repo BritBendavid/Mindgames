@@ -242,7 +242,7 @@ body::before {
   color: #111;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 20px;
-  padding: 26px 24px 20px;
+  padding: 40px 24px 20px;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(10px);
   transform: translateY(14px) scale(0.985);
@@ -256,7 +256,7 @@ body::before {
 
 #signin-close {
   position: absolute;
-  top: 12px;
+  top: 8px;
   right: 14px;
   width: 34px;
   height: 34px;
@@ -416,6 +416,22 @@ body::before {
   background: rgba(0, 0, 0, 0.06);
 }
 
+.auth-show-password {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -2px 0 12px;
+  font-size: 0.92rem;
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-show-password input {
+  width: auto;
+  margin: 0;
+}
+
 </style>
 </head>
 <body>
@@ -464,6 +480,10 @@ body::before {
 
         <input id="signin-email" type="email" placeholder="Email" autocomplete="email" />
         <input id="signin-password" type="password" placeholder="Password" autocomplete="current-password" />
+<label class="auth-show-password">
+  <input id="signin-show-password" type="checkbox" />
+  <span>Show password</span>
+</label>
 
         <button id="signin-submit" type="button">Sign In</button>
 
@@ -480,6 +500,11 @@ body::before {
         <input id="signup-username" type="text" placeholder="Username" autocomplete="username" />
         <input id="signup-email" type="email" placeholder="Email" autocomplete="email" />
         <input id="signup-password" type="password" placeholder="Password" autocomplete="new-password" />
+
+<label class="auth-show-password">
+  <input id="signup-show-password" type="checkbox" />
+  <span>Show password</span>
+</label>
 
         <button id="signup-submit" type="button">Create Account</button>
 
@@ -525,11 +550,13 @@ const signupView = document.getElementById("signup-view");
 
 const signinEmail = document.getElementById("signin-email");
 const signinPassword = document.getElementById("signin-password");
+const signinShowPassword = document.getElementById("signin-show-password");
 const signinSubmit = document.getElementById("signin-submit");
 
 const signupUsername = document.getElementById("signup-username");
 const signupEmail = document.getElementById("signup-email");
 const signupPassword = document.getElementById("signup-password");
+const signupShowPassword = document.getElementById("signup-show-password");
 const signupSubmit = document.getElementById("signup-submit");
 
 const googleSigninButton = document.getElementById("google-signin-button");
@@ -706,6 +733,14 @@ modal?.addEventListener("click", (e) => {
 tabSignin?.addEventListener("click", showSigninTab);
 tabSignup?.addEventListener("click", showSignupTab);
 
+signinShowPassword?.addEventListener("change", () => {
+  signinPassword.type = signinShowPassword.checked ? "text" : "password";
+});
+
+signupShowPassword?.addEventListener("change", () => {
+  signupPassword.type = signupShowPassword.checked ? "text" : "password";
+});
+
 /* Sign in */
 signinSubmit?.addEventListener("click", async () => {
   const email = signinEmail.value.trim();
@@ -805,9 +840,15 @@ myProgressButton?.addEventListener("click", () => {
 
 /* Log out */
 logoutButton?.addEventListener("click", async () => {
-  await supabaseClient.auth.signOut();
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    console.error("Logout error:", error);
+    return;
+  }
+
   userDropdown.classList.add("hidden");
-  await updateAuthUI();
+  showSignedOutUI();
 });
 
 function showSignedOutUI() {
