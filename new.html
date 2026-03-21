@@ -454,7 +454,7 @@ body::before {
 
         <div id="user-dropdown" class="hidden">
           <button id="my-progress-button">My Progress</button>
-          <button id="logout-button" onclick="alert('logout button clicked')">Log Out</button>
+          <button id="logout-button">Log Out</button>
         </div>
       </div>
     </div>
@@ -465,7 +465,7 @@ body::before {
     <p class="language-prompt">Select a language</p>
 
     <div class="language-buttons">
-      <button class="language-btn" onclick="alert('logout button clicked')>🇺🇸 English</button>
+      <button class="language-btn">🇺🇸 English</button>
       <button class="language-btn">🇮🇱 Hebrew</button>
     </div>
   </main>
@@ -529,7 +529,7 @@ body::before {
 
   <!-- New auth JS -->
   <script>
-    
+
 const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
 
@@ -838,37 +838,23 @@ document.addEventListener("click", (e) => {
   }
 });
 
-userDropdown?.addEventListener("click", (e) => {
-  e.stopPropagation();
-});
-
 /* My progress */
 myProgressButton?.addEventListener("click", () => {
   window.location.href = "my-progress.html";
 });
 
 /* Log out */
-  logoutButton?.addEventListener("click", function () {
+  logoutButton?.addEventListener("click", async () => {
+  const { error } = await supabaseClient.auth.signOut({ scope: "local" });
 
-  // Force clear UI immediately
+  if (error) {
+    console.error("Logout error:", error);
+    return;
+  }
+
+  userDropdown.classList.add("hidden");
   showSignedOutUI();
-
-  // Clear ALL possible session storage manually
-  localStorage.clear();
-  sessionStorage.clear();
-
-  // Attempt Supabase logout (non-blocking)
-  supabaseClient.auth.signOut({ scope: "local" })
-    .then(() => {
-    })
-    .catch(() => {
-    });
-
-  // Force reload after short delay so debug is visible
-  setTimeout(() => {
-    location.href = location.origin;
-  }, 500);
-
+  window.location.reload();
 });
 
 function showSignedOutUI() {
