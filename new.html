@@ -428,34 +428,9 @@ body::before {
 }
 
 .auth-show-password input {
-  appearance: none;
-  -webkit-appearance: none;
-
-  width: 12px;
-  height: 12px;
-
-  border: 1px solid #777;
-  border-radius: 3px;
-
-  display: inline-block;
-  position: relative;
-
-  cursor: pointer;
-}
-
-/* checked state */
-.auth-show-password input:checked::after {
-  content: "";
-  position: absolute;
-  top: 1px;
-  left: 3px;
-
-  width: 3px;
-  height: 6px;
-
-  border: solid black;
-  border-width: 0 1.5px 1.5px 0;
-  transform: rotate(45deg);
+  width: 13px;
+  height: 13px;
+  margin: 0;
 }
 
 .auth-show-password span {
@@ -869,28 +844,17 @@ myProgressButton?.addEventListener("click", () => {
 });
 
 /* Log out */
-  logoutButton?.addEventListener("click", function () {
+  logoutButton?.addEventListener("click", async () => {
+  const { error } = await supabaseClient.auth.signOut({ scope: "local" });
 
-  console.log("LOGOUT CLICKED"); // debug check
+  if (error) {
+    console.error("Logout error:", error);
+    return;
+  }
 
-  supabaseClient.auth.signOut({ scope: "local" })
-    .then(() => {
-      console.log("SIGNED OUT");
-
-      // force clear UI immediately
-      showSignedOutUI();
-
-      // hard reload (cannot be blocked)
-      location.href = location.origin;
-    })
-    .catch((err) => {
-      console.error("Logout error:", err);
-
-      // even if error, force logout visually
-      showSignedOutUI();
-      location.href = location.origin;
-    });
-
+  userDropdown.classList.add("hidden");
+  showSignedOutUI();
+  window.location.reload();
 });
 
 function showSignedOutUI() {
