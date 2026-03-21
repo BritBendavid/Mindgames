@@ -500,10 +500,10 @@ body::before {
   <!-- New auth JS -->
   <script>
 
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* Header elements */
 const signinButton = document.getElementById("signin-button");
@@ -712,7 +712,7 @@ tabSignup?.addEventListener("click", showSignupTab);
 signinSubmit?.addEventListener("click", async () => {
   const email = signinEmail.value.trim();
   const password = signinPassword.value;
-
+  
   if (!email || !password) {
     setMessage("Please enter your email and password.", true);
     return;
@@ -780,7 +780,6 @@ signupSubmit?.addEventListener("click", async () => {
       return;
     }
   }
-
   setMessage("Account created. Check your email if confirmation is enabled.");
   showSigninTab();
 });
