@@ -443,38 +443,73 @@ body::before {
 .password-wrapper {
   position: relative;
   width: 100%;
+  margin-bottom: 12px;
 }
 
 .password-wrapper input {
-  padding-right: 42px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0;
+  padding: 12px 46px 12px 13px;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  outline: none;
+}
+
+.password-wrapper input:focus {
+  border-color: #777;
 }
 
 .toggle-password {
   position: absolute;
   top: 50%;
   right: 12px;
+  width: 22px;
+  height: 22px;
   transform: translateY(-50%);
   border: none;
   background: transparent;
-  cursor: pointer;
   padding: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.toggle-password-icons {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .toggle-password svg {
+  position: absolute;
+  inset: 0;
   width: 18px;
   height: 18px;
-  fill: #555;
-  transition: opacity 0.2s ease;
+  fill: none;
+  stroke: #6b6b6b;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.18s ease, opacity 0.18s ease;
 }
 
 .toggle-password:hover svg {
-  fill: #111;
+  stroke: #111;
 }
 
-.eye-off-icon {
-  position: absolute;
-  top: 0;
-  left: 0;
+.toggle-password:focus-visible {
+  outline: none;
+}
+
+.toggle-password:focus-visible .toggle-password-icons {
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
 }
 
 .hidden {
@@ -530,17 +565,27 @@ body::before {
         <input id="signin-email" type="email" placeholder="Email" autocomplete="email" />
         <div class="password-wrapper">
   <input id="signin-password" type="password" placeholder="Password" autocomplete="current-password" />
-  
-  <button type="button" class="toggle-password" data-target="signin-password">
-    <!-- eye icon -->
-    <svg class="eye-icon" viewBox="0 0 24 24">
-      <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7Zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10Z"/>
-    </svg>
 
-    <!-- eye-off icon -->
-    <svg class="eye-off-icon hidden" viewBox="0 0 24 24">
-      <path d="M2 5l17 17M9.9 4.24A9.77 9.77 0 0 1 12 4c7 0 10 7 10 7a16.9 16.9 0 0 1-4.27 5.4M6.53 6.53A16.9 16.9 0 0 0 2 11s3 7 10 7a9.77 9.77 0 0 0 5.24-1.5M14.12 14.12A3 3 0 0 1 9.88 9.88"/>
-    </svg>
+  <button
+    type="button"
+    class="toggle-password"
+    data-target="signin-password"
+    aria-label="Show password"
+    aria-pressed="false"
+  >
+    <span class="toggle-password-icons">
+      <svg class="eye-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z" />
+        <circle cx="12" cy="12" r="3.25" />
+      </svg>
+
+      <svg class="eye-off-icon hidden" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 3l18 18" />
+        <path d="M10.58 10.58A2 2 0 0 0 10 12a2 2 0 0 0 2 2c.52 0 1-.2 1.42-.58" />
+        <path d="M9.88 5.09A11.2 11.2 0 0 1 12 5c6.5 0 10.5 7 10.5 7a17.6 17.6 0 0 1-4.04 4.72" />
+        <path d="M6.61 6.61A17.32 17.32 0 0 0 1.5 12S5.5 19 12 19c1.73 0 3.28-.5 4.66-1.24" />
+      </svg>
+    </span>
   </button>
 </div>
 
@@ -560,15 +605,27 @@ body::before {
         <input id="signup-email" type="email" placeholder="Email" autocomplete="email" />
         <div class="password-wrapper">
   <input id="signup-password" type="password" placeholder="Password" autocomplete="new-password" />
-  
-  <button type="button" class="toggle-password" data-target="signup-password">
-    <svg class="eye-icon" viewBox="0 0 24 24">
-      <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7Zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10Z"/>
-    </svg>
 
-    <svg class="eye-off-icon hidden" viewBox="0 0 24 24">
-      <path d="M2 5l17 17M9.9 4.24A9.77 9.77 0 0 1 12 4c7 0 10 7 10 7a16.9 16.9 0 0 1-4.27 5.4M6.53 6.53A16.9 16.9 0 0 0 2 11s3 7 10 7a9.77 9.77 0 0 0 5.24-1.5M14.12 14.12A3 3 0 0 1 9.88 9.88"/>
-    </svg>
+  <button
+    type="button"
+    class="toggle-password"
+    data-target="signup-password"
+    aria-label="Show password"
+    aria-pressed="false"
+  >
+    <span class="toggle-password-icons">
+      <svg class="eye-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z" />
+        <circle cx="12" cy="12" r="3.25" />
+      </svg>
+
+      <svg class="eye-off-icon hidden" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 3l18 18" />
+        <path d="M10.58 10.58A2 2 0 0 0 10 12a2 2 0 0 0 2 2c.52 0 1-.2 1.42-.58" />
+        <path d="M9.88 5.09A11.2 11.2 0 0 1 12 5c6.5 0 10.5 7 10.5 7a17.6 17.6 0 0 1-4.04 4.72" />
+        <path d="M6.61 6.61A17.32 17.32 0 0 0 1.5 12S5.5 19 12 19c1.73 0 3.28-.5 4.66-1.24" />
+      </svg>
+    </span>
   </button>
 </div>
 
@@ -811,15 +868,14 @@ document.querySelectorAll(".toggle-password").forEach((btn) => {
 
     if (!input) return;
 
-    if (input.type === "password") {
-      input.type = "text";
-      eye.classList.add("hidden");
-      eyeOff.classList.remove("hidden");
-    } else {
-      input.type = "password";
-      eye.classList.remove("hidden");
-      eyeOff.classList.add("hidden");
-    }
+    const showing = input.type === "text";
+
+    input.type = showing ? "password" : "text";
+    eye.classList.toggle("hidden", !showing);
+    eyeOff.classList.toggle("hidden", showing);
+
+    btn.setAttribute("aria-pressed", String(!showing));
+    btn.setAttribute("aria-label", showing ? "Show password" : "Hide password");
   });
 });
 
