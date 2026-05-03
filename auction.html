@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Supabase Lobby Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, #dce9ff, transparent 35%),
+        radial-gradient(circle at bottom right, #d7fff0, transparent 30%),
+        #f6f8fc;
+      color: #172033;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(960px, 100%);
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid #d9e4f7;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 24px 70px rgba(31, 59, 100, 0.14);
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 2.3rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #5d6c83;
+      margin-bottom: 30px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #dce6f8;
+      border-radius: 18px;
+      padding: 24px;
+    }
+
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #c8d6ee;
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #2f6fff;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 18px;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: #2f6fff;
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2055c7;
+    }
+
+    button:disabled {
+      background: #9aa9c2;
+      cursor: not-allowed;
+    }
+
+    .message {
+      min-height: 28px;
+      text-align: center;
+      color: #b00020;
+      margin: 18px 0 0;
+      font-weight: bold;
+    }
+
+    .lobby {
+      display: none;
+      margin-top: 28px;
+      background: #eef5ff;
+      border: 1px solid #cfe0ff;
+      border-radius: 20px;
+      padding: 24px;
+    }
+
+    .lobby-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .code {
+      font-size: 2.5rem;
+      letter-spacing: 8px;
+      font-weight: bold;
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      text-align: center;
+      margin: 18px 0;
+      border: 1px solid #dce6f8;
+    }
+
+    .status {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: white;
+      border: 1px solid #dce6f8;
+      font-weight: bold;
+    }
+
+    .started {
+      background: #e5ffe9;
+      color: #116b24;
+    }
+
+    .waiting {
+      background: #fff8dc;
+      color: #7b5b00;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+    }
+
+    li {
+      padding: 12px 14px;
+      background: white;
+      border: 1px solid #dce6f8;
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 740px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .app {
+        padding: 22px;
+      }
+
+      .code {
+        font-size: 2rem;
+        letter-spacing: 5px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <h1>Lobby Game</h1>
+    <p class="subtitle">Create a lobby, share the six-digit code, then start when ready.</p>
+
+    <div class="grid" id="entryArea">
+      <section class="card">
+        <h2>Create Lobby</h2>
+
+        <label for="creatorUsername">Username</label>
+        <input id="creatorUsername" maxlength="24" placeholder="Example: PlayerOne" />
+
+        <label for="maxPlayers">Max players</label>
+        <input id="maxPlayers" type="number" min="2" max="20" value="4" />
+
+        <button id="createLobbyBtn">Create Lobby</button>
+      </section>
+
+      <section class="card">
+        <h2>Join Lobby</h2>
+
+        <label for="joinCode">Six-digit code</label>
+        <input id="joinCode" maxlength="6" placeholder="123456" />
+
+        <label for="joinUsername">Username</label>
+        <input id="joinUsername" maxlength="24" placeholder="Example: Guest" />
+
+        <button id="joinLobbyBtn">Join Lobby</button>
+      </section>
+    </div>
+
+    <p class="message" id="message"></p>
+
+    <section class="lobby" id="lobbyArea">
+      <div class="lobby-header">
+        <h2>Current Lobby</h2>
+        <span class="status" id="statusBadge">Waiting</span>
+      </div>
+
+      <p>Share this code:</p>
+      <div class="code" id="currentCode"></div>
+
+      <p id="playerCountText"></p>
+
+      <button id="startGameBtn" class="hidden">Start Game</button>
+
+      <h3>Players</h3>
+      <ul id="memberList"></ul>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "YOUR_SUPABASE_URL";
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const creatorUsername = document.getElementById("creatorUsername");
+    const maxPlayersInput = document.getElementById("maxPlayers");
+    const createLobbyBtn = document.getElementById("createLobbyBtn");
+
+    const joinCodeInput = document.getElementById("joinCode");
+    const joinUsername = document.getElementById("joinUsername");
+    const joinLobbyBtn = document.getElementById("joinLobbyBtn");
+
+    const message = document.getElementById("message");
+    const lobbyArea = document.getElementById("lobbyArea");
+    const currentCode = document.getElementById("currentCode");
+    const memberList = document.getElementById("memberList");
+    const playerCountText = document.getElementById("playerCountText");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const statusBadge = document.getElementById("statusBadge");
+
+    let currentUser = null;
+    let currentLobby = null;
+    let lobbyChannel = null;
+    let membersChannel = null;
+
+    function showMessage(text) {
+      message.textContent = text || "";
+    }
+
+    function cleanUsername(value) {
+      return value.trim().slice(0, 24);
+    }
+
+    function cleanCode(value) {
+      return value.replace(/\D/g, "").slice(0, 6);
+    }
+
+    function setButtonsDisabled(disabled) {
+      createLobbyBtn.disabled = disabled;
+      joinLobbyBtn.disabled = disabled;
+      startGameBtn.disabled = disabled;
+    }
+
+    async function ensureAnonymousAuth() {
+      const sessionResult = await db.auth.getSession();
+
+      if (sessionResult.data.session?.user) {
+        currentUser = sessionResult.data.session.user;
+        return;
+      }
+
+      const { data, error } = await db.auth.signInAnonymously();
+
+      if (error) {
+        throw error;
+      }
+
+      currentUser = data.user;
+    }
+
+    async function createLobby() {
+      const username = cleanUsername(creatorUsername.value);
+      const maxPlayers = Number(maxPlayersInput.value);
+
+      if (!username) {
+        showMessage("Enter a username.");
+        return;
+      }
+
+      if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 20) {
+        showMessage("Max players must be between 2 and 20.");
+        return;
+      }
+
+      setButtonsDisabled(true);
+      showMessage("");
+
+      try {
+        const { data, error } = await db.rpc("create_lobby", {
+          p_username: username,
+          p_max_players: maxPlayers
+        });
+
+        if (error) throw error;
+
+        await enterLobby(data[0]);
+      } catch (error) {
+        showMessage(error.message);
+      } finally {
+        setButtonsDisabled(false);
+      }
+    }
+
+    async function joinLobby() {
+      const code = cleanCode(joinCodeInput.value);
+      const username = cleanUsername(joinUsername.value);
+
+      if (code.length !== 6) {
+        showMessage("Enter a valid six-digit code.");
+        return;
+      }
+
+      if (!username) {
+        showMessage("Enter a username.");
+        return;
+      }
+
+      setButtonsDisabled(true);
+      showMessage("");
+
+      try {
+        const { data, error } = await db.rpc("join_lobby", {
+          p_code: code,
+          p_username: username
+        });
+
+        if (error) throw error;
+
+        await enterLobby(data[0]);
+      } catch (error) {
+        showMessage(error.message);
+      } finally {
+        setButtonsDisabled(false);
+      }
+    }
+
+    async function enterLobby(lobby) {
+      currentLobby = lobby;
+
+      lobbyArea.style.display = "block";
+      currentCode.textContent = lobby.code;
+
+      await loadLobby();
+      await loadMembers();
+
+      subscribeToLobby();
+      subscribeToMembers();
+    }
+
+    async function loadLobby() {
+      if (!currentLobby) return;
+
+      const { data, error } = await db
+        .from("lobbies")
+        .select("*")
+        .eq("id", currentLobby.lobby_id)
+        .single();
+
+      if (error) {
+        showMessage(error.message);
+        return;
+      }
+
+      currentLobby = {
+        lobby_id: data.id,
+        code: data.code,
+        max_players: data.max_players,
+        status: data.status,
+        creator_id: data.creator_id
+      };
+
+      currentCode.textContent = currentLobby.code;
+
+      const isStarted = currentLobby.status === "started";
+
+      statusBadge.textContent = isStarted ? "Started" : "Waiting";
+      statusBadge.className = "status " + (isStarted ? "started" : "waiting");
+
+      const isCreator = currentLobby.creator_id === currentUser.id;
+
+      if (isCreator && !isStarted) {
+        startGameBtn.classList.remove("hidden");
+        startGameBtn.disabled = false;
+      } else {
+        startGameBtn.classList.add("hidden");
+      }
+
+      if (isStarted) {
+        showMessage("Game started. This lobby is now locked. The code can be reused by another lobby.");
+      }
+    }
+
+    async function loadMembers() {
+      if (!currentLobby) return;
+
+      const { data, error } = await db
+        .from("lobby_members")
+        .select("*")
+        .eq("lobby_id", currentLobby.lobby_id)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        showMessage(error.message);
+        return;
+      }
+
+      memberList.innerHTML = "";
+
+      for (const member of data) {
+        const li = document.createElement("li");
+        li.textContent =
+          member.username +
+          (member.user_id === currentLobby.creator_id ? " — Creator" : "");
+
+        memberList.appendChild(li);
+      }
+
+      playerCountText.textContent =
+        `${data.length} / ${currentLobby.max_players} players`;
+    }
+
+    async function startGame() {
+      if (!currentLobby) return;
+
+      setButtonsDisabled(true);
+      showMessage("");
+
+      try {
+        const { data, error } = await db.rpc("start_lobby", {
+          p_lobby_id: currentLobby.lobby_id
+        });
+
+        if (error) throw error;
+
+        currentLobby.status = data[0].status;
+        await loadLobby();
+      } catch (error) {
+        showMessage(error.message);
+      } finally {
+        setButtonsDisabled(false);
+      }
+    }
+
+    function subscribeToLobby() {
+      if (lobbyChannel) {
+        db.removeChannel(lobbyChannel);
+      }
+
+      lobbyChannel = db
+        .channel(`lobby-status-${currentLobby.lobby_id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "lobbies",
+            filter: `id=eq.${currentLobby.lobby_id}`
+          },
+          async () => {
+            await loadLobby();
+          }
+        )
+        .subscribe();
+    }
+
+    function subscribeToMembers() {
+      if (membersChannel) {
+        db.removeChannel(membersChannel);
+      }
+
+      membersChannel = db
+        .channel(`lobby-members-${currentLobby.lobby_id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "lobby_members",
+            filter: `lobby_id=eq.${currentLobby.lobby_id}`
+          },
+          async () => {
+            await loadMembers();
+          }
+        )
+        .subscribe();
+    }
+
+    createLobbyBtn.addEventListener("click", createLobby);
+    joinLobbyBtn.addEventListener("click", joinLobby);
+    startGameBtn.addEventListener("click", startGame);
+
+    joinCodeInput.addEventListener("input", () => {
+      joinCodeInput.value = cleanCode(joinCodeInput.value);
+    });
+
+    async function boot() {
+      try {
+        setButtonsDisabled(true);
+        showMessage("Signing in...");
+
+        await ensureAnonymousAuth();
+
+        showMessage("");
+      } catch (error) {
+        showMessage(error.message);
+      } finally {
+        setButtonsDisabled(false);
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>
