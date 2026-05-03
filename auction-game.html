@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Lobby Game</title>
+  <title>Auction</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -277,7 +277,7 @@
       <div class="timer" id="timerLabel">--</div>
     </header>
 
-    <div class="grid">
+    <div class="grid" id="activeGameArea">
       <section class="panel">
         <h2>Players</h2>
         <div class="players-grid" id="playersGrid"></div>
@@ -330,6 +330,7 @@
     const betMessage = document.getElementById("betMessage");
     const eligiblePlayersList = document.getElementById("eligiblePlayersList");
     const gameOverBox = document.getElementById("gameOverBox");
+    const activeGameArea = document.getElementById("activeGameArea");
 
     let currentUser = null;
     let lobby = null;
@@ -671,26 +672,29 @@
     }
 
     function renderGameOver() {
-      if (lobby.status !== "ended") {
-        gameOverBox.style.display = "none";
-        return;
-      }
+  if (lobby.status !== "ended") {
+    gameOverBox.style.display = "none";
+    activeGameArea.style.display = "grid";
+    return;
+  }
 
-      const winners = lobby.overall_winner_member_ids || [];
+  activeGameArea.style.display = "none";
 
-      let winnerNames = winners
-        .map(id => getPlayer(id)?.username || "Unknown")
-        .join(", ");
+  const winners = lobby.overall_winner_member_ids || [];
 
-      if (!winnerNames && lobby.overall_winner_member_id) {
-        winnerNames = getPlayer(lobby.overall_winner_member_id)?.username || "Unknown";
-      }
+  let winnerNames = winners
+    .map(id => getPlayer(id)?.username || "Unknown")
+    .join(", ");
 
-      gameOverBox.style.display = "block";
-      gameOverBox.textContent = winnerNames
-        ? `Game Over — Winner${winners.length > 1 ? "s" : ""}: ${winnerNames}`
-        : "Game Over";
-    }
+  if (!winnerNames && lobby.overall_winner_member_id) {
+    winnerNames = getPlayer(lobby.overall_winner_member_id)?.username || "Unknown";
+  }
+
+  gameOverBox.style.display = "block";
+  gameOverBox.textContent = winnerNames
+    ? `Game Over — Winner${winners.length > 1 ? "s" : ""}: ${winnerNames}`
+    : "Game Over";
+}
 
     function startTimer() {
       if (timerInterval) {
