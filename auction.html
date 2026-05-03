@@ -28,6 +28,7 @@
     }
 
     .app {
+      position: relative;
       width: min(960px, 100%);
       background: rgba(255, 255, 255, 0.92);
       border: 1px solid #d9e4f7;
@@ -101,6 +102,79 @@
       background: #9aa9c2;
       cursor: not-allowed;
     }
+
+    .rules-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: auto;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #172033;
+  color: white;
+  font-size: 0.95rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+
+.rules-btn:hover {
+  background: #2f3a50;
+}
+
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-backdrop.open {
+  display: flex;
+}
+
+.modal {
+  position: relative;
+  width: min(620px, 100%);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+  border: 1px solid #dce6f8;
+}
+
+.modal h2 {
+  margin-top: 0;
+}
+
+.modal p {
+  line-height: 1.55;
+  color: #334155;
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: #eef2f7;
+  color: #172033;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  background: #dbe4f0;
+}
 
     .message {
       min-height: 28px;
@@ -194,6 +268,7 @@
 
 <body>
   <main class="app">
+    <button class="rules-btn" id="rulesBtn">Rules</button>
     <h1>Auction!</h1>
     <p class="subtitle">Create a lobby, share the six-digit code, then start when ready.</p>
 
@@ -241,6 +316,46 @@
       <h3>Players</h3>
       <ul id="memberList"></ul>
     </section>
+    <div class="modal-backdrop" id="rulesModal">
+  <div class="modal">
+    <button class="modal-close" id="closeRulesBtn">&times;</button>
+
+    <h2>How the Game Works</h2>
+
+    <p>
+      Each player starts with <strong>$1000</strong>. The game lasts
+      <strong>15 rounds</strong>.
+    </p>
+
+    <p>
+      In each round, every player has <strong>30 seconds</strong> to secretly
+      submit a bid. If a player does not submit in time, their bid counts as
+      <strong>$0</strong>.
+    </p>
+
+    <p>
+      When the timer ends, the player who bid the most wins the round. Every
+      player loses the amount they bid, whether they won or not.
+    </p>
+
+    <p>
+      If two or more players tie for the highest bid, those tied players enter
+      <strong>sudden death</strong>. They get another 30 seconds to bid more
+      money on top of what they already bid. Sudden death continues until one
+      tied player bids more than the others.
+    </p>
+
+    <p>
+      If tied players have the same amount of money left and all of it has been
+      bid, the round is split between them.
+    </p>
+
+    <p>
+      After 15 rounds, the player with the most round wins is the overall
+      winner.
+    </p>
+  </div>
+</div>
   </main>
 
   <script>
@@ -264,6 +379,9 @@
     const playerCountText = document.getElementById("playerCountText");
     const startGameBtn = document.getElementById("startGameBtn");
     const statusBadge = document.getElementById("statusBadge");
+    const rulesBtn = document.getElementById("rulesBtn");
+    const rulesModal = document.getElementById("rulesModal");
+    const closeRulesBtn = document.getElementById("closeRulesBtn");
 
     let currentUser = null;
     let currentLobby = null;
@@ -529,6 +647,26 @@
     joinCodeInput.addEventListener("input", () => {
       joinCodeInput.value = cleanCode(joinCodeInput.value);
     });
+
+    rulesBtn.addEventListener("click", () => {
+  rulesModal.classList.add("open");
+});
+
+closeRulesBtn.addEventListener("click", () => {
+  rulesModal.classList.remove("open");
+});
+
+rulesModal.addEventListener("click", event => {
+  if (event.target === rulesModal) {
+    rulesModal.classList.remove("open");
+  }
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    rulesModal.classList.remove("open");
+  }
+});
 
     async function boot() {
       try {
