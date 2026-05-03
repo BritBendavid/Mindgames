@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lobby Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      color: #172033;
+      background:
+        radial-gradient(circle at top left, #dbeafe, transparent 32%),
+        radial-gradient(circle at bottom right, #dcfce7, transparent 28%),
+        #f8fafc;
+      padding: 24px;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 22px;
+      background: white;
+      border: 1px solid #dbe4f0;
+      border-radius: 20px;
+      padding: 20px 24px;
+      box-shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
+    }
+
+    .round-label {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .timer {
+      font-size: 2rem;
+      font-weight: bold;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      padding: 10px 18px;
+      border-radius: 999px;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    .status {
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 22px;
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid #dbe4f0;
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
+    }
+
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+    }
+
+    .player-card {
+      border: 1px solid #dbe4f0;
+      border-radius: 16px;
+      padding: 16px;
+      background: #fbfdff;
+    }
+
+    .player-name {
+      font-size: 1.15rem;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .money {
+      font-size: 1.7rem;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .wins {
+      color: #475569;
+      margin-bottom: 12px;
+    }
+
+    .progress-wrap {
+      height: 14px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #2563eb;
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    .progress-label {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    .bet-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      font-size: 1.1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .message {
+      min-height: 24px;
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    .success {
+      color: #15803d;
+    }
+
+    .eligible-list {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .eligible-list div {
+      padding: 6px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .eligible-list div:last-child {
+      border-bottom: none;
+    }
+
+    .history {
+      margin-top: 22px;
+    }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .round-card {
+      border: 1px solid #dbe4f0;
+      background: white;
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .round-card h4 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+
+    .round-card .winner {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 10px;
+      background: #ecfdf5;
+      color: #166534;
+      font-weight: bold;
+    }
+
+    .round-card .split {
+      background: #fff7ed;
+      color: #9a3412;
+    }
+
+    .phase-title {
+      margin-top: 8px;
+      font-weight: bold;
+      color: #334155;
+    }
+
+    .game-over {
+      display: none;
+      margin-bottom: 22px;
+      background: #ecfdf5;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      border-radius: 20px;
+      padding: 20px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .timer {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <section class="game-over" id="gameOverBox"></section>
+
+    <header class="topbar">
+      <div>
+        <div class="round-label" id="roundLabel">Round - / 15</div>
+        <div class="status" id="phaseLabel">Loading...</div>
+      </div>
+
+      <div class="timer" id="timerLabel">--</div>
+    </header>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Players</h2>
+        <div class="players-grid" id="playersGrid"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Your Bid</h2>
+
+        <div class="bet-box">
+          <p id="yourMoneyText">Money left: --</p>
+          <p id="yourCommittedText">Already committed this round: --</p>
+          <input id="betAmount" type="number" min="0" step="1" placeholder="Enter amount" />
+          <button id="submitBidBtn">Submit Bid</button>
+          <p class="message" id="betMessage"></p>
+        </div>
+
+        <div class="eligible-list">
+          <strong>Current bidding players</strong>
+          <div id="eligiblePlayersList"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="history">
+      <h2>Round History</h2>
+      <div class="history-grid" id="historyGrid"></div>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
+
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const lobbyId = urlParams.get("lobby");
+
+    const roundLabel = document.getElementById("roundLabel");
+    const phaseLabel = document.getElementById("phaseLabel");
+    const timerLabel = document.getElementById("timerLabel");
+
+    const playersGrid = document.getElementById("playersGrid");
+    const historyGrid = document.getElementById("historyGrid");
+
+    const yourMoneyText = document.getElementById("yourMoneyText");
+    const yourCommittedText = document.getElementById("yourCommittedText");
+    const betAmount = document.getElementById("betAmount");
+    const submitBidBtn = document.getElementById("submitBidBtn");
+    const betMessage = document.getElementById("betMessage");
+    const eligiblePlayersList = document.getElementById("eligiblePlayersList");
+    const gameOverBox = document.getElementById("gameOverBox");
+
+    let currentUser = null;
+    let lobby = null;
+    let players = [];
+    let rounds = [];
+    let phases = [];
+    let phasePlayers = [];
+    let bets = [];
+
+    let activeRound = null;
+    let activePhase = null;
+    let timerInterval = null;
+    let resolveInProgress = false;
+
+    function money(n) {
+      return "$" + Number(n || 0).toLocaleString();
+    }
+
+    function setMessage(text, good = false) {
+      betMessage.textContent = text || "";
+      betMessage.className = good ? "message success" : "message";
+    }
+
+    function getPlayer(memberId) {
+      return players.find(p => p.id === memberId);
+    }
+
+    function currentMember() {
+      return players.find(p => p.user_id === currentUser?.id);
+    }
+
+    async function ensureAnonymousAuth() {
+      const sessionResult = await db.auth.getSession();
+
+      if (sessionResult.data.session?.user) {
+        currentUser = sessionResult.data.session.user;
+        return;
+      }
+
+      const { data, error } = await db.auth.signInAnonymously();
+
+      if (error) throw error;
+
+      currentUser = data.user;
+    }
+
+    async function loadAll() {
+      if (!lobbyId) {
+        setMessage("Missing lobby ID.");
+        return;
+      }
+
+      const lobbyResult = await db
+        .from("lobbies")
+        .select("*")
+        .eq("id", lobbyId)
+        .single();
+
+      if (lobbyResult.error) {
+        setMessage(lobbyResult.error.message);
+        return;
+      }
+
+      lobby = lobbyResult.data;
+
+      const playersResult = await db
+        .from("lobby_members")
+        .select("*")
+        .eq("lobby_id", lobbyId)
+        .order("created_at", { ascending: true });
+
+      if (playersResult.error) {
+        setMessage(playersResult.error.message);
+        return;
+      }
+
+      players = playersResult.data;
+
+      const roundsResult = await db
+        .from("game_rounds")
+        .select("*")
+        .eq("lobby_id", lobbyId)
+        .order("round_number", { ascending: true });
+
+      if (roundsResult.error) {
+        setMessage(roundsResult.error.message);
+        return;
+      }
+
+      rounds = roundsResult.data;
+
+      const roundIds = rounds.map(r => r.id);
+
+      if (roundIds.length) {
+        const phasesResult = await db
+          .from("round_bid_phases")
+          .select("*")
+          .in("round_id", roundIds)
+          .order("phase_number", { ascending: true });
+
+        if (phasesResult.error) {
+          setMessage(phasesResult.error.message);
+          return;
+        }
+
+        phases = phasesResult.data;
+      } else {
+        phases = [];
+      }
+
+      const phaseIds = phases.map(p => p.id);
+
+      if (phaseIds.length) {
+        const phasePlayersResult = await db
+          .from("round_phase_players")
+          .select("*")
+          .in("phase_id", phaseIds);
+
+        if (phasePlayersResult.error) {
+          setMessage(phasePlayersResult.error.message);
+          return;
+        }
+
+        phasePlayers = phasePlayersResult.data;
+
+        const betsResult = await db
+          .from("round_bets")
+          .select("*")
+          .in("phase_id", phaseIds);
+
+        if (betsResult.error) {
+          setMessage(betsResult.error.message);
+          return;
+        }
+
+        bets = betsResult.data;
+      } else {
+        phasePlayers = [];
+        bets = [];
+      }
+
+      render();
+    }
+
+    function render() {
+      activeRound = rounds.find(
+        r => r.round_number === lobby.current_round && r.status === "collecting"
+      );
+
+      activePhase = activeRound
+        ? phases
+            .filter(p => p.round_id === activeRound.id && p.status === "collecting")
+            .sort((a, b) => b.phase_number - a.phase_number)[0]
+        : null;
+
+      renderTopbar();
+      renderPlayers();
+      renderBetPanel();
+      renderHistory();
+      renderGameOver();
+      startTimer();
+    }
+
+    function renderTopbar() {
+      roundLabel.textContent = `Round ${lobby.current_round || "-"} / ${lobby.total_rounds || 15}`;
+
+      if (lobby.status === "ended") {
+        phaseLabel.textContent = "Game ended";
+        timerLabel.textContent = "Done";
+        return;
+      }
+
+      if (!activePhase) {
+        phaseLabel.textContent = "Waiting for next phase...";
+        timerLabel.textContent = "--";
+        return;
+      }
+
+      if (activePhase.phase_number === 1) {
+        phaseLabel.textContent = "Normal bidding phase";
+      } else {
+        phaseLabel.textContent = `Sudden death phase ${activePhase.phase_number - 1}`;
+      }
+    }
+
+    function renderPlayers() {
+      playersGrid.innerHTML = "";
+
+      for (const player of players) {
+        const spent = 1000 - Number(player.money_left);
+        const percentSpent = Math.max(0, Math.min(100, (spent / 1000) * 100));
+
+        const card = document.createElement("div");
+        card.className = "player-card";
+
+        card.innerHTML = `
+          <div class="player-name">${escapeHtml(player.username)}</div>
+          <div class="money">${money(player.money_left)}</div>
+          <div class="wins">Wins: ${Number(player.rounds_won).toFixed(2).replace(/\\.00$/, "")}</div>
+          <div class="progress-wrap">
+            <div class="progress-fill" style="width: ${percentSpent}%"></div>
+          </div>
+          <div class="progress-label">${Math.round(percentSpent)}% of money spent</div>
+        `;
+
+        playersGrid.appendChild(card);
+      }
+    }
+
+    function renderBetPanel() {
+      const me = currentMember();
+
+      if (!me || lobby.status === "ended") {
+        submitBidBtn.disabled = true;
+        betAmount.disabled = true;
+        return;
+      }
+
+      yourMoneyText.textContent = `Money left: ${money(me.money_left)}`;
+
+      const committed = getCommittedThisRound(me.id);
+      yourCommittedText.textContent = `Already committed this round: ${money(committed)}`;
+
+      if (!activePhase || !activeRound) {
+        submitBidBtn.disabled = true;
+        betAmount.disabled = true;
+        return;
+      }
+
+      const eligibleMemberIds = phasePlayers
+        .filter(pp => pp.phase_id === activePhase.id)
+        .map(pp => pp.lobby_member_id);
+
+      eligiblePlayersList.innerHTML = "";
+
+      for (const memberId of eligibleMemberIds) {
+        const p = getPlayer(memberId);
+        const submitted = bets.some(
+          b => b.phase_id === activePhase.id && b.lobby_member_id === memberId
+        );
+
+        const row = document.createElement("div");
+        row.textContent = `${p?.username || "Unknown"} — ${submitted ? "submitted" : "waiting"}`;
+        eligiblePlayersList.appendChild(row);
+      }
+
+      const amEligible = eligibleMemberIds.includes(me.id);
+
+      const alreadySubmitted = bets.some(
+        b => b.phase_id === activePhase.id && b.lobby_member_id === me.id
+      );
+
+      const available = Math.max(0, Number(me.money_left) - committed);
+
+      betAmount.max = String(available);
+      betAmount.placeholder = `0 to ${available}`;
+
+      if (!amEligible) {
+        submitBidBtn.disabled = true;
+        betAmount.disabled = true;
+        setMessage("You are not part of this sudden-death phase.", false);
+        return;
+      }
+
+      if (alreadySubmitted) {
+        submitBidBtn.disabled = true;
+        betAmount.disabled = true;
+        setMessage("Bid submitted.", true);
+        return;
+      }
+
+      submitBidBtn.disabled = false;
+      betAmount.disabled = false;
+    }
+
+    function getCommittedThisRound(memberId) {
+      if (!activeRound) return 0;
+
+      const phaseIdsForRound = phases
+        .filter(p => p.round_id === activeRound.id)
+        .map(p => p.id);
+
+      return bets
+        .filter(b => phaseIdsForRound.includes(b.phase_id) && b.lobby_member_id === memberId)
+        .reduce((sum, b) => sum + Number(b.amount), 0);
+    }
+
+    function renderHistory() {
+      historyGrid.innerHTML = "";
+
+      const resolvedRounds = rounds
+        .filter(r => r.status === "resolved")
+        .sort((a, b) => a.round_number - b.round_number);
+
+      for (const round of resolvedRounds) {
+        const card = document.createElement("div");
+        card.className = "round-card";
+
+        const roundPhases = phases
+          .filter(p => p.round_id === round.id)
+          .sort((a, b) => a.phase_number - b.phase_number);
+
+        let html = `<h4>Round ${round.round_number}</h4>`;
+
+        for (const phase of roundPhases) {
+          html += `<div class="phase-title">${phase.phase_number === 1 ? "Initial bids" : "Sudden death " + (phase.phase_number - 1)}</div>`;
+
+          const phaseBets = bets
+            .filter(b => b.phase_id === phase.id)
+            .sort((a, b) => {
+              const pa = getPlayer(a.lobby_member_id)?.created_at || "";
+              const pb = getPlayer(b.lobby_member_id)?.created_at || "";
+              return pa.localeCompare(pb);
+            });
+
+          for (const bet of phaseBets) {
+            const player = getPlayer(bet.lobby_member_id);
+            html += `<div>${escapeHtml(player?.username || "Unknown")}: ${money(bet.amount)}</div>`;
+          }
+        }
+
+        if (round.winner_member_id) {
+          const winner = getPlayer(round.winner_member_id);
+          html += `<div class="winner">Winner: ${escapeHtml(winner?.username || "Unknown")} with ${money(round.winning_amount)}</div>`;
+        } else if (round.split_winner_member_ids && round.split_winner_member_ids.length) {
+          const names = round.split_winner_member_ids
+            .map(id => getPlayer(id)?.username || "Unknown")
+            .map(escapeHtml)
+            .join(", ");
+
+          html += `<div class="winner split">Split round: ${names}</div>`;
+        } else {
+          html += `<div class="winner split">No winner</div>`;
+        }
+
+        card.innerHTML = html;
+        historyGrid.appendChild(card);
+      }
+    }
+
+    function renderGameOver() {
+      if (lobby.status !== "ended") {
+        gameOverBox.style.display = "none";
+        return;
+      }
+
+      const winners = lobby.overall_winner_member_ids || [];
+
+      let winnerNames = winners
+        .map(id => getPlayer(id)?.username || "Unknown")
+        .join(", ");
+
+      if (!winnerNames && lobby.overall_winner_member_id) {
+        winnerNames = getPlayer(lobby.overall_winner_member_id)?.username || "Unknown";
+      }
+
+      gameOverBox.style.display = "block";
+      gameOverBox.textContent = winnerNames
+        ? `Game Over — Winner${winners.length > 1 ? "s" : ""}: ${winnerNames}`
+        : "Game Over";
+    }
+
+    function startTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+
+      timerInterval = setInterval(updateTimer, 250);
+      updateTimer();
+    }
+
+    function updateTimer() {
+      if (lobby?.status === "ended") {
+        timerLabel.textContent = "Done";
+        return;
+      }
+
+      if (!activePhase) {
+        timerLabel.textContent = "--";
+        return;
+      }
+
+      const msLeft = new Date(activePhase.deadline_at).getTime() - Date.now();
+      const secondsLeft = Math.max(0, Math.ceil(msLeft / 1000));
+
+      timerLabel.textContent = `${secondsLeft}s`;
+
+      if (secondsLeft <= 0) {
+        tryResolveRound();
+      }
+    }
+
+    async function tryResolveRound() {
+      if (resolveInProgress || !lobby || lobby.status !== "started") return;
+
+      resolveInProgress = true;
+
+      try {
+        await db.rpc("resolve_round_if_ready", {
+          p_lobby_id: lobbyId
+        });
+
+        await loadAll();
+      } catch (error) {
+        // Usually this only means another client already resolved it
+        // or the phase was not quite ready yet.
+      } finally {
+        resolveInProgress = false;
+      }
+    }
+
+    async function submitBid() {
+      const amount = Number(betAmount.value);
+
+      if (!Number.isInteger(amount) || amount < 0) {
+        setMessage("Enter a valid whole-dollar amount.");
+        return;
+      }
+
+      submitBidBtn.disabled = true;
+      betAmount.disabled = true;
+      setMessage("");
+
+      try {
+        const { error } = await db.rpc("submit_bid", {
+          p_lobby_id: lobbyId,
+          p_amount: amount
+        });
+
+        if (error) throw error;
+
+        setMessage("Bid submitted.", true);
+        await loadAll();
+      } catch (error) {
+        setMessage(error.message);
+        submitBidBtn.disabled = false;
+        betAmount.disabled = false;
+      }
+    }
+
+    function subscribeToChanges() {
+      db.channel(`game-lobby-${lobbyId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "lobbies",
+            filter: `id=eq.${lobbyId}`
+          },
+          loadAll
+        )
+        .subscribe();
+
+      db.channel(`game-members-${lobbyId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "lobby_members",
+            filter: `lobby_id=eq.${lobbyId}`
+          },
+          loadAll
+        )
+        .subscribe();
+
+      db.channel(`game-rounds-${lobbyId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "game_rounds"
+          },
+          loadAll
+        )
+        .subscribe();
+
+      db.channel(`game-phases-${lobbyId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "round_bid_phases"
+          },
+          loadAll
+        )
+        .subscribe();
+
+      db.channel(`game-phase-players-${lobbyId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "round_phase_players"
+          },
+          loadAll
+        )
+        .subscribe();
+
+      db.channel(`game-bets-${lobbyId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "round_bets"
+          },
+          loadAll
+        )
+        .subscribe();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    submitBidBtn.addEventListener("click", submitBid);
+
+    betAmount.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        submitBid();
+      }
+    });
+
+    async function boot() {
+      try {
+        setMessage("Loading...");
+
+        await ensureAnonymousAuth();
+        await loadAll();
+
+        subscribeToChanges();
+
+        setMessage("");
+      } catch (error) {
+        setMessage(error.message);
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>
