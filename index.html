@@ -158,7 +158,7 @@
     /* Horizontal dropdown buttons row */
     .cat-row{
       display:grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 10px;
       padding: 12px;
     }
@@ -216,7 +216,7 @@
     /* TWO roll-down areas side-by-side */
     .roll-row{
       display:grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 10px;
       padding: 0 12px 12px;
     }
@@ -500,6 +500,21 @@
           </div>
         </button>
 
+<button class="category-btn" id="multiplayerBtn" type="button" aria-expanded="false" aria-controls="multiplayerRoll">
+  <div class="cat-left">
+    <div class="cat-ico" aria-hidden="true"><span>🎮</span></div>
+    <div class="cat-meta">
+      <div class="cat-title">Multiplayer</div>
+      <div class="cat-desc">Play against other users</div>
+    </div>
+  </div>
+  <div class="chev" aria-hidden="true" id="multiplayerChev">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</button>
+        
         <button class="category-btn" id="otherBtn" type="button" aria-expanded="false" aria-controls="otherRoll">
           <div class="cat-left">
             <div class="cat-ico" aria-hidden="true"><span>✨</span></div>
@@ -552,6 +567,21 @@
           </div>
         </div>
 
+<div class="roll" id="multiplayerRoll">
+  <div class="roll-inner">
+    <div class="games" role="group" aria-label="Multiplayer list">
+      <div class="game-card" tabindex="0" role="button" data-href="auction.html" aria-label="Start Auction">
+        <div class="game-top">
+          <div class="game-ico" aria-hidden="true"><span>🏛️</span></div>
+          <h3 class="game-title">Auction</h3>
+        </div>
+        <p class="game-desc">Join a multiplayer auction game.</p>
+        <span class="pill">Multiplayer</span>
+      </div>
+    </div>
+  </div>
+</div>
+        
         <!-- Other roll-down -->
         <div class="roll" id="otherRoll">
           <div class="roll-inner">
@@ -614,6 +644,9 @@
     const otherRoll = document.getElementById("otherRoll");
     const mindChev = document.getElementById("mindChev");
     const otherChev = document.getElementById("otherChev");
+    const multiplayerBtn = document.getElementById("multiplayerBtn");
+    const multiplayerRoll = document.getElementById("multiplayerRoll");
+    const multiplayerChev = document.getElementById("multiplayerChev");
 
     document.getElementById("year").textContent = new Date().getFullYear();
 
@@ -629,7 +662,10 @@
     }
 
     mindBtn.addEventListener("click", () => toggle(mindRoll, mindBtn, mindChev));
-    otherBtn.addEventListener("click", () => toggle(otherRoll, otherBtn, otherChev));
+    multiplayerBtn.addEventListener("click", () => {
+  toggle(multiplayerRoll, multiplayerBtn, multiplayerChev);
+});
+    otherBtn.addEventListener("click", () => toggle(otherRoll, otherBtn, otherChev);
 
     function goTo(href) {
       if (!href) return;
