@@ -661,11 +661,23 @@
       setOpen(rollEl, btnEl, chevEl, !isOpen);
     }
 
-    mindBtn.addEventListener("click", () => toggle(mindRoll, mindBtn, mindChev));
-    multiplayerBtn.addEventListener("click", () => {
-  toggle(multiplayerRoll, multiplayerBtn, multiplayerChev);
-});
-    otherBtn.addEventListener("click", () => toggle(otherRoll, otherBtn, otherChev);
+if (mindBtn && mindRoll && mindChev) {
+  mindBtn.addEventListener("click", () => {
+    toggle(mindRoll, mindBtn, mindChev);
+  });
+}
+
+if (otherBtn && otherRoll && otherChev) {
+  otherBtn.addEventListener("click", () => {
+    toggle(otherRoll, otherBtn, otherChev);
+  });
+}
+
+if (multiplayerBtn && multiplayerRoll && multiplayerChev) {
+  multiplayerBtn.addEventListener("click", () => {
+    toggle(multiplayerRoll, multiplayerBtn, multiplayerChev);
+  });
+}
 
     function goTo(href) {
       if (!href) return;
