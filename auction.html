@@ -423,7 +423,7 @@
       }
 
       if (isStarted) {
-        showMessage("Game started. This lobby is now locked. The code can be reused by another lobby.");
+         window.location.href = `game.html?lobby=${currentLobby.lobby_id}`;
       }
     }
 
