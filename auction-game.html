@@ -30,17 +30,20 @@
     }
 
     .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 22px;
-      background: white;
-      border: 1px solid #dbe4f0;
-      border-radius: 20px;
-      padding: 20px 24px;
-      box-shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
-    }
+  position: sticky;
+  top: 12px;
+  z-index: 900;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+  background: white;
+  border: 1px solid #dbe4f0;
+  border-radius: 20px;
+  padding: 20px 24px;
+  box-shadow: 0 16px 50px rgba(15, 23, 42, 0.12);
+}
 
     .round-label {
       font-size: 1.5rem;
@@ -58,6 +61,23 @@
       min-width: 90px;
       text-align: center;
     }
+
+    .timer.danger {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+  animation: timerPulse 0.8s infinite alternate;
+}
+
+@keyframes timerPulse {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.06);
+  }
+}
 
     .status {
       color: #64748b;
@@ -261,6 +281,90 @@
         width: 100%;
       }
     }
+
+    .round-popup-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.45);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.round-popup-backdrop.open {
+  display: flex;
+}
+
+.round-popup {
+  width: min(640px, 100%);
+  max-height: 82vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 22px;
+  border: 1px solid #dbe4f0;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.28);
+  padding: 26px;
+  animation: popupEnter 0.2s ease-out;
+}
+
+.round-popup h2 {
+  margin-top: 0;
+}
+
+.popup-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.popup-section:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.popup-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.popup-row:last-child {
+  border-bottom: none;
+}
+
+.popup-winner {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 12px;
+  font-weight: bold;
+}
+
+.popup-sudden {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  padding: 12px;
+  font-weight: bold;
+}
+
+@keyframes popupEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
   </style>
 </head>
 
@@ -301,6 +405,13 @@
       </section>
     </div>
 
+    <div class="round-popup-backdrop" id="roundPopup">
+  <div class="round-popup">
+    <h2 id="roundPopupTitle">Round Results</h2>
+    <div id="roundPopupBody"></div>
+  </div>
+</div>
+
     <section class="history">
       <h2>Round History</h2>
       <div class="history-grid" id="historyGrid"></div>
@@ -330,6 +441,9 @@
     const betMessage = document.getElementById("betMessage");
     const eligiblePlayersList = document.getElementById("eligiblePlayersList");
     const gameOverBox = document.getElementById("gameOverBox");
+    const roundPopup = document.getElementById("roundPopup");
+    const roundPopupTitle = document.getElementById("roundPopupTitle");
+    const roundPopupBody = document.getElementById("roundPopupBody");
     const activeGameArea = document.getElementById("activeGameArea");
 
     let currentUser = null;
@@ -345,6 +459,10 @@
     let timerInterval = null;
     let resolveInProgress = false;
 
+    let lastShownResolvedRoundId = null;
+    let lastShownSuddenDeathPhaseId = null;
+    let popupTimeout = null;
+    
     function money(n) {
       return "$" + Number(n || 0).toLocaleString();
     }
@@ -476,23 +594,24 @@
     }
 
     function render() {
-      activeRound = rounds.find(
-        r => r.round_number === lobby.current_round && r.status === "collecting"
-      );
+  activeRound = rounds.find(
+    r => r.round_number === lobby.current_round && r.status === "collecting"
+  );
 
-      activePhase = activeRound
-        ? phases
-            .filter(p => p.round_id === activeRound.id && p.status === "collecting")
-            .sort((a, b) => b.phase_number - a.phase_number)[0]
-        : null;
+  activePhase = activeRound
+    ? phases
+        .filter(p => p.round_id === activeRound.id && p.status === "collecting")
+        .sort((a, b) => b.phase_number - a.phase_number)[0]
+    : null;
 
-      renderTopbar();
-      renderPlayers();
-      renderBetPanel();
-      renderHistory();
-      renderGameOver();
-      startTimer();
-    }
+  renderTopbar();
+  renderPlayers();
+  renderBetPanel();
+  renderHistory();
+  renderGameOver();
+  startTimer();
+  maybeShowBetweenRoundPopup();
+}
 
     function renderTopbar() {
       roundLabel.textContent = `Round ${lobby.current_round || "-"} / ${lobby.total_rounds || 15}`;
@@ -671,6 +790,185 @@
       }
     }
 
+function showRoundPopup(title, html, milliseconds = 5000) {
+  roundPopupTitle.textContent = title;
+  roundPopupBody.innerHTML = html;
+  roundPopup.classList.add("open");
+
+  if (popupTimeout) {
+    clearTimeout(popupTimeout);
+  }
+
+  popupTimeout = setTimeout(() => {
+    roundPopup.classList.remove("open");
+  }, milliseconds);
+}
+
+function buildTotalsHtml() {
+  let html = `
+    <div class="popup-section">
+      <h3>Current Totals</h3>
+  `;
+
+  for (const player of players) {
+    html += `
+      <div class="popup-row">
+        <span>${escapeHtml(player.username)}</span>
+        <span>${money(player.money_left)} left · ${Number(player.rounds_won).toFixed(2).replace(/\\.00$/, "")} wins</span>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function buildPhaseBetsHtml(phase) {
+  const phaseBets = bets
+    .filter(b => b.phase_id === phase.id)
+    .sort((a, b) => {
+      const pa = getPlayer(a.lobby_member_id)?.created_at || "";
+      const pb = getPlayer(b.lobby_member_id)?.created_at || "";
+      return pa.localeCompare(pb);
+    });
+
+  let html = `
+    <div class="popup-section">
+      <h3>${phase.phase_number === 1 ? "Bids This Round" : "Sudden Death Bids"}</h3>
+  `;
+
+  for (const bet of phaseBets) {
+    const player = getPlayer(bet.lobby_member_id);
+    html += `
+      <div class="popup-row">
+        <span>${escapeHtml(player?.username || "Unknown")}</span>
+        <span>${money(bet.amount)}</span>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function maybeShowBetweenRoundPopup() {
+  if (!rounds.length || !phases.length) return;
+
+  const resolvedRounds = rounds
+    .filter(r => r.status === "resolved")
+    .sort((a, b) => b.round_number - a.round_number);
+
+  const mostRecentResolvedRound = resolvedRounds[0];
+
+  if (
+    mostRecentResolvedRound &&
+    mostRecentResolvedRound.id !== lastShownResolvedRoundId
+  ) {
+    lastShownResolvedRoundId = mostRecentResolvedRound.id;
+
+    const roundPhases = phases
+      .filter(p => p.round_id === mostRecentResolvedRound.id)
+      .sort((a, b) => a.phase_number - b.phase_number);
+
+    let html = "";
+
+    for (const phase of roundPhases) {
+      html += buildPhaseBetsHtml(phase);
+    }
+
+    if (mostRecentResolvedRound.winner_member_id) {
+      const winner = getPlayer(mostRecentResolvedRound.winner_member_id);
+      html += `
+        <div class="popup-section">
+          <div class="popup-winner">
+            Winner: ${escapeHtml(winner?.username || "Unknown")}
+            with ${money(mostRecentResolvedRound.winning_amount)}
+          </div>
+        </div>
+      `;
+    } else if (
+      mostRecentResolvedRound.split_winner_member_ids &&
+      mostRecentResolvedRound.split_winner_member_ids.length
+    ) {
+      const names = mostRecentResolvedRound.split_winner_member_ids
+        .map(id => getPlayer(id)?.username || "Unknown")
+        .map(escapeHtml)
+        .join(", ");
+
+      html += `
+        <div class="popup-section">
+          <div class="popup-winner">
+            Split round between: ${names}
+          </div>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="popup-section">
+          <div class="popup-sudden">
+            No winner this round.
+          </div>
+        </div>
+      `;
+    }
+
+    html += buildTotalsHtml();
+
+    showRoundPopup(
+      `Round ${mostRecentResolvedRound.round_number} Results`,
+      html,
+      6000
+    );
+
+    return;
+  }
+
+  const collectingPhases = phases
+    .filter(p => p.status === "collecting")
+    .sort((a, b) => {
+      const roundA = rounds.find(r => r.id === a.round_id)?.round_number || 0;
+      const roundB = rounds.find(r => r.id === b.round_id)?.round_number || 0;
+
+      if (roundA !== roundB) return roundB - roundA;
+      return b.phase_number - a.phase_number;
+    });
+
+  const newestCollectingPhase = collectingPhases[0];
+
+  if (
+    newestCollectingPhase &&
+    newestCollectingPhase.phase_number > 1 &&
+    newestCollectingPhase.id !== lastShownSuddenDeathPhaseId
+  ) {
+    lastShownSuddenDeathPhaseId = newestCollectingPhase.id;
+
+    const tiedPlayerIds = phasePlayers
+      .filter(pp => pp.phase_id === newestCollectingPhase.id)
+      .map(pp => pp.lobby_member_id);
+
+    const tiedNames = tiedPlayerIds
+      .map(id => getPlayer(id)?.username || "Unknown")
+      .map(escapeHtml)
+      .join(", ");
+
+    let html = `
+      <div class="popup-section">
+        <div class="popup-sudden">
+          Sudden death between: ${tiedNames}
+        </div>
+      </div>
+    `;
+
+    html += buildTotalsHtml();
+
+    showRoundPopup(
+      "Sudden Death",
+      html,
+      4000
+    );
+  }
+}
+    
     function renderGameOver() {
   if (lobby.status !== "ended") {
     gameOverBox.style.display = "none";
@@ -706,25 +1004,51 @@
     }
 
     function updateTimer() {
-      if (lobby?.status === "ended") {
-        timerLabel.textContent = "Done";
-        return;
-      }
+  if (lobby?.status === "ended") {
+    timerLabel.textContent = "Done";
+    timerLabel.classList.remove("danger");
+    return;
+  }
 
-      if (!activePhase) {
-        timerLabel.textContent = "--";
-        return;
-      }
+  if (!activePhase) {
+    timerLabel.textContent = "--";
+    timerLabel.classList.remove("danger");
+    return;
+  }
 
-      const msLeft = new Date(activePhase.deadline_at).getTime() - Date.now();
-      const secondsLeft = Math.max(0, Math.ceil(msLeft / 1000));
+  const msLeft = new Date(activePhase.deadline_at).getTime() - Date.now();
+  const secondsLeft = Math.max(0, Math.ceil(msLeft / 1000));
 
-      timerLabel.textContent = `${secondsLeft}s`;
+  timerLabel.textContent = `${secondsLeft}s`;
 
-      if (secondsLeft <= 0) {
-        tryResolveRound();
-      }
-    }
+  const me = currentMember();
+
+  const hasSubmitted =
+    me &&
+    bets.some(
+      b =>
+        b.phase_id === activePhase.id &&
+        b.lobby_member_id === me.id
+    );
+
+  const isEligible =
+    me &&
+    phasePlayers.some(
+      pp =>
+        pp.phase_id === activePhase.id &&
+        pp.lobby_member_id === me.id
+    );
+
+  if (secondsLeft <= 10 && secondsLeft > 0 && isEligible && !hasSubmitted) {
+    timerLabel.classList.add("danger");
+  } else {
+    timerLabel.classList.remove("danger");
+  }
+
+  if (secondsLeft <= 0) {
+    tryResolveRound();
+  }
+}
 
     async function tryResolveRound() {
       if (resolveInProgress || !lobby || lobby.status !== "started") return;
@@ -864,6 +1188,12 @@
     betAmount.addEventListener("keydown", event => {
       if (event.key === "Enter") {
         submitBid();
+      }
+    });
+
+    roundPopup.addEventListener("click", event => {
+      if (event.target === roundPopup) {
+        roundPopup.classList.remove("open");
       }
     });
 
