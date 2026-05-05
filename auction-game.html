@@ -461,6 +461,7 @@
 
     let lastShownResolvedRoundId = null;
     let lastShownSuddenDeathPhaseId = null;
+    let lastUnlockedPhaseId = null;
     let popupTimeout = null;
     
     function money(n) {
@@ -1013,7 +1014,7 @@ function maybeShowBetweenRoundPopup() {
       updateTimer();
     }
 
-    function updateTimer() {
+ function updateTimer() {
   if (lobby?.status === "ended") {
     timerLabel.textContent = "Done";
     timerLabel.classList.remove("danger");
@@ -1035,6 +1036,11 @@ function maybeShowBetweenRoundPopup() {
     timerLabel.textContent = `Starts in ${secondsUntilStart}s`;
     timerLabel.classList.remove("danger");
     return;
+  }
+
+  if (lastUnlockedPhaseId !== activePhase.id) {
+    lastUnlockedPhaseId = activePhase.id;
+    renderBetPanel();
   }
 
   const secondsLeft = Math.max(0, Math.ceil((deadlineAt - now) / 1000));
@@ -1069,7 +1075,7 @@ function maybeShowBetweenRoundPopup() {
     tryResolveRound();
   }
 }
-
+    
     async function tryResolveRound() {
       if (resolveInProgress || !lobby || lobby.status !== "started") return;
 
