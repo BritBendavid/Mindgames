@@ -869,14 +869,14 @@ function buildRoundTotalsBetsHtml(round) {
       <h3>Total Bids This Round</h3>
   `;
 
-  rankedTotals.forEach((entry, index) => {
-    html += `
-      <div class="popup-row">
-        <span>#${index + 1} ${escapeHtml(entry.player.username)}</span>
-        <span>${money(entry.total)}</span>
-      </div>
-    `;
-  });
+  rankedTotals.forEach(entry => {
+  html += `
+    <div class="popup-row">
+      <span>${escapeHtml(entry.player.username)}</span>
+      <span>${money(entry.total)}</span>
+    </div>
+  `;
+});
 
   html += `</div>`;
 
@@ -920,48 +920,28 @@ function maybeShowBetweenRoundPopup() {
     let html = "";
 
     html += buildRoundTotalsBetsHtml(mostRecentResolvedRound);
+    html += buildTotalsHtml();
+
+    let title = `Round ${mostRecentResolvedRound.round_number} Results`;
 
     if (mostRecentResolvedRound.winner_member_id) {
       const winner = getPlayer(mostRecentResolvedRound.winner_member_id);
-
-      html += `
-        <div class="popup-section">
-          <div class="popup-winner">
-            Winner: ${escapeHtml(winner?.username || "Unknown")}
-            with ${money(mostRecentResolvedRound.winning_amount)}
-          </div>
-        </div>
-      `;
+      title = `${winner?.username || "Unknown"} wins round ${mostRecentResolvedRound.round_number}!`;
     } else if (
       mostRecentResolvedRound.split_winner_member_ids &&
       mostRecentResolvedRound.split_winner_member_ids.length
     ) {
       const names = mostRecentResolvedRound.split_winner_member_ids
         .map(id => getPlayer(id)?.username || "Unknown")
-        .map(escapeHtml)
         .join(", ");
 
-      html += `
-        <div class="popup-section">
-          <div class="popup-winner">
-            Split round between: ${names}
-          </div>
-        </div>
-      `;
+      title = `${names} split round ${mostRecentResolvedRound.round_number}!`;
     } else {
-      html += `
-        <div class="popup-section">
-          <div class="popup-sudden">
-            No winner this round.
-          </div>
-        </div>
-      `;
+      title = `No winner in round ${mostRecentResolvedRound.round_number}`;
     }
 
-    html += buildTotalsHtml();
-
     showRoundPopup(
-      `Round ${mostRecentResolvedRound.round_number} Results`,
+      title,
       html,
       12000
     );
@@ -999,7 +979,7 @@ function maybeShowBetweenRoundPopup() {
     html += buildTotalsHtml();
 
     showRoundPopup(
-      "Sudden Death",
+      "Sudden Death!",
       html,
       12000
     );
