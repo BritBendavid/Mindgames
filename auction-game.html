@@ -704,6 +704,9 @@
 
       const available = Math.max(0, Number(me.money_left) - committed);
 
+      const phaseHasStarted =
+        Date.now() >= new Date(activePhase.starts_at).getTime();
+
       betAmount.max = String(available);
       betAmount.placeholder = `0 to ${available}`;
 
@@ -718,6 +721,13 @@
         submitBidBtn.disabled = true;
         betAmount.disabled = true;
         setMessage("Bid submitted.", true);
+        return;
+      }
+
+      if (!phaseHasStarted) {
+        submitBidBtn.disabled = true;
+        betAmount.disabled = true;
+        setMessage("Bidding starts after the popup.", false);
         return;
       }
 
@@ -1016,8 +1026,18 @@ function maybeShowBetweenRoundPopup() {
     return;
   }
 
-  const msLeft = new Date(activePhase.deadline_at).getTime() - Date.now();
-  const secondsLeft = Math.max(0, Math.ceil(msLeft / 1000));
+  const now = Date.now();
+  const startsAt = new Date(activePhase.starts_at).getTime();
+  const deadlineAt = new Date(activePhase.deadline_at).getTime();
+
+  if (now < startsAt) {
+    const secondsUntilStart = Math.max(0, Math.ceil((startsAt - now) / 1000));
+    timerLabel.textContent = `Starts in ${secondsUntilStart}s`;
+    timerLabel.classList.remove("danger");
+    return;
+  }
+
+  const secondsLeft = Math.max(0, Math.ceil((deadlineAt - now) / 1000));
 
   timerLabel.textContent = `${secondsLeft}s`;
 
