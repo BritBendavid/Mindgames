@@ -835,32 +835,71 @@ function buildTotalsHtml() {
   return html;
 }
 
-function buildPhaseBetsHtml(phase) {
-  const phaseBets = bets
-    .filter(b => b.phase_id === phase.id)
+function getRoundTotalBets(roundId) {
+  const phaseIdsForRound = phases
+    .filter(p => p.round_id === roundId)
+    .map(p => p.id);
+
+  return players
+    .map(player => {
+      const total = bets
+        .filter(
+          b =>
+            phaseIdsForRound.includes(b.phase_id) &&
+            b.lobby_member_id === player.id
+        )
+        .reduce((sum, b) => sum + Number(b.amount), 0);
+
+      return {
+        player,
+        total
+      };
+    })
     .sort((a, b) => {
-      const pa = getPlayer(a.lobby_member_id)?.created_at || "";
-      const pb = getPlayer(b.lobby_member_id)?.created_at || "";
-      return pa.localeCompare(pb);
+      if (b.total !== a.total) return b.total - a.total;
+      return a.player.created_at.localeCompare(b.player.created_at);
     });
+}
+
+function buildRoundTotalsBetsHtml(round) {
+  const rankedTotals = getRoundTotalBets(round.id);
 
   let html = `
     <div class="popup-section">
-      <h3>${phase.phase_number === 1 ? "Bids This Round" : "Sudden Death Bids"}</h3>
+      <h3>Total Bids This Round</h3>
   `;
 
-  for (const bet of phaseBets) {
-    const player = getPlayer(bet.lobby_member_id);
+  rankedTotals.forEach((entry, index) => {
     html += `
       <div class="popup-row">
-        <span>${escapeHtml(player?.username || "Unknown")}</span>
-        <span>${money(bet.amount)}</span>
+        <span>#${index + 1} ${escapeHtml(entry.player.username)}</span>
+        <span>${money(entry.total)}</span>
       </div>
     `;
-  }
+  });
 
   html += `</div>`;
+
   return html;
+}
+
+function buildSuddenDeathPlayersHtml(phase) {
+  const tiedPlayerIds = phasePlayers
+    .filter(pp => pp.phase_id === phase.id)
+    .map(pp => pp.lobby_member_id);
+
+  const tiedNames = tiedPlayerIds
+    .map(id => getPlayer(id)?.username || "Unknown")
+    .map(escapeHtml)
+    .join(", ");
+
+  return `
+    <div class="popup-section">
+      <div class="popup-sudden">
+        Sudden death between: ${tiedNames}
+      </div>
+    </div>
+  `;
 }
 
 function maybeShowBetweenRoundPopup() {
@@ -878,18 +917,13 @@ function maybeShowBetweenRoundPopup() {
   ) {
     lastShownResolvedRoundId = mostRecentResolvedRound.id;
 
-    const roundPhases = phases
-      .filter(p => p.round_id === mostRecentResolvedRound.id)
-      .sort((a, b) => a.phase_number - b.phase_number);
-
     let html = "";
 
-    for (const phase of roundPhases) {
-      html += buildPhaseBetsHtml(phase);
-    }
+    html += buildRoundTotalsBetsHtml(mostRecentResolvedRound);
 
     if (mostRecentResolvedRound.winner_member_id) {
       const winner = getPlayer(mostRecentResolvedRound.winner_member_id);
+
       html += `
         <div class="popup-section">
           <div class="popup-winner">
@@ -929,7 +963,7 @@ function maybeShowBetweenRoundPopup() {
     showRoundPopup(
       `Round ${mostRecentResolvedRound.round_number} Results`,
       html,
-      6000
+      12000
     );
 
     return;
@@ -954,29 +988,20 @@ function maybeShowBetweenRoundPopup() {
   ) {
     lastShownSuddenDeathPhaseId = newestCollectingPhase.id;
 
-    const tiedPlayerIds = phasePlayers
-      .filter(pp => pp.phase_id === newestCollectingPhase.id)
-      .map(pp => pp.lobby_member_id);
+    const currentRound = rounds.find(
+      r => r.id === newestCollectingPhase.round_id
+    );
 
-    const tiedNames = tiedPlayerIds
-      .map(id => getPlayer(id)?.username || "Unknown")
-      .map(escapeHtml)
-      .join(", ");
+    let html = "";
 
-    let html = `
-      <div class="popup-section">
-        <div class="popup-sudden">
-          Sudden death between: ${tiedNames}
-        </div>
-      </div>
-    `;
-
+    html += buildRoundTotalsBetsHtml(currentRound);
+    html += buildSuddenDeathPlayersHtml(newestCollectingPhase);
     html += buildTotalsHtml();
 
     showRoundPopup(
       "Sudden Death",
       html,
-      4000
+      12000
     );
   }
 }
