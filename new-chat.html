@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ChatGPT 500 Word Bot</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, #dbeafe, transparent 35%),
+        radial-gradient(circle at bottom right, #e0e7ff, transparent 35%),
+        #f8fafc;
+      color: #111827;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app {
+      width: min(900px, 95vw);
+      height: min(760px, 92vh);
+      background: white;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 22px 70px rgba(15, 23, 42, 0.18);
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 22px;
+    }
+
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 1.45rem;
+    }
+
+    header p {
+      margin: 0;
+      color: #d1d5db;
+      font-size: 0.95rem;
+    }
+
+    #chat {
+      flex: 1;
+      padding: 22px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: linear-gradient(#ffffff, #f9fafb);
+    }
+
+    .message {
+      max-width: 75%;
+      padding: 13px 15px;
+      border-radius: 16px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #2563eb;
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background: #e5e7eb;
+      color: #111827;
+      border-bottom-left-radius: 5px;
+    }
+
+    .system {
+      align-self: center;
+      background: #fff7ed;
+      color: #9a3412;
+      border: 1px solid #fed7aa;
+      font-size: 0.82rem;
+      max-width: 90%;
+    }
+
+    form {
+      display: flex;
+      gap: 10px;
+      padding: 16px;
+      border-top: 1px solid #e5e7eb;
+      background: white;
+    }
+
+    input {
+      flex: 1;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      padding: 13px 16px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #2563eb;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0 22px;
+      background: #111827;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .small {
+      padding: 10px 18px;
+      border-top: 1px solid #e5e7eb;
+      background: #f9fafb;
+      color: #6b7280;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <header>
+      <h1>ChatGPT 500 Word Bot</h1>
+      <p>ChatGPT replies are checked before they appear.</p>
+    </header>
+
+    <main id="chat"></main>
+
+    <form id="chatForm">
+      <input id="userInput" autocomplete="off" placeholder="Say something..." />
+      <button id="sendButton" type="submit">Send</button>
+    </form>
+
+    <div class="small">
+      The browser calls Supabase. Supabase calls OpenAI. The word guard blocks bad replies.
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
+
+    const chat = document.getElementById("chat");
+    const form = document.getElementById("chatForm");
+    const input = document.getElementById("userInput");
+    const sendButton = document.getElementById("sendButton");
+
+    const messages = [];
+
+    function addMessage(text, type) {
+      const div = document.createElement("div");
+      div.className = `message ${type}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function addSystemMessage(text) {
+      addMessage(text, "system");
+    }
+
+    async function sendToBot(userText) {
+      messages.push({
+        role: "user",
+        content: userText
+      });
+
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          messages
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Request failed");
+      }
+
+      messages.push({
+        role: "assistant",
+        content: data.reply
+      });
+
+      if (data.rejected) {
+        addSystemMessage(
+          `Guard rejected a draft because of: ${data.rejected.badWords.join(", ")}`
+        );
+      }
+
+      if (data.tries > 1) {
+        addSystemMessage(`Guard approved the reply after ${data.tries} tries.`);
+      }
+
+      addMessage(data.reply, "bot");
+    }
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      addMessage(userText, "user");
+      input.value = "";
+      sendButton.disabled = true;
+
+      try {
+        await sendToBot(userText);
+      } catch (error) {
+        addSystemMessage(error.message || "The bot could not answer right now.");
+      } finally {
+        sendButton.disabled = false;
+        input.focus();
+      }
+    });
+
+    addMessage("hello there how are you today", "bot");
+  </script>
+</body>
+</html>
