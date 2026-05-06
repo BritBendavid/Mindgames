@@ -137,6 +137,27 @@
       color: #6b7280;
       font-size: 0.8rem;
     }
+
+    .bot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.replay-button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+
+.replay-button:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+    
   </style>
 </head>
 
@@ -171,12 +192,30 @@
     const messages = [];
 
     function addMessage(text, type) {
-      const div = document.createElement("div");
-      div.className = `message ${type}`;
-      div.textContent = text;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
+  const div = document.createElement("div");
+  div.className = `message ${type}`;
+
+  const textSpan = document.createElement("span");
+  textSpan.textContent = text;
+  div.appendChild(textSpan);
+
+  if (type === "bot") {
+    const replayButton = document.createElement("button");
+    replayButton.type = "button";
+    replayButton.className = "replay-button";
+    replayButton.textContent = "🔊";
+    replayButton.title = "Hear again";
+
+    replayButton.addEventListener("click", () => {
+      speakText(text);
+    });
+
+    div.appendChild(replayButton);
+  }
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
 
     function addSystemMessage(text) {
       addMessage(text, "system");
