@@ -365,6 +365,40 @@
     transform: scale(1) translateY(0);
   }
 }
+
+.final-standings {
+  display: none;
+  margin-bottom: 22px;
+  background: white;
+  border: 1px solid #dbe4f0;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
+}
+
+.final-standings h2 {
+  margin-top: 0;
+}
+
+.standings-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: bold;
+}
+
+.standings-row:last-child {
+  border-bottom: none;
+}
+
+.play-again-btn {
+  width: auto;
+  margin-top: 16px;
+  padding: 12px 22px;
+  border-radius: 999px;
+}
   </style>
 </head>
 
@@ -372,7 +406,7 @@
   <main class="app">
     <section class="game-over" id="gameOverBox"></section>
 
-    <header class="topbar">
+    <header class="topbar" id="topbar">
       <div>
         <div class="round-label" id="roundLabel">Round - / 15</div>
         <div class="status" id="phaseLabel">Loading...</div>
@@ -412,10 +446,15 @@
   </div>
 </div>
 
-    <section class="history">
-      <h2>Round History</h2>
-      <div class="history-grid" id="historyGrid"></div>
-    </section>
+    <section class="final-standings" id="finalStandings">
+  <h2>Final Rankings</h2>
+  <div id="finalStandingsList"></div>
+</section>
+
+<section class="history">
+  <h2>Round History</h2>
+  <div class="history-grid" id="historyGrid"></div>
+</section>
   </main>
 
   <script>
@@ -426,6 +465,8 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const lobbyId = urlParams.get("lobby");
+
+    const topbar = document.getElementById("topbar");
 
     const roundLabel = document.getElementById("roundLabel");
     const phaseLabel = document.getElementById("phaseLabel");
@@ -441,6 +482,8 @@
     const betMessage = document.getElementById("betMessage");
     const eligiblePlayersList = document.getElementById("eligiblePlayersList");
     const gameOverBox = document.getElementById("gameOverBox");
+    const finalStandings = document.getElementById("finalStandings");
+    const finalStandingsList = document.getElementById("finalStandingsList");
     const roundPopup = document.getElementById("roundPopup");
     const roundPopupTitle = document.getElementById("roundPopupTitle");
     const roundPopupBody = document.getElementById("roundPopupBody");
@@ -594,7 +637,7 @@
       render();
     }
 
-    function render() {
+ function render() {
   activeRound = rounds.find(
     r => r.round_number === lobby.current_round && r.status === "collecting"
   );
@@ -611,7 +654,10 @@
   renderHistory();
   renderGameOver();
   startTimer();
-  maybeShowBetweenRoundPopup();
+
+  if (lobby.status !== "ended") {
+    maybeShowBetweenRoundPopup();
+  }
 }
 
     function renderTopbar() {
@@ -750,57 +796,60 @@
     }
 
     function renderHistory() {
-      historyGrid.innerHTML = "";
+  historyGrid.innerHTML = "";
 
-      const resolvedRounds = rounds
-        .filter(r => r.status === "resolved")
-        .sort((a, b) => a.round_number - b.round_number);
+  const resolvedRounds = rounds
+    .filter(r => r.status === "resolved")
+    .sort((a, b) => a.round_number - b.round_number);
 
-      for (const round of resolvedRounds) {
-        const card = document.createElement("div");
-        card.className = "round-card";
+  for (const round of resolvedRounds) {
+    const card = document.createElement("div");
+    card.className = "round-card";
 
-        const roundPhases = phases
-          .filter(p => p.round_id === round.id)
-          .sort((a, b) => a.phase_number - b.phase_number);
+    const rankedTotals = getRoundTotalBets(round.id);
 
-        let html = `<h4>Round ${round.round_number}</h4>`;
+    let html = `<h4>Round ${round.round_number}</h4>`;
 
-        for (const phase of roundPhases) {
-          html += `<div class="phase-title">${phase.phase_number === 1 ? "Initial bids" : "Sudden death " + (phase.phase_number - 1)}</div>`;
+    html += `<div class="phase-title">Total Bids</div>`;
 
-          const phaseBets = bets
-            .filter(b => b.phase_id === phase.id)
-            .sort((a, b) => {
-              const pa = getPlayer(a.lobby_member_id)?.created_at || "";
-              const pb = getPlayer(b.lobby_member_id)?.created_at || "";
-              return pa.localeCompare(pb);
-            });
-
-          for (const bet of phaseBets) {
-            const player = getPlayer(bet.lobby_member_id);
-            html += `<div>${escapeHtml(player?.username || "Unknown")}: ${money(bet.amount)}</div>`;
-          }
-        }
-
-        if (round.winner_member_id) {
-          const winner = getPlayer(round.winner_member_id);
-          html += `<div class="winner">Winner: ${escapeHtml(winner?.username || "Unknown")} with ${money(round.winning_amount)}</div>`;
-        } else if (round.split_winner_member_ids && round.split_winner_member_ids.length) {
-          const names = round.split_winner_member_ids
-            .map(id => getPlayer(id)?.username || "Unknown")
-            .map(escapeHtml)
-            .join(", ");
-
-          html += `<div class="winner split">Split round: ${names}</div>`;
-        } else {
-          html += `<div class="winner split">No winner</div>`;
-        }
-
-        card.innerHTML = html;
-        historyGrid.appendChild(card);
-      }
+    for (const entry of rankedTotals) {
+      html += `
+        <div>
+          ${escapeHtml(entry.player.username)}: ${money(entry.total)}
+        </div>
+      `;
     }
+
+    if (round.winner_member_id) {
+      const winner = getPlayer(round.winner_member_id);
+      html += `
+        <div class="winner">
+          ${escapeHtml(winner?.username || "Unknown")} won
+        </div>
+      `;
+    } else if (round.split_winner_member_ids && round.split_winner_member_ids.length) {
+      const names = round.split_winner_member_ids
+        .map(id => getPlayer(id)?.username || "Unknown")
+        .map(escapeHtml)
+        .join(", ");
+
+      html += `
+        <div class="winner split">
+          Split: ${names}
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="winner split">
+          No winner
+        </div>
+      `;
+    }
+
+    card.innerHTML = html;
+    historyGrid.appendChild(card);
+  }
+}
 
 function showRoundPopup(title, html, milliseconds = 5000) {
   roundPopupTitle.textContent = title;
@@ -912,9 +961,10 @@ function maybeShowBetweenRoundPopup() {
   const mostRecentResolvedRound = resolvedRounds[0];
 
   if (
-    mostRecentResolvedRound &&
-    mostRecentResolvedRound.id !== lastShownResolvedRoundId
-  ) {
+  mostRecentResolvedRound &&
+  mostRecentResolvedRound.id !== lastShownResolvedRoundId &&
+  mostRecentResolvedRound.round_number < Number(lobby.total_rounds || 15)
+) {
     lastShownResolvedRoundId = mostRecentResolvedRound.id;
 
     let html = "";
@@ -989,26 +1039,93 @@ function maybeShowBetweenRoundPopup() {
     function renderGameOver() {
   if (lobby.status !== "ended") {
     gameOverBox.style.display = "none";
-    activeGameArea.style.display = "grid";
+    finalStandings.style.display = "none";
+
+    if (activeGameArea) {
+      activeGameArea.style.display = "grid";
+    }
+
+    if (topbar) {
+      topbar.style.display = "flex";
+    }
+
     return;
   }
 
-  activeGameArea.style.display = "none";
-
-  const winners = lobby.overall_winner_member_ids || [];
-
-  let winnerNames = winners
-    .map(id => getPlayer(id)?.username || "Unknown")
-    .join(", ");
-
-  if (!winnerNames && lobby.overall_winner_member_id) {
-    winnerNames = getPlayer(lobby.overall_winner_member_id)?.username || "Unknown";
+  if (activeGameArea) {
+    activeGameArea.style.display = "none";
   }
 
+  if (topbar) {
+    topbar.style.display = "none";
+  }
+
+  const rankings = getTotalRankings();
+  const firstPlace = rankings[0];
+
+  const winners = rankings.filter(
+    player =>
+      Number(player.rounds_won) === Number(firstPlace.rounds_won) &&
+      Number(player.money_left) === Number(firstPlace.money_left)
+  );
+
+  const winnerNames = winners
+    .map(player => escapeHtml(player.username))
+    .join(", ");
+
   gameOverBox.style.display = "block";
-  gameOverBox.textContent = winnerNames
-    ? `Game Over — Winner${winners.length > 1 ? "s" : ""}: ${winnerNames}`
-    : "Game Over";
+
+  gameOverBox.innerHTML = `
+    <div>Game Over — Winner${winners.length > 1 ? "s" : ""}: ${winnerNames}</div>
+    <button class="play-again-btn" id="playAgainBtn">Play Again</button>
+  `;
+
+  const playAgainBtn = document.getElementById("playAgainBtn");
+
+  playAgainBtn.addEventListener("click", () => {
+    window.location.href = "index.html";
+  });
+
+  renderFinalStandings();
+}
+
+    function getTotalRankings() {
+  return [...players].sort((a, b) => {
+    const winsDiff = Number(b.rounds_won) - Number(a.rounds_won);
+    if (winsDiff !== 0) return winsDiff;
+
+    const moneyDiff = Number(b.money_left) - Number(a.money_left);
+    if (moneyDiff !== 0) return moneyDiff;
+
+    return a.created_at.localeCompare(b.created_at);
+  });
+}
+
+function renderFinalStandings() {
+  if (lobby.status !== "ended") {
+    finalStandings.style.display = "none";
+    return;
+  }
+
+  const rankings = getTotalRankings();
+
+  finalStandingsList.innerHTML = "";
+
+  rankings.forEach((player, index) => {
+    const row = document.createElement("div");
+    row.className = "standings-row";
+
+    row.innerHTML = `
+      <span>#${index + 1} ${escapeHtml(player.username)}</span>
+      <span>
+        ${Number(player.rounds_won).toFixed(2).replace(/\.00$/, "")} wins · ${money(player.money_left)} left
+      </span>
+    `;
+
+    finalStandingsList.appendChild(row);
+  });
+
+  finalStandings.style.display = "block";
 }
 
     function startTimer() {
