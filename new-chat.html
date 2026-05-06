@@ -182,6 +182,23 @@
       addMessage(text, "system");
     }
 
+    function speakText(text) {
+      if (!("speechSynthesis" in window)) {
+         addSystemMessage("Speech is not supported in this browser.");
+         return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      window.speechSynthesis.speak(utterance);
+    }
+
     async function sendToBot(userText) {
       messages.push({
         role: "user",
@@ -222,6 +239,7 @@
       }
 
       addMessage(data.reply, "bot");
+      speakText(data.reply);
     }
 
     form.addEventListener("submit", async event => {
