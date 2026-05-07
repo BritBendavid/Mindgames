@@ -157,6 +157,96 @@
 .replay-button:hover {
   background: rgba(0, 0, 0, 0.08);
 }
+
+.header-button {
+  margin-top: 12px;
+  border: 1px solid #374151;
+  background: #f9fafb;
+  color: #111827;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.header-button:hover {
+  background: #e5e7eb;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.hidden {
+  display: none;
+}
+
+.modal-content {
+  width: min(700px, 95vw);
+  max-height: 80vh;
+  overflow: hidden;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.close-button {
+  border: none;
+  background: #f3f4f6;
+  color: #111827;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  background: #e5e7eb;
+}
+
+.modal-info {
+  margin: 0;
+  padding: 14px 20px;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+#allowedWordsList {
+  margin: 0;
+  padding: 18px 32px;
+  overflow-y: auto;
+  columns: 3;
+  column-gap: 36px;
+}
+
+#allowedWordsList li {
+  break-inside: avoid;
+  padding: 3px 0;
+}
     
   </style>
 </head>
@@ -166,6 +256,10 @@
     <header>
       <h1>ChatGPT 500 Word Bot</h1>
       <p>ChatGPT replies are checked before they appear.</p>
+
+      <button id="allowedWordsButton" class="header-button" type="button">
+         Show allowed words
+      </button>
     </header>
 
     <main id="chat"></main>
@@ -180,6 +274,21 @@
     </div>
   </div>
 
+  <div id="allowedWordsModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Allowed Words</h2>
+      <button id="closeAllowedWordsButton" class="close-button" type="button">×</button>
+    </div>
+
+    <p id="allowedWordsInfo" class="modal-info">
+      Loading words...
+    </p>
+
+    <ol id="allowedWordsList"></ol>
+  </div>
+</div>
+  
   <script>
     const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
@@ -189,7 +298,15 @@
     const input = document.getElementById("userInput");
     const sendButton = document.getElementById("sendButton");
 
+    const allowedWordsButton = document.getElementById("allowedWordsButton");
+    const allowedWordsModal = document.getElementById("allowedWordsModal");
+    const closeAllowedWordsButton = document.getElementById("closeAllowedWordsButton");
+    const allowedWordsList = document.getElementById("allowedWordsList");
+    const allowedWordsInfo = document.getElementById("allowedWordsInfo");
+
     const messages = [];
+
+    let cachedAllowedWords = null;
 
     function addMessage(text, type) {
   const div = document.createElement("div");
@@ -301,7 +418,76 @@
       }
     });
 
+    async function loadAllowedWords() {
+  if (cachedAllowedWords) {
+    return cachedAllowedWords;
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "GET",
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    }
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Could not load allowed words.");
+  }
+
+  cachedAllowedWords = data.words;
+  return cachedAllowedWords;
+}
+
+function renderAllowedWords(words) {
+  allowedWordsList.innerHTML = "";
+
+  allowedWordsInfo.textContent =
+    `${words.length} words are allowed, listed in Leipzig frequency order.`;
+
+  words.forEach(word => {
+    const li = document.createElement("li");
+    li.textContent = word;
+    allowedWordsList.appendChild(li);
+  });
+}
+
+async function openAllowedWordsModal() {
+  allowedWordsModal.classList.remove("hidden");
+  allowedWordsInfo.textContent = "Loading words...";
+  allowedWordsList.innerHTML = "";
+
+  try {
+    const words = await loadAllowedWords();
+    renderAllowedWords(words);
+  } catch (error) {
+    allowedWordsInfo.textContent = error.message || "Could not load words.";
+  }
+}
+
+function closeAllowedWordsModal() {
+  allowedWordsModal.classList.add("hidden");
+}
+
+allowedWordsButton.addEventListener("click", openAllowedWordsModal);
+closeAllowedWordsButton.addEventListener("click", closeAllowedWordsModal);
+
+allowedWordsModal.addEventListener("click", event => {
+  if (event.target === allowedWordsModal) {
+    closeAllowedWordsModal();
+  }
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeAllowedWordsModal();
+  }
+});
+
     addMessage("hello there how are you today", "bot");
+    
   </script>
 </body>
 </html>
