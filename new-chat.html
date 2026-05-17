@@ -325,6 +325,25 @@
     box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
   }
 }
+
+    .language-picker {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #e5e7eb;
+  font-size: 0.95rem;
+}
+
+.language-picker select {
+  border: 1px solid #4b5563;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: white;
+  color: #111827;
+  font-weight: bold;
+  outline: none;
+}
     
   </style>
 </head>
@@ -334,6 +353,24 @@
     <header>
       <h1>ChatGPT 500 Word Bot</h1>
       <p>ChatGPT replies are checked before they appear.</p>
+
+      <label class="language-picker">
+  Chat language:
+  <select id="languageSelect">
+    <option value="English" selected>English</option>
+    <option value="Hebrew">Hebrew</option>
+    <option value="Spanish">Spanish</option>
+    <option value="French">French</option>
+    <option value="German">German</option>
+    <option value="Arabic">Arabic</option>
+    <option value="Russian">Russian</option>
+    <option value="Italian">Italian</option>
+    <option value="Portuguese">Portuguese</option>
+    <option value="Chinese">Chinese</option>
+    <option value="Japanese">Japanese</option>
+    <option value="Korean">Korean</option>
+  </select>
+</label>
 
       <button id="allowedWordsButton" class="header-button" type="button">
          Show allowed words
@@ -395,6 +432,7 @@
     const form = document.getElementById("chatForm");
     const input = document.getElementById("userInput");
     const sendButton = document.getElementById("sendButton");
+    const languageSelect = document.getElementById("languageSelect");
 
     const transcribeButton = document.getElementById("transcribeButton");
 
@@ -478,9 +516,10 @@
           "apikey": SUPABASE_ANON_KEY,
           "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
         },
-        body: JSON.stringify({
-          messages
-        })
+body: JSON.stringify({
+  messages,
+  language: languageSelect.value
+})
       });
 
       const data = await response.json();
