@@ -289,6 +289,42 @@
   padding: 0;
   text-decoration: underline;
 }
+
+.transcribe-button {
+  border: none;
+  border-radius: 999px;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  background: #e5e7eb;
+  color: #111827;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.transcribe-button:hover {
+  background: #d1d5db;
+}
+
+.transcribe-button.listening {
+  background: #dc2626;
+  color: white;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.45);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
     
   </style>
 </head>
@@ -307,9 +343,14 @@
     <main id="chat"></main>
 
     <form id="chatForm">
-      <input id="userInput" autocomplete="off" placeholder="Say something..." />
-      <button id="sendButton" type="submit">Send</button>
-    </form>
+  <button id="transcribeButton" class="transcribe-button" type="button" title="Speak">
+    🎤
+  </button>
+
+  <input id="userInput" autocomplete="off" placeholder="Say something..." />
+
+  <button id="sendButton" type="submit">Send</button>
+</form>
 
     <div class="small">
       The browser calls Supabase. Supabase calls OpenAI. The word guard blocks bad replies.
@@ -354,6 +395,14 @@
     const form = document.getElementById("chatForm");
     const input = document.getElementById("userInput");
     const sendButton = document.getElementById("sendButton");
+
+    const transcribeButton = document.getElementById("transcribeButton");
+
+    const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    let recognition = null;
+    let isListening = false;
 
     const allowedWordsButton = document.getElementById("allowedWordsButton");
     const allowedWordsModal = document.getElementById("allowedWordsModal");
@@ -614,6 +663,81 @@ document.addEventListener("keydown", event => {
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }
+
+    function setupSpeechRecognition() {
+  if (!SpeechRecognition) {
+    transcribeButton.disabled = true;
+    transcribeButton.textContent = "🚫";
+    transcribeButton.title = "Speech input is not supported in this browser.";
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.interimResults = true;
+  recognition.continuous = false;
+
+  let finalTranscript = "";
+
+  recognition.addEventListener("start", () => {
+    isListening = true;
+    finalTranscript = "";
+    transcribeButton.classList.add("listening");
+    transcribeButton.textContent = "●";
+    input.placeholder = "Listening...";
+  });
+
+  recognition.addEventListener("result", event => {
+    let interimTranscript = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+
+      if (event.results[i].isFinal) {
+        finalTranscript += transcript + " ";
+      } else {
+        interimTranscript += transcript;
+      }
+    }
+
+    input.value = (finalTranscript + interimTranscript).trim();
+  });
+
+  recognition.addEventListener("end", () => {
+    isListening = false;
+    transcribeButton.classList.remove("listening");
+    transcribeButton.textContent = "🎤";
+    input.placeholder = "Say something...";
+    input.focus();
+  });
+
+  recognition.addEventListener("error", event => {
+    isListening = false;
+    transcribeButton.classList.remove("listening");
+    transcribeButton.textContent = "🎤";
+    input.placeholder = "Say something...";
+
+    if (event.error === "not-allowed") {
+      addSystemMessage("Microphone access was blocked.");
+    } else if (event.error === "no-speech") {
+      addSystemMessage("No speech was heard.");
+    } else {
+      addSystemMessage(`Speech input error: ${event.error}`);
+    }
+  });
+
+  transcribeButton.addEventListener("click", () => {
+    if (!recognition) return;
+
+    if (isListening) {
+      recognition.stop();
+    } else {
+      recognition.start();
+    }
+  });
+}
+
+setupSpeechRecognition();
     
 allowedWordsButton.addEventListener("click", openAllowedWordsModal);
 closeAllowedWordsButton.addEventListener("click", closeAllowedWordsModal);
