@@ -624,6 +624,64 @@ function normalizeForSync(text) {
     .trim();
 }
 
+function renderBotReply(text) {
+  clearAnimationTimers();
+  translationCache.clear();
+  wordDisplay.innerHTML = "";
+  wordDisplay.setAttribute("dir", "auto");
+
+  const parts = splitTextIntoParts(text);
+  let wordIndex = 0;
+  const delay = getWordDelay();
+
+  for (const part of parts) {
+    if (/^\s+$/.test(part)) {
+      wordDisplay.appendChild(document.createTextNode(" "));
+      continue;
+    }
+
+    if (isClickableWord(part)) {
+      const unit = document.createElement("span");
+      unit.className = "word-unit";
+      unit.dataset.word = part;
+
+      const mainWord = document.createElement("span");
+      mainWord.className = "main-word";
+      mainWord.textContent = part;
+
+      const translation = document.createElement("span");
+      translation.className = "translation";
+
+      unit.appendChild(mainWord);
+      unit.appendChild(translation);
+
+      unit.addEventListener("click", () => {
+        translateWordUnit(unit, part, text);
+      });
+
+      wordDisplay.appendChild(unit);
+
+      const timer = setTimeout(() => {
+        unit.classList.add("visible");
+      }, wordIndex * delay);
+
+      animationTimers.push(timer);
+      wordIndex += 1;
+    } else {
+      const punct = document.createElement("span");
+      punct.className = "punct";
+      punct.textContent = part;
+      wordDisplay.appendChild(punct);
+
+      const timer = setTimeout(() => {
+        punct.classList.add("visible");
+      }, wordIndex * delay);
+
+      animationTimers.push(timer);
+    }
+  }
+}
+
 function renderBotReplyWithTimestamps(text, timestampWords, audio) {
   clearAnimationTimers();
   translationCache.clear();
