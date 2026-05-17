@@ -4,716 +4,682 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>ChatGPT 500 Word Bot</title>
+  <title>Language Chat</title>
 
   <style>
     * {
       box-sizing: border-box;
     }
 
+    :root {
+      --bg: #030303;
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel-strong: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --translated: #facc15;
+      --danger: #ef4444;
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background:
-        radial-gradient(circle at top left, #dbeafe, transparent 35%),
-        radial-gradient(circle at bottom right, #e0e7ff, transparent 35%),
-        #f8fafc;
-      color: #111827;
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(250, 204, 21, 0.08), transparent 25%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
     }
 
     .app {
-      width: min(900px, 95vw);
-      height: min(760px, 92vh);
-      background: white;
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow: 0 22px 70px rgba(15, 23, 42, 0.18);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
+      padding: 28px;
+      gap: 22px;
     }
 
-    header {
-      background: #111827;
-      color: white;
-      padding: 22px;
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 22px;
+      z-index: 5;
     }
 
-    header h1 {
-      margin: 0 0 6px;
-      font-size: 1.45rem;
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
-    header p {
+    .brand h1 {
       margin: 0;
-      color: #d1d5db;
-      font-size: 0.95rem;
+      font-size: 1.05rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
     }
 
-    #chat {
-      flex: 1;
-      padding: 22px;
-      overflow-y: auto;
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .controls {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 14px;
-      background: linear-gradient(#ffffff, #f9fafb);
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
-    .message {
-      max-width: 75%;
-      padding: 13px 15px;
-      border-radius: 16px;
-      line-height: 1.45;
-      white-space: pre-wrap;
-    }
-
-    .user {
-      align-self: flex-end;
-      background: #2563eb;
-      color: white;
-      border-bottom-right-radius: 5px;
-    }
-
-    .bot {
-      align-self: flex-start;
-      background: #e5e7eb;
-      color: #111827;
-      border-bottom-left-radius: 5px;
-    }
-
-    .system {
-      align-self: center;
-      background: #fff7ed;
-      color: #9a3412;
-      border: 1px solid #fed7aa;
-      font-size: 0.82rem;
-      max-width: 90%;
-    }
-
-    form {
+    .control-card {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      padding: 10px 12px;
       display: flex;
-      gap: 10px;
-      padding: 16px;
-      border-top: 1px solid #e5e7eb;
-      background: white;
+      align-items: center;
+      gap: 9px;
+      backdrop-filter: blur(16px);
     }
 
-    input {
-      flex: 1;
-      border: 1px solid #d1d5db;
-      border-radius: 999px;
-      padding: 13px 16px;
-      font-size: 1rem;
-      outline: none;
+    .control-card label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
     }
 
-    input:focus {
-      border-color: #2563eb;
-    }
-
-    button {
+    select {
+      appearance: none;
       border: none;
-      border-radius: 999px;
-      padding: 0 22px;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding-right: 18px;
+    }
+
+    select option {
       background: #111827;
       color: white;
-      font-weight: bold;
+    }
+
+    .select-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .select-wrap::after {
+      content: "⌄";
+      position: absolute;
+      right: 0;
+      color: var(--muted);
+      pointer-events: none;
+      transform: translateY(-2px);
+    }
+
+    .speed-card {
+      min-width: 260px;
+    }
+
+    .speed-number {
+      color: var(--text);
+      font-weight: 700;
+      min-width: 46px;
+      text-align: right;
+      font-size: 0.85rem;
+    }
+
+    input[type="range"] {
+      width: 130px;
+      accent-color: white;
       cursor: pointer;
     }
 
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    .stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      position: relative;
+      padding: 28px 3vw;
     }
 
-    .small {
-      padding: 10px 18px;
-      border-top: 1px solid #e5e7eb;
-      background: #f9fafb;
+    .last-user {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      opacity: 0.8;
+      padding: 0 20px;
+    }
+
+    .word-display {
+      max-width: 1200px;
+      width: 100%;
+      text-align: center;
+      line-height: 1.25;
+      font-size: clamp(2.4rem, 7vw, 7rem);
+      font-weight: 800;
+      letter-spacing: -0.06em;
+    }
+
+    .word-unit {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      vertical-align: top;
+      margin: 0 0.13em 0.24em;
+      opacity: 0;
+      transform: translateY(18px);
+      transition:
+        opacity 420ms ease,
+        transform 420ms ease,
+        color 180ms ease;
+      cursor: pointer;
+      border-radius: 12px;
+      padding: 0 0.03em;
+      position: relative;
+    }
+
+    .word-unit.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .word-unit:hover .main-word {
+      color: var(--accent);
+    }
+
+    .word-unit.translating .main-word {
+      color: var(--accent);
+    }
+
+    .word-unit.translated .main-word {
+      color: var(--translated);
+    }
+
+    .word-unit.loading .translation {
+      opacity: 0.7;
+    }
+
+    .main-word {
+      display: inline-block;
+      transition: color 180ms ease;
+    }
+
+    .translation {
+      display: none;
+      font-size: clamp(0.8rem, 1.5vw, 1.15rem);
+      line-height: 1.1;
+      letter-spacing: normal;
+      font-weight: 600;
+      color: var(--translated);
+      margin-top: 0.25em;
+      max-width: 180px;
+      word-break: break-word;
+    }
+
+    .word-unit.translated .translation,
+    .word-unit.translating .translation {
+      display: block;
+    }
+
+    .punct,
+    .space {
+      opacity: 0;
+      transition: opacity 420ms ease;
+    }
+
+    .punct.visible,
+    .space.visible {
+      opacity: 1;
+    }
+
+    .composer-shell {
+      display: flex;
+      justify-content: center;
+      z-index: 5;
+    }
+
+    form {
+      width: min(960px, 100%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      padding: 10px;
+      backdrop-filter: blur(16px);
+    }
+
+    #userInput {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: white;
+      font-size: 1.05rem;
+      padding: 12px 10px;
+      min-width: 0;
+    }
+
+    #userInput::placeholder {
       color: #6b7280;
-      font-size: 0.8rem;
     }
 
-    .bot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+    .icon-button,
+    .send-button {
+      border: none;
+      border-radius: 999px;
+      height: 46px;
+      cursor: pointer;
+      font-weight: 800;
+      transition:
+        transform 160ms ease,
+        background 160ms ease,
+        opacity 160ms ease;
+    }
 
-.replay-button {
-  border: none;
-  background: transparent;
-  color: inherit;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 6px;
-}
+    .icon-button {
+      width: 46px;
+      min-width: 46px;
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      font-size: 1.1rem;
+    }
 
-.replay-button:hover {
-  background: rgba(0, 0, 0, 0.08);
-}
+    .icon-button:hover,
+    .send-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.2);
+    }
 
-.header-button {
-  margin-top: 12px;
-  border: 1px solid #374151;
-  background: #f9fafb;
-  color: #111827;
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-weight: bold;
-  cursor: pointer;
-}
+    .send-button {
+      padding: 0 24px;
+      background: white;
+      color: black;
+      font-size: 0.95rem;
+    }
 
-.header-button:hover {
-  background: #e5e7eb;
-}
+    .send-button:hover {
+      background: #e5e7eb;
+    }
 
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  z-index: 1000;
-}
+    .send-button:disabled,
+    .icon-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
 
-.hidden {
-  display: none;
-}
+    .system-message {
+      position: fixed;
+      left: 50%;
+      bottom: 98px;
+      transform: translateX(-50%);
+      background: rgba(17, 24, 39, 0.94);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      z-index: 20;
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+      max-width: min(700px, 90vw);
+      text-align: center;
+    }
 
-.modal-content {
-  width: min(700px, 95vw);
-  max-height: 80vh;
-  overflow: hidden;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
-  display: flex;
-  flex-direction: column;
-}
+    .recording {
+      background: var(--danger);
+      animation: pulse 1s infinite;
+    }
 
-.modal-header {
-  padding: 18px 20px;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.42);
+      }
 
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-}
+      70% {
+        box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+      }
 
-.close-button {
-  border: none;
-  background: #f3f4f6;
-  color: #111827;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-}
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
+    }
 
-.close-button:hover {
-  background: #e5e7eb;
-}
+    @media (max-width: 760px) {
+      body {
+        overflow-y: auto;
+      }
 
-.modal-info {
-  margin: 0;
-  padding: 14px 20px;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
-}
+      .app {
+        min-height: 100svh;
+        padding: 18px;
+      }
 
-#allowedWordsList {
-  margin: 0;
-  padding: 18px 32px;
-  overflow-y: auto;
-  columns: 3;
-  column-gap: 36px;
-}
+      .top-bar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
 
-#allowedWordsList li {
-  break-inside: avoid;
-  padding: 3px 0;
-}
+      .controls {
+        justify-content: flex-start;
+        width: 100%;
+      }
 
-    .drafts-list {
-  overflow-y: auto;
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+      .control-card {
+        width: 100%;
+        justify-content: space-between;
+      }
 
-.draft-card {
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  border-radius: 14px;
-  padding: 14px;
-}
+      .speed-card {
+        min-width: 0;
+      }
 
-.draft-card h3 {
-  margin: 0 0 8px;
-  font-size: 1rem;
-}
+      input[type="range"] {
+        width: 100px;
+      }
 
-.draft-text {
-  margin: 0 0 10px;
-  white-space: pre-wrap;
-  line-height: 1.45;
-}
+      .stage {
+        padding: 24px 0;
+      }
 
-.bad-words {
-  margin: 0;
-  color: #991b1b;
-  font-size: 0.9rem;
-}
+      .word-display {
+        font-size: clamp(2.3rem, 13vw, 5rem);
+      }
 
-.inline-action-button {
-  border: none;
-  background: transparent;
-  color: #2563eb;
-  font-weight: bold;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-}
-
-.transcribe-button {
-  border: none;
-  border-radius: 999px;
-  width: 48px;
-  min-width: 48px;
-  height: 48px;
-  background: #e5e7eb;
-  color: #111827;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-.transcribe-button:hover {
-  background: #d1d5db;
-}
-
-.transcribe-button.recording {
-  background: #dc2626;
-  color: white;
-  animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.45);
-  }
-
-  70% {
-    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
-  }
-}
-
-    .language-picker {
-  margin-top: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #e5e7eb;
-  font-size: 0.95rem;
-}
-
-.language-picker select {
-  border: 1px solid #4b5563;
-  border-radius: 999px;
-  padding: 7px 12px;
-  background: white;
-  color: #111827;
-  font-weight: bold;
-  outline: none;
-}
-
-.clickable-word {
-  cursor: pointer;
-  border-radius: 4px;
-  padding: 1px 2px;
-}
-
-.clickable-word:hover {
-  background: rgba(37, 99, 235, 0.15);
-  text-decoration: underline;
-}
-
-.translation-popover {
-  position: fixed;
-  z-index: 2000;
-  max-width: 260px;
-  background: #111827;
-  color: white;
-  border-radius: 12px;
-  padding: 10px 12px;
-  font-size: 0.9rem;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-}
-
-.translation-popover strong {
-  display: block;
-  margin-bottom: 4px;
-}
-
-.translation-popover .translation-small {
-  color: #d1d5db;
-  font-size: 0.78rem;
-  margin-top: 6px;
-}
-    
+      .send-button {
+        padding: 0 18px;
+      }
+    }
   </style>
 </head>
 
 <body>
   <div class="app">
-    <header>
-      <h1>ChatGPT 500 Word Bot</h1>
-      <p>ChatGPT replies are checked before they appear.</p>
+    <header class="top-bar">
+      <div class="brand">
+        <h1>Language Chat</h1>
+        <p>Read, listen, click words, and learn in context.</p>
+      </div>
 
-      <label class="language-picker">
-  Chat language:
-  <select id="languageSelect">
-    <option value="English" selected>English</option>
-    <option value="Hebrew">Hebrew</option>
-    <option value="Spanish">Spanish</option>
-    <option value="French">French</option>
-    <option value="German">German</option>
-    <option value="Arabic">Arabic</option>
-    <option value="Russian">Russian</option>
-    <option value="Italian">Italian</option>
-    <option value="Portuguese">Portuguese</option>
-    <option value="Chinese">Chinese</option>
-    <option value="Japanese">Japanese</option>
-    <option value="Korean">Korean</option>
-  </select>
-</label>
+      <div class="controls">
+        <div class="control-card">
+          <label for="languageSelect">Chat</label>
+          <div class="select-wrap">
+            <select id="languageSelect">
+              <option value="English" selected>🇺🇸 English</option>
+              <option value="Hebrew">🇮🇱 Hebrew</option>
+              <option value="Spanish">🇪🇸 Spanish</option>
+              <option value="French">🇫🇷 French</option>
+              <option value="German">🇩🇪 German</option>
+              <option value="Arabic">🇸🇦 Arabic</option>
+              <option value="Russian">🇷🇺 Russian</option>
+              <option value="Italian">🇮🇹 Italian</option>
+              <option value="Portuguese">🇵🇹 Portuguese</option>
+              <option value="Chinese">🇨🇳 Chinese</option>
+              <option value="Japanese">🇯🇵 Japanese</option>
+              <option value="Korean">🇰🇷 Korean</option>
+            </select>
+          </div>
+        </div>
 
-      <label class="language-picker">
-  Fluent language:
-  <select id="fluentLanguageSelect">
-    <option value="English" selected>English</option>
-    <option value="Hebrew">Hebrew</option>
-    <option value="Spanish">Spanish</option>
-    <option value="French">French</option>
-    <option value="German">German</option>
-    <option value="Arabic">Arabic</option>
-    <option value="Russian">Russian</option>
-    <option value="Italian">Italian</option>
-    <option value="Portuguese">Portuguese</option>
-    <option value="Chinese">Chinese</option>
-    <option value="Japanese">Japanese</option>
-    <option value="Korean">Korean</option>
-  </select>
-</label>
+        <div class="control-card">
+          <label for="fluentLanguageSelect">Fluent</label>
+          <div class="select-wrap">
+            <select id="fluentLanguageSelect">
+              <option value="English" selected>🇺🇸 English</option>
+              <option value="Hebrew">🇮🇱 Hebrew</option>
+              <option value="Spanish">🇪🇸 Spanish</option>
+              <option value="French">🇫🇷 French</option>
+              <option value="German">🇩🇪 German</option>
+              <option value="Arabic">🇸🇦 Arabic</option>
+              <option value="Russian">🇷🇺 Russian</option>
+              <option value="Italian">🇮🇹 Italian</option>
+              <option value="Portuguese">🇵🇹 Portuguese</option>
+              <option value="Chinese">🇨🇳 Chinese</option>
+              <option value="Japanese">🇯🇵 Japanese</option>
+              <option value="Korean">🇰🇷 Korean</option>
+            </select>
+          </div>
+        </div>
 
-      <button id="allowedWordsButton" class="header-button" type="button">
-         Show allowed words
-      </button>
+        <div class="control-card speed-card">
+          <label for="speedSlider">Speed</label>
+          <input id="speedSlider" type="range" min="1" max="10" value="6" />
+          <span id="speedLabel" class="speed-number">6</span>
+        </div>
+      </div>
     </header>
 
-    <main id="chat"></main>
+    <main class="stage">
+      <div id="lastUser" class="last-user"></div>
+      <div id="wordDisplay" class="word-display" dir="auto">
+        <span class="word-unit visible">
+          <span class="main-word">Start</span>
+        </span>
+        <span class="word-unit visible">
+          <span class="main-word">a</span>
+        </span>
+        <span class="word-unit visible">
+          <span class="main-word">chat</span>
+        </span>
+      </div>
+    </main>
 
-    <form id="chatForm">
-  <button id="transcribeButton" class="transcribe-button" type="button" title="Speak">
-    🎤
-  </button>
+    <div class="composer-shell">
+      <form id="chatForm">
+        <button id="transcribeButton" class="icon-button" type="button" title="Record speech">
+          🎤
+        </button>
 
-  <input id="userInput" autocomplete="off" placeholder="Say something..." />
+        <input id="userInput" autocomplete="off" placeholder="Ask something..." />
 
-  <button id="sendButton" type="submit">Send</button>
-</form>
-
-    <div class="small">
-      The browser calls Supabase. Supabase calls OpenAI. The word guard blocks bad replies.
+        <button id="sendButton" class="send-button" type="submit">Send</button>
+      </form>
     </div>
   </div>
 
-  <div id="allowedWordsModal" class="modal hidden">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2>Allowed Words</h2>
-      <button id="closeAllowedWordsButton" class="close-button" type="button">×</button>
-    </div>
-
-    <p id="allowedWordsInfo" class="modal-info">
-      Loading words...
-    </p>
-
-    <ol id="allowedWordsList"></ol>
-  </div>
-</div>
-
-<div id="draftsModal" class="modal hidden">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2>Rejected Drafts</h2>
-      <button id="closeDraftsButton" class="close-button" type="button">×</button>
-    </div>
-
-    <p id="draftsInfo" class="modal-info">
-      These drafts were blocked before the final message appeared.
-    </p>
-
-    <div id="draftsList" class="drafts-list"></div>
-  </div>
-</div>
-  
   <script>
     const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
 
-    const chat = document.getElementById("chat");
     const form = document.getElementById("chatForm");
     const input = document.getElementById("userInput");
     const sendButton = document.getElementById("sendButton");
-    const languageSelect = document.getElementById("languageSelect");
-    const fluentLanguageSelect = document.getElementById("fluentLanguageSelect");
-
-    let activeTranslationPopover = null;
-    const translationCache = new Map();
-
     const transcribeButton = document.getElementById("transcribeButton");
 
+    const wordDisplay = document.getElementById("wordDisplay");
+    const lastUser = document.getElementById("lastUser");
+
+    const languageSelect = document.getElementById("languageSelect");
+    const fluentLanguageSelect = document.getElementById("fluentLanguageSelect");
+    const speedSlider = document.getElementById("speedSlider");
+    const speedLabel = document.getElementById("speedLabel");
+
+    const messages = [];
+    const translationCache = new Map();
+
+    let animationTimers = [];
     let mediaRecorder = null;
     let recordedChunks = [];
     let isRecording = false;
 
-    const allowedWordsButton = document.getElementById("allowedWordsButton");
-    const allowedWordsModal = document.getElementById("allowedWordsModal");
-    const closeAllowedWordsButton = document.getElementById("closeAllowedWordsButton");
-    const allowedWordsList = document.getElementById("allowedWordsList");
-    const allowedWordsInfo = document.getElementById("allowedWordsInfo");
-
-    const draftsModal = document.getElementById("draftsModal");
-    const closeDraftsButton = document.getElementById("closeDraftsButton");
-    const draftsList = document.getElementById("draftsList");
-    const draftsInfo = document.getElementById("draftsInfo");
-
-    const messages = [];
-
-    let cachedAllowedWords = null;
-    let latestRejectedDrafts = [];
-
- function addMessage(text, type) {
-  const div = document.createElement("div");
-  div.className = `message ${type}`;
-
-  if (type === "bot") {
-    const textSpan = document.createElement("span");
-    renderClickableBotText(text, textSpan);
-    div.appendChild(textSpan);
-
-    if (typeof speakText === "function") {
-      const replayButton = document.createElement("button");
-      replayButton.type = "button";
-      replayButton.className = "replay-button";
-      replayButton.textContent = "🔊";
-      replayButton.title = "Hear again";
-
-      replayButton.addEventListener("click", event => {
-        event.stopPropagation();
-        speakText(text);
-      });
-
-      div.appendChild(replayButton);
+    function getWordDelay() {
+      const speed = Number(speedSlider.value);
+      return 430 - speed * 36;
     }
-  } else {
-    div.textContent = text;
-  }
 
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-    async function translateClickedWord(word, sentence, x, y) {
-  const cleanWord = word.trim();
-  if (!cleanWord) return;
-
-  const chatLanguage = languageSelect.value;
-  const fluentLanguage = fluentLanguageSelect.value;
-
-  const cacheKey = `${cleanWord}|${chatLanguage}|${fluentLanguage}|${sentence}`;
-
-  showTranslationPopover(x, y, cleanWord, "Translating...", fluentLanguage);
-
-  if (translationCache.has(cacheKey)) {
-    showTranslationPopover(
-      x,
-      y,
-      cleanWord,
-      translationCache.get(cacheKey),
-      fluentLanguage
-    );
-    return;
-  }
-
-  try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({
-        action: "translate-word",
-        word: cleanWord,
-        sentence,
-        chatLanguage,
-        fluentLanguage
-      })
+    speedSlider.addEventListener("input", () => {
+      speedLabel.textContent = speedSlider.value;
     });
 
-    const rawText = await response.text();
+    function showSystemMessage(text) {
+      const existing = document.querySelector(".system-message");
+      if (existing) existing.remove();
 
-    let data;
-    try {
-      data = JSON.parse(rawText);
-    } catch {
-      throw new Error(`Translation returned non-JSON response: ${rawText}`);
+      const div = document.createElement("div");
+      div.className = "system-message";
+      div.textContent = text;
+      document.body.appendChild(div);
+
+      setTimeout(() => {
+        div.remove();
+      }, 4200);
     }
 
-    if (!response.ok) {
-      throw new Error(data.error || `Translation failed with status ${response.status}`);
+    function clearAnimationTimers() {
+      animationTimers.forEach(timer => clearTimeout(timer));
+      animationTimers = [];
     }
 
-    const translation = data.translation || "";
-    translationCache.set(cacheKey, translation);
-
-    showTranslationPopover(x, y, cleanWord, translation, fluentLanguage);
-  } catch (error) {
-    showTranslationPopover(
-      x,
-      y,
-      cleanWord,
-      error.message || "Translation failed.",
-      fluentLanguage
-    );
-  }
-}
-
-function showTranslationPopover(x, y, word, translation, fluentLanguage) {
-  closeTranslationPopover();
-
-  const popover = document.createElement("div");
-  popover.className = "translation-popover";
-
-  const wordLine = document.createElement("strong");
-  wordLine.textContent = word;
-
-  const translationLine = document.createElement("div");
-  translationLine.textContent = translation;
-
-  const small = document.createElement("div");
-  small.className = "translation-small";
-  small.textContent = `Into ${fluentLanguage}`;
-
-  popover.appendChild(wordLine);
-  popover.appendChild(translationLine);
-  popover.appendChild(small);
-
-  document.body.appendChild(popover);
-
-  const margin = 12;
-  const rect = popover.getBoundingClientRect();
-
-  let left = x + margin;
-  let top = y + margin;
-
-  if (left + rect.width > window.innerWidth) {
-    left = window.innerWidth - rect.width - margin;
-  }
-
-  if (top + rect.height > window.innerHeight) {
-    top = y - rect.height - margin;
-  }
-
-  popover.style.left = `${Math.max(margin, left)}px`;
-  popover.style.top = `${Math.max(margin, top)}px`;
-
-  activeTranslationPopover = popover;
-}
-
-function closeTranslationPopover() {
-  if (activeTranslationPopover) {
-    activeTranslationPopover.remove();
-    activeTranslationPopover = null;
-  }
-}
-
-document.addEventListener("click", closeTranslationPopover);
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    closeTranslationPopover();
-  }
-});
-
-    function renderClickableBotText(text, container) {
-  container.innerHTML = "";
-
-  const parts = text.split(/(\s+|[.,!?;:()[\]{}"“”‘’])/g);
-
-  parts.forEach(part => {
-    if (!part) return;
-
-    const isWord = /[\p{L}]/u.test(part);
-
-    if (!isWord || /^\s+$/.test(part)) {
-      container.appendChild(document.createTextNode(part));
-      return;
+    function splitTextIntoParts(text) {
+      return text.match(/[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)?|[\p{N}]+|[^\s\p{L}\p{M}\p{N}]|\s+/gu) || [];
     }
 
-    const button = document.createElement("span");
-    button.className = "clickable-word";
-    button.textContent = part;
-    button.title = "Click to translate";
-
-    button.addEventListener("click", event => {
-      event.stopPropagation();
-      translateClickedWord(part, text, event.clientX, event.clientY);
-    });
-
-    container.appendChild(button);
-  });
-}
-
-    function addSystemMessage(text) {
-      addMessage(text, "system");
+    function isClickableWord(part) {
+      return /[\p{L}\p{M}]/u.test(part);
     }
 
-    function speakText(text) {
-      if (!("speechSynthesis" in window)) {
-         addSystemMessage("Speech is not supported in this browser.");
-         return;
+    function renderBotReply(text) {
+      clearAnimationTimers();
+      translationCache.clear();
+      wordDisplay.innerHTML = "";
+      wordDisplay.setAttribute("dir", "auto");
+
+      const parts = splitTextIntoParts(text);
+      let wordIndex = 0;
+      const delay = getWordDelay();
+
+      for (const part of parts) {
+        if (/^\s+$/.test(part)) {
+          wordDisplay.appendChild(document.createTextNode(" "));
+          continue;
+        }
+
+        if (isClickableWord(part)) {
+          const unit = document.createElement("span");
+          unit.className = "word-unit";
+          unit.dataset.word = part;
+
+          const mainWord = document.createElement("span");
+          mainWord.className = "main-word";
+          mainWord.textContent = part;
+
+          const translation = document.createElement("span");
+          translation.className = "translation";
+
+          unit.appendChild(mainWord);
+          unit.appendChild(translation);
+
+          unit.addEventListener("click", () => {
+            translateWordUnit(unit, part, text);
+          });
+
+          wordDisplay.appendChild(unit);
+
+          const timer = setTimeout(() => {
+            unit.classList.add("visible");
+          }, wordIndex * delay);
+
+          animationTimers.push(timer);
+          wordIndex += 1;
+        } else {
+          const punct = document.createElement("span");
+          punct.className = "punct";
+          punct.textContent = part;
+          wordDisplay.appendChild(punct);
+
+          const timer = setTimeout(() => {
+            punct.classList.add("visible");
+          }, wordIndex * delay);
+
+          animationTimers.push(timer);
+        }
+      }
+    }
+
+    async function translateWordUnit(unit, word, sentence) {
+      const cleanWord = word.trim();
+      if (!cleanWord) return;
+
+      const translationEl = unit.querySelector(".translation");
+      const chatLanguage = languageSelect.value;
+      const fluentLanguage = fluentLanguageSelect.value;
+
+      const cacheKey = `${cleanWord}|${chatLanguage}|${fluentLanguage}|${sentence}`;
+
+      unit.classList.remove("translated");
+      unit.classList.add("translating");
+      translationEl.textContent = "…";
+
+      if (translationCache.has(cacheKey)) {
+        translationEl.textContent = translationCache.get(cacheKey);
+        unit.classList.remove("translating");
+        unit.classList.add("translated");
+        return;
       }
 
-      window.speechSynthesis.cancel();
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            action: "translate-word",
+            word: cleanWord,
+            sentence,
+            chatLanguage,
+            fluentLanguage
+          })
+        });
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 1;
+        const rawText = await response.text();
 
-      window.speechSynthesis.speak(utterance);
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch {
+          throw new Error(`Translation returned non-JSON response: ${rawText}`);
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || `Translation failed with status ${response.status}`);
+        }
+
+        const translated = data.translation || "";
+        translationCache.set(cacheKey, translated);
+
+        translationEl.textContent = translated;
+        unit.classList.remove("translating");
+        unit.classList.add("translated");
+      } catch (error) {
+        translationEl.textContent = "failed";
+        unit.classList.remove("translating");
+        unit.classList.add("translated");
+        showSystemMessage(error.message || "Translation failed.");
+      }
     }
 
     async function sendToBot(userText) {
@@ -722,6 +688,9 @@ document.addEventListener("keydown", event => {
         content: userText
       });
 
+      lastUser.textContent = userText;
+      renderBotReply("Thinking");
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: {
@@ -729,16 +698,23 @@ document.addEventListener("keydown", event => {
           "apikey": SUPABASE_ANON_KEY,
           "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
         },
-body: JSON.stringify({
-  messages,
-  language: languageSelect.value
-})
+        body: JSON.stringify({
+          messages,
+          language: languageSelect.value
+        })
       });
 
-      const data = await response.json();
+      const rawText = await response.text();
+
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(`Chat returned non-JSON response: ${rawText}`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || "Request failed");
+        throw new Error(data.error || `Request failed with status ${response.status}`);
       }
 
       messages.push({
@@ -746,18 +722,7 @@ body: JSON.stringify({
         content: data.reply
       });
 
-      if (data.rejected) {
-        addSystemMessage(
-          `Guard rejected a draft because of: ${data.rejected.badWords.join(", ")}`
-        );
-      }
-
-      if (data.tries > 1) {
-  addGuardApprovalMessage(data.tries, data.rejectedDrafts || []);
-}
-
-      addMessage(data.reply, "bot");
-      speakText(data.reply);
+      renderBotReply(data.reply);
     }
 
     form.addEventListener("submit", async event => {
@@ -766,293 +731,143 @@ body: JSON.stringify({
       const userText = input.value.trim();
       if (!userText) return;
 
-      addMessage(userText, "user");
       input.value = "";
       sendButton.disabled = true;
+      transcribeButton.disabled = true;
 
       try {
         await sendToBot(userText);
       } catch (error) {
-        addSystemMessage(error.message || "The bot could not answer right now.");
+        console.error(error);
+        renderBotReply("Something went wrong");
+        showSystemMessage(error.message || "The bot could not answer.");
       } finally {
         sendButton.disabled = false;
+        transcribeButton.disabled = false;
         input.focus();
       }
     });
 
-    async function loadAllowedWords() {
-  if (cachedAllowedWords) {
-    return cachedAllowedWords;
-  }
-
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
-    method: "GET",
-    headers: {
-      "apikey": SUPABASE_ANON_KEY,
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-    }
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || "Could not load allowed words.");
-  }
-
-  cachedAllowedWords = data.words;
-  return cachedAllowedWords;
-}
-
-function renderAllowedWords(words) {
-  allowedWordsList.innerHTML = "";
-
-  allowedWordsInfo.textContent =
-    `${words.length} words are allowed, listed in Leipzig frequency order.`;
-
-  words.forEach(word => {
-    const li = document.createElement("li");
-    li.textContent = word;
-    allowedWordsList.appendChild(li);
-  });
-}
-
-async function openAllowedWordsModal() {
-  allowedWordsModal.classList.remove("hidden");
-  allowedWordsInfo.textContent = "Loading words...";
-  allowedWordsList.innerHTML = "";
-
-  try {
-    const words = await loadAllowedWords();
-    renderAllowedWords(words);
-  } catch (error) {
-    allowedWordsInfo.textContent = error.message || "Could not load words.";
-  }
-}
-
-function closeAllowedWordsModal() {
-  allowedWordsModal.classList.add("hidden");
-}
-
-function renderDrafts(drafts) {
-  draftsList.innerHTML = "";
-
-  if (!drafts || drafts.length === 0) {
-    draftsInfo.textContent = "There are no rejected drafts for this reply.";
-    return;
-  }
-
-  draftsInfo.textContent =
-    `${drafts.length} draft${drafts.length === 1 ? "" : "s"} were rejected before approval.`;
-
-  drafts.forEach((draft, index) => {
-    const card = document.createElement("div");
-    card.className = "draft-card";
-
-    const title = document.createElement("h3");
-    title.textContent = `Draft ${index + 1}`;
-
-    const text = document.createElement("p");
-    text.className = "draft-text";
-    text.textContent = draft.text;
-
-    const badWords = document.createElement("p");
-    badWords.className = "bad-words";
-    badWords.textContent = `Blocked words: ${draft.badWords.join(", ")}`;
-
-    card.appendChild(title);
-    card.appendChild(text);
-    card.appendChild(badWords);
-
-    draftsList.appendChild(card);
-  });
-}
-
-function openDraftsModal(drafts) {
-  latestRejectedDrafts = drafts || [];
-  renderDrafts(latestRejectedDrafts);
-  draftsModal.classList.remove("hidden");
-}
-
-function closeDraftsModal() {
-  draftsModal.classList.add("hidden");
-}
-
-closeDraftsButton.addEventListener("click", closeDraftsModal);
-
-draftsModal.addEventListener("click", event => {
-  if (event.target === draftsModal) {
-    closeDraftsModal();
-  }
-});
-
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    closeDraftsModal();
-  }
-});
-
-    function addGuardApprovalMessage(tries, rejectedDrafts) {
-  const div = document.createElement("div");
-  div.className = "message system";
-
-  const text = document.createElement("span");
-  text.textContent = `Guard approved the reply after ${tries} tries. `;
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "inline-action-button";
-  button.textContent = "See drafts";
-
-  button.addEventListener("click", () => {
-    openDraftsModal(rejectedDrafts);
-  });
-
-  div.appendChild(text);
-  div.appendChild(button);
-
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
     async function transcribeAudioBlob(audioBlob) {
-  const formData = new FormData();
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "chunk.webm");
 
-  formData.append("audio", audioBlob, "chunk.webm");
-
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
-    method: "POST",
-    headers: {
-      "apikey": SUPABASE_ANON_KEY,
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-    },
-    body: formData
-  });
-
-  const rawText = await response.text();
-
-  let data;
-  try {
-    data = JSON.parse(rawText);
-  } catch {
-    throw new Error(`Transcription returned non-JSON response: ${rawText}`);
-  }
-
-  if (!response.ok) {
-    throw new Error(data.error || `Transcription failed with status ${response.status}`);
-  }
-
-  const transcript =
-    data.text ||
-    data.transcript ||
-    data.transcription ||
-    "";
-
-  if (!transcript.trim()) {
-    throw new Error("No transcript was returned.");
-  }
-
-  return transcript.trim();
-}
-
-async function startRecording() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    addSystemMessage("Audio recording is not supported in this browser.");
-    return;
-  }
-
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-  recordedChunks = [];
-
-  mediaRecorder = new MediaRecorder(stream, {
-    mimeType: MediaRecorder.isTypeSupported("audio/webm")
-      ? "audio/webm"
-      : undefined
-  });
-
-  mediaRecorder.addEventListener("dataavailable", event => {
-    if (event.data && event.data.size > 0) {
-      recordedChunks.push(event.data);
-    }
-  });
-
-  mediaRecorder.addEventListener("stop", async () => {
-    transcribeButton.disabled = true;
-    transcribeButton.textContent = "…";
-    input.placeholder = "Transcribing...";
-
-    try {
-      const audioBlob = new Blob(recordedChunks, {
-        type: mediaRecorder.mimeType || "audio/webm"
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: formData
       });
 
-      const transcript = await transcribeAudioBlob(audioBlob);
+      const rawText = await response.text();
 
-      input.value = transcript;
-      input.focus();
-    } catch (error) {
-      console.error("Transcription error:", error);
-      addSystemMessage(error.message || "Transcription failed.");
-    } finally {
-      stream.getTracks().forEach(track => track.stop());
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(`Transcription returned non-JSON response: ${rawText}`);
+      }
 
-      isRecording = false;
-      transcribeButton.disabled = false;
-      transcribeButton.classList.remove("recording");
-      transcribeButton.textContent = "🎤";
-      input.placeholder = "Say something...";
+      if (!response.ok) {
+        throw new Error(data.error || `Transcription failed with status ${response.status}`);
+      }
+
+      const transcript =
+        data.text ||
+        data.transcript ||
+        data.transcription ||
+        "";
+
+      if (!transcript.trim()) {
+        throw new Error("No transcript was returned.");
+      }
+
+      return transcript.trim();
     }
-  });
 
-  mediaRecorder.start();
+    async function startRecording() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showSystemMessage("Audio recording is not supported in this browser.");
+        return;
+      }
 
-  isRecording = true;
-  transcribeButton.classList.add("recording");
-  transcribeButton.textContent = "■";
-  input.placeholder = "Recording... click again to stop";
-}
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state === "recording") {
-    mediaRecorder.stop();
-  }
-}
+      recordedChunks = [];
 
-transcribeButton.addEventListener("click", async () => {
-  try {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      await startRecording();
+      const options = MediaRecorder.isTypeSupported("audio/webm")
+        ? { mimeType: "audio/webm" }
+        : {};
+
+      mediaRecorder = new MediaRecorder(stream, options);
+
+      mediaRecorder.addEventListener("dataavailable", event => {
+        if (event.data && event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      });
+
+      mediaRecorder.addEventListener("stop", async () => {
+        transcribeButton.disabled = true;
+        transcribeButton.textContent = "…";
+        input.placeholder = "Transcribing...";
+
+        try {
+          const audioBlob = new Blob(recordedChunks, {
+            type: mediaRecorder.mimeType || "audio/webm"
+          });
+
+          const transcript = await transcribeAudioBlob(audioBlob);
+
+          input.value = transcript;
+          input.focus();
+        } catch (error) {
+          console.error("Transcription error:", error);
+          showSystemMessage(error.message || "Transcription failed.");
+        } finally {
+          stream.getTracks().forEach(track => track.stop());
+
+          isRecording = false;
+          transcribeButton.disabled = false;
+          transcribeButton.classList.remove("recording");
+          transcribeButton.textContent = "🎤";
+          input.placeholder = "Ask something...";
+        }
+      });
+
+      mediaRecorder.start();
+
+      isRecording = true;
+      transcribeButton.classList.add("recording");
+      transcribeButton.textContent = "■";
+      input.placeholder = "Recording... click again to stop";
     }
-  } catch (error) {
-    console.error("Recording error:", error);
-    addSystemMessage(error.message || "Could not start recording.");
 
-    isRecording = false;
-    transcribeButton.classList.remove("recording");
-    transcribeButton.textContent = "🎤";
-    input.placeholder = "Say something...";
-  }
-});
-    
-allowedWordsButton.addEventListener("click", openAllowedWordsModal);
-closeAllowedWordsButton.addEventListener("click", closeAllowedWordsModal);
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      }
+    }
 
-allowedWordsModal.addEventListener("click", event => {
-  if (event.target === allowedWordsModal) {
-    closeAllowedWordsModal();
-  }
-});
+    transcribeButton.addEventListener("click", async () => {
+      try {
+        if (isRecording) {
+          stopRecording();
+        } else {
+          await startRecording();
+        }
+      } catch (error) {
+        console.error("Recording error:", error);
+        showSystemMessage(error.message || "Could not start recording.");
 
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    closeAllowedWordsModal();
-  }
-});
-
-    addMessage("hello there how are you today", "bot");
-    
+        isRecording = false;
+        transcribeButton.classList.remove("recording");
+        transcribeButton.textContent = "🎤";
+        input.placeholder = "Ask something...";
+      }
+    });
   </script>
 </body>
 </html>
