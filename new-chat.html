@@ -425,6 +425,10 @@
   background: rgba(255, 255, 255, 0.12);
   color: #d1d5db;
 }
+
+    .word-unit.active-word .main-word {
+  color: #60a5fa;
+}
   </style>
 </head>
 
@@ -612,28 +616,22 @@ let currentAudio = null;
       return /[\p{L}\p{M}]/u.test(part);
     }
 
-    function renderBotReply(text, totalDurationMs = null) {
+function normalizeForSync(text) {
+  return text
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^\p{L}\p{M}\p{N}]/gu, "")
+    .trim();
+}
+
+function renderBotReplyWithTimestamps(text, timestampWords, audio) {
   clearAnimationTimers();
   translationCache.clear();
   wordDisplay.innerHTML = "";
   wordDisplay.setAttribute("dir", "auto");
 
   const parts = splitTextIntoParts(text);
-
-  const wordParts = parts.filter(part => isClickableWord(part));
-  const wordCount = Math.max(wordParts.length, 1);
-
-  let wordDelay;
-
-  if (totalDurationMs) {
-    // Spread visible words across the actual audio duration.
-    // The 0.88 gives the last words time to appear before the audio fully ends.
-    wordDelay = Math.max(70, (totalDurationMs * 0.88) / wordCount);
-  } else {
-    wordDelay = getWordDelay();
-  }
-
-  let wordIndex = 0;
+  const visibleWordUnits = [];
 
   for (const part of parts) {
     if (/^\s+$/.test(part)) {
@@ -661,26 +659,77 @@ let currentAudio = null;
       });
 
       wordDisplay.appendChild(unit);
-
-      const timer = setTimeout(() => {
-        unit.classList.add("visible");
-      }, wordIndex * wordDelay);
-
-      animationTimers.push(timer);
-      wordIndex += 1;
+      visibleWordUnits.push(unit);
     } else {
       const punct = document.createElement("span");
       punct.className = "punct";
       punct.textContent = part;
       wordDisplay.appendChild(punct);
-
-      const timer = setTimeout(() => {
-        punct.classList.add("visible");
-      }, Math.max(0, (wordIndex - 1) * wordDelay));
-
-      animationTimers.push(timer);
     }
   }
+
+  const cleanTimestampWords = timestampWords
+    .filter(item => item && item.word)
+    .map(item => ({
+      word: normalizeForSync(item.word),
+      start: Number(item.start),
+      end: Number(item.end)
+    }))
+    .filter(item => item.word && Number.isFinite(item.start));
+
+  let timestampIndex = 0;
+
+  for (const unit of visibleWordUnits) {
+    const displayedWord = normalizeForSync(unit.dataset.word || "");
+
+    while (
+      timestampIndex < cleanTimestampWords.length &&
+      cleanTimestampWords[timestampIndex].word !== displayedWord
+    ) {
+      timestampIndex++;
+    }
+
+    const timing = cleanTimestampWords[timestampIndex];
+
+    if (timing) {
+      unit.dataset.start = String(timing.start);
+      unit.dataset.end = String(timing.end);
+      timestampIndex++;
+    }
+  }
+
+  function syncFrame() {
+    const currentTime = audio.currentTime;
+
+    for (const unit of visibleWordUnits) {
+      const start = Number(unit.dataset.start);
+      const end = Number(unit.dataset.end);
+
+      if (!Number.isFinite(start)) continue;
+
+      if (currentTime >= start) {
+        unit.classList.add("visible");
+      }
+
+      if (
+        currentTime >= start &&
+        Number.isFinite(end) &&
+        currentTime <= end + 0.08
+      ) {
+        unit.classList.add("active-word");
+      } else {
+        unit.classList.remove("active-word");
+      }
+    }
+
+    if (!audio.paused && !audio.ended) {
+      requestAnimationFrame(syncFrame);
+    }
+  }
+
+  audio.addEventListener("play", () => {
+    requestAnimationFrame(syncFrame);
+  }, { once: true });
 }
 
     function waitForAudioMetadata(audio) {
@@ -1036,6 +1085,65 @@ function getAudioPlaybackRate() {
   if (speed <= 6) return 1.0;
   if (speed <= 8) return 1.08;
   return 1.16;
+}
+
+    async function fetchSyncedSpeech(text) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      action: "speak-synced",
+      text,
+      language: languageSelect.value,
+      speedLabel: getSpeechSpeedLabel()
+    })
+  });
+
+  const rawText = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Speech returned non-JSON response: ${rawText}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || `Speech failed with status ${response.status}`);
+  }
+
+  return data;
+}
+
+    async function prepareAndPlayBotReply(text) {
+  if (!voiceEnabled) {
+    renderBotReply(text);
+    return;
+  }
+
+  try {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+
+    const speech = await fetchSyncedSpeech(text);
+
+    const audioUrl = `data:${speech.mimeType || "audio/mpeg"};base64,${speech.audioBase64}`;
+    currentAudio = new Audio(audioUrl);
+
+    renderBotReplyWithTimestamps(text, speech.words || [], currentAudio);
+
+    await currentAudio.play();
+  } catch (error) {
+    console.error("Synced speech error:", error);
+    showSystemMessage(error.message || "Could not play synced speech.");
+    renderBotReply(text);
+  }
 }
   </script>
 </body>
