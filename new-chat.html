@@ -344,6 +344,40 @@
   font-weight: bold;
   outline: none;
 }
+
+.clickable-word {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 2px;
+}
+
+.clickable-word:hover {
+  background: rgba(37, 99, 235, 0.15);
+  text-decoration: underline;
+}
+
+.translation-popover {
+  position: fixed;
+  z-index: 2000;
+  max-width: 260px;
+  background: #111827;
+  color: white;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.translation-popover strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.translation-popover .translation-small {
+  color: #d1d5db;
+  font-size: 0.78rem;
+  margin-top: 6px;
+}
     
   </style>
 </head>
@@ -357,6 +391,24 @@
       <label class="language-picker">
   Chat language:
   <select id="languageSelect">
+    <option value="English" selected>English</option>
+    <option value="Hebrew">Hebrew</option>
+    <option value="Spanish">Spanish</option>
+    <option value="French">French</option>
+    <option value="German">German</option>
+    <option value="Arabic">Arabic</option>
+    <option value="Russian">Russian</option>
+    <option value="Italian">Italian</option>
+    <option value="Portuguese">Portuguese</option>
+    <option value="Chinese">Chinese</option>
+    <option value="Japanese">Japanese</option>
+    <option value="Korean">Korean</option>
+  </select>
+</label>
+
+      <label class="language-picker">
+  Fluent language:
+  <select id="fluentLanguageSelect">
     <option value="English" selected>English</option>
     <option value="Hebrew">Hebrew</option>
     <option value="Spanish">Spanish</option>
@@ -433,6 +485,10 @@
     const input = document.getElementById("userInput");
     const sendButton = document.getElementById("sendButton");
     const languageSelect = document.getElementById("languageSelect");
+    const fluentLanguageSelect = document.getElementById("fluentLanguageSelect");
+
+    let activeTranslationPopover = null;
+    const translationCache = new Map();
 
     const transcribeButton = document.getElementById("transcribeButton");
 
@@ -456,30 +512,187 @@
     let cachedAllowedWords = null;
     let latestRejectedDrafts = [];
 
-    function addMessage(text, type) {
+ function addMessage(text, type) {
   const div = document.createElement("div");
   div.className = `message ${type}`;
 
-  const textSpan = document.createElement("span");
-  textSpan.textContent = text;
-  div.appendChild(textSpan);
-
   if (type === "bot") {
-    const replayButton = document.createElement("button");
-    replayButton.type = "button";
-    replayButton.className = "replay-button";
-    replayButton.textContent = "🔊";
-    replayButton.title = "Hear again";
+    const textSpan = document.createElement("span");
+    renderClickableBotText(text, textSpan);
+    div.appendChild(textSpan);
 
-    replayButton.addEventListener("click", () => {
-      speakText(text);
-    });
+    if (typeof speakText === "function") {
+      const replayButton = document.createElement("button");
+      replayButton.type = "button";
+      replayButton.className = "replay-button";
+      replayButton.textContent = "🔊";
+      replayButton.title = "Hear again";
 
-    div.appendChild(replayButton);
+      replayButton.addEventListener("click", event => {
+        event.stopPropagation();
+        speakText(text);
+      });
+
+      div.appendChild(replayButton);
+    }
+  } else {
+    div.textContent = text;
   }
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
+}
+
+    async function translateClickedWord(word, sentence, x, y) {
+  const cleanWord = word.trim();
+  if (!cleanWord) return;
+
+  const chatLanguage = languageSelect.value;
+  const fluentLanguage = fluentLanguageSelect.value;
+
+  const cacheKey = `${cleanWord}|${chatLanguage}|${fluentLanguage}|${sentence}`;
+
+  showTranslationPopover(x, y, cleanWord, "Translating...", fluentLanguage);
+
+  if (translationCache.has(cacheKey)) {
+    showTranslationPopover(
+      x,
+      y,
+      cleanWord,
+      translationCache.get(cacheKey),
+      fluentLanguage
+    );
+    return;
+  }
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({
+        action: "translate-word",
+        word: cleanWord,
+        sentence,
+        chatLanguage,
+        fluentLanguage
+      })
+    });
+
+    const rawText = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      throw new Error(`Translation returned non-JSON response: ${rawText}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || `Translation failed with status ${response.status}`);
+    }
+
+    const translation = data.translation || "";
+    translationCache.set(cacheKey, translation);
+
+    showTranslationPopover(x, y, cleanWord, translation, fluentLanguage);
+  } catch (error) {
+    showTranslationPopover(
+      x,
+      y,
+      cleanWord,
+      error.message || "Translation failed.",
+      fluentLanguage
+    );
+  }
+}
+
+function showTranslationPopover(x, y, word, translation, fluentLanguage) {
+  closeTranslationPopover();
+
+  const popover = document.createElement("div");
+  popover.className = "translation-popover";
+
+  const wordLine = document.createElement("strong");
+  wordLine.textContent = word;
+
+  const translationLine = document.createElement("div");
+  translationLine.textContent = translation;
+
+  const small = document.createElement("div");
+  small.className = "translation-small";
+  small.textContent = `Into ${fluentLanguage}`;
+
+  popover.appendChild(wordLine);
+  popover.appendChild(translationLine);
+  popover.appendChild(small);
+
+  document.body.appendChild(popover);
+
+  const margin = 12;
+  const rect = popover.getBoundingClientRect();
+
+  let left = x + margin;
+  let top = y + margin;
+
+  if (left + rect.width > window.innerWidth) {
+    left = window.innerWidth - rect.width - margin;
+  }
+
+  if (top + rect.height > window.innerHeight) {
+    top = y - rect.height - margin;
+  }
+
+  popover.style.left = `${Math.max(margin, left)}px`;
+  popover.style.top = `${Math.max(margin, top)}px`;
+
+  activeTranslationPopover = popover;
+}
+
+function closeTranslationPopover() {
+  if (activeTranslationPopover) {
+    activeTranslationPopover.remove();
+    activeTranslationPopover = null;
+  }
+}
+
+document.addEventListener("click", closeTranslationPopover);
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeTranslationPopover();
+  }
+});
+
+    function renderClickableBotText(text, container) {
+  container.innerHTML = "";
+
+  const parts = text.split(/(\s+|[.,!?;:()[\]{}"“”‘’])/g);
+
+  parts.forEach(part => {
+    if (!part) return;
+
+    const isWord = /[\p{L}]/u.test(part);
+
+    if (!isWord || /^\s+$/.test(part)) {
+      container.appendChild(document.createTextNode(part));
+      return;
+    }
+
+    const button = document.createElement("span");
+    button.className = "clickable-word";
+    button.textContent = part;
+    button.title = "Click to translate";
+
+    button.addEventListener("click", event => {
+      event.stopPropagation();
+      translateClickedWord(part, text, event.clientX, event.clientY);
+    });
+
+    container.appendChild(button);
+  });
 }
 
     function addSystemMessage(text) {
