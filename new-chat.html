@@ -410,6 +410,21 @@
         padding: 0 18px;
       }
     }
+
+    .voice-toggle-button {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 13px;
+  background: white;
+  color: black;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.voice-toggle-button.off {
+  background: rgba(255, 255, 255, 0.12);
+  color: #d1d5db;
+}
   </style>
 </head>
 
@@ -468,6 +483,13 @@
           <span id="speedLabel" class="speed-number">6</span>
         </div>
       </div>
+
+      <div class="control-card">
+        <label>Voice</label>
+          <button id="voiceToggleButton" class="voice-toggle-button" type="button">
+          Voice On
+          </button>
+      </div>
     </header>
 
     <main class="stage">
@@ -518,19 +540,50 @@
     const messages = [];
     const translationCache = new Map();
 
+const voiceToggleButton = document.getElementById("voiceToggleButton");
+
+let voiceEnabled = true;
+let currentAudio = null;
+    
     let animationTimers = [];
     let mediaRecorder = null;
     let recordedChunks = [];
     let isRecording = false;
 
     function getWordDelay() {
-      const speed = Number(speedSlider.value);
-      return 430 - speed * 36;
-    }
+  const speed = Number(speedSlider.value);
+
+  const delays = {
+    1: 520,
+    2: 460,
+    3: 400,
+    4: 340,
+    5: 290,
+    6: 240,
+    7: 200,
+    8: 165,
+    9: 135,
+    10: 110
+  };
+
+  return delays[speed] || 240;
+}
 
     speedSlider.addEventListener("input", () => {
       speedLabel.textContent = speedSlider.value;
     });
+
+    voiceToggleButton.addEventListener("click", () => {
+  voiceEnabled = !voiceEnabled;
+
+  if (!voiceEnabled && currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  }
+
+  voiceToggleButton.textContent = voiceEnabled ? "Voice On" : "Voice Off";
+  voiceToggleButton.classList.toggle("off", !voiceEnabled);
+});
 
     function showSystemMessage(text) {
       const existing = document.querySelector(".system-message");
@@ -723,6 +776,7 @@
       });
 
       renderBotReply(data.reply);
+      speakBotReply(data.reply);
     }
 
     form.addEventListener("submit", async event => {
@@ -868,6 +922,78 @@
         input.placeholder = "Ask something...";
       }
     });
+
+    function getSpeechSpeedLabel() {
+  const speed = Number(speedSlider.value);
+
+  if (speed <= 2) return "very slow";
+  if (speed <= 4) return "slow";
+  if (speed <= 6) return "normal";
+  if (speed <= 8) return "fast";
+  return "very fast";
+}
+
+async function fetchSpeechAudio(text) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      action: "speak",
+      text,
+      language: languageSelect.value,
+      speedLabel: getSpeechSpeedLabel()
+    })
+  });
+
+  const rawText = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Speech returned non-JSON response: ${rawText}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || `Speech failed with status ${response.status}`);
+  }
+
+  const audioUrl = `data:${data.mimeType || "audio/mpeg"};base64,${data.audioBase64}`;
+  return new Audio(audioUrl);
+}
+
+async function speakBotReply(text) {
+  if (!voiceEnabled) return;
+
+  try {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+
+    currentAudio = await fetchSpeechAudio(text);
+    currentAudio.playbackRate = getAudioPlaybackRate();
+    await currentAudio.play();
+  } catch (error) {
+    console.error("Speech playback error:", error);
+    showSystemMessage(error.message || "Could not play speech.");
+  }
+}
+
+function getAudioPlaybackRate() {
+  const speed = Number(speedSlider.value);
+
+  // Keep this moderate so the voice still sounds natural.
+  if (speed <= 2) return 0.78;
+  if (speed <= 4) return 0.9;
+  if (speed <= 6) return 1.0;
+  if (speed <= 8) return 1.12;
+  return 1.22;
+}
   </script>
 </body>
 </html>
