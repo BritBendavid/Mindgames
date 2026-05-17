@@ -306,7 +306,7 @@
   background: #d1d5db;
 }
 
-.transcribe-button.listening {
+.transcribe-button.recording {
   background: #dc2626;
   color: white;
   animation: pulse 1s infinite;
@@ -398,11 +398,9 @@
 
     const transcribeButton = document.getElementById("transcribeButton");
 
-    const SpeechRecognition =
-  window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    let recognition = null;
-    let isListening = false;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
 
     const allowedWordsButton = document.getElementById("allowedWordsButton");
     const allowedWordsModal = document.getElementById("allowedWordsModal");
@@ -664,80 +662,127 @@ document.addEventListener("keydown", event => {
   chat.scrollTop = chat.scrollHeight;
 }
 
-    function setupSpeechRecognition() {
-  if (!SpeechRecognition) {
-    transcribeButton.disabled = true;
-    transcribeButton.textContent = "🚫";
-    transcribeButton.title = "Speech input is not supported in this browser.";
+    async function transcribeAudioBlob(audioBlob) {
+  const formData = new FormData();
+
+  formData.append("audio", audioBlob, "chunk.webm");
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: formData
+  });
+
+  const rawText = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Transcription returned non-JSON response: ${rawText}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || `Transcription failed with status ${response.status}`);
+  }
+
+  const transcript =
+    data.text ||
+    data.transcript ||
+    data.transcription ||
+    "";
+
+  if (!transcript.trim()) {
+    throw new Error("No transcript was returned.");
+  }
+
+  return transcript.trim();
+}
+
+async function startRecording() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    addSystemMessage("Audio recording is not supported in this browser.");
     return;
   }
 
-  recognition = new SpeechRecognition();
-  recognition.lang = "en-US";
-  recognition.interimResults = true;
-  recognition.continuous = false;
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  let finalTranscript = "";
+  recordedChunks = [];
 
-  recognition.addEventListener("start", () => {
-    isListening = true;
-    finalTranscript = "";
-    transcribeButton.classList.add("listening");
-    transcribeButton.textContent = "●";
-    input.placeholder = "Listening...";
+  mediaRecorder = new MediaRecorder(stream, {
+    mimeType: MediaRecorder.isTypeSupported("audio/webm")
+      ? "audio/webm"
+      : undefined
   });
 
-  recognition.addEventListener("result", event => {
-    let interimTranscript = "";
-
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const transcript = event.results[i][0].transcript;
-
-      if (event.results[i].isFinal) {
-        finalTranscript += transcript + " ";
-      } else {
-        interimTranscript += transcript;
-      }
-    }
-
-    input.value = (finalTranscript + interimTranscript).trim();
-  });
-
-  recognition.addEventListener("end", () => {
-    isListening = false;
-    transcribeButton.classList.remove("listening");
-    transcribeButton.textContent = "🎤";
-    input.placeholder = "Say something...";
-    input.focus();
-  });
-
-  recognition.addEventListener("error", event => {
-    isListening = false;
-    transcribeButton.classList.remove("listening");
-    transcribeButton.textContent = "🎤";
-    input.placeholder = "Say something...";
-
-    if (event.error === "not-allowed") {
-      addSystemMessage("Microphone access was blocked.");
-    } else if (event.error === "no-speech") {
-      addSystemMessage("No speech was heard.");
-    } else {
-      addSystemMessage(`Speech input error: ${event.error}`);
+  mediaRecorder.addEventListener("dataavailable", event => {
+    if (event.data && event.data.size > 0) {
+      recordedChunks.push(event.data);
     }
   });
 
-  transcribeButton.addEventListener("click", () => {
-    if (!recognition) return;
+  mediaRecorder.addEventListener("stop", async () => {
+    transcribeButton.disabled = true;
+    transcribeButton.textContent = "…";
+    input.placeholder = "Transcribing...";
 
-    if (isListening) {
-      recognition.stop();
-    } else {
-      recognition.start();
+    try {
+      const audioBlob = new Blob(recordedChunks, {
+        type: mediaRecorder.mimeType || "audio/webm"
+      });
+
+      const transcript = await transcribeAudioBlob(audioBlob);
+
+      input.value = transcript;
+      input.focus();
+    } catch (error) {
+      console.error("Transcription error:", error);
+      addSystemMessage(error.message || "Transcription failed.");
+    } finally {
+      stream.getTracks().forEach(track => track.stop());
+
+      isRecording = false;
+      transcribeButton.disabled = false;
+      transcribeButton.classList.remove("recording");
+      transcribeButton.textContent = "🎤";
+      input.placeholder = "Say something...";
     }
   });
+
+  mediaRecorder.start();
+
+  isRecording = true;
+  transcribeButton.classList.add("recording");
+  transcribeButton.textContent = "■";
+  input.placeholder = "Recording... click again to stop";
 }
 
-setupSpeechRecognition();
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === "recording") {
+    mediaRecorder.stop();
+  }
+}
+
+transcribeButton.addEventListener("click", async () => {
+  try {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      await startRecording();
+    }
+  } catch (error) {
+    console.error("Recording error:", error);
+    addSystemMessage(error.message || "Could not start recording.");
+
+    isRecording = false;
+    transcribeButton.classList.remove("recording");
+    transcribeButton.textContent = "🎤";
+    input.placeholder = "Say something...";
+  }
+});
     
 allowedWordsButton.addEventListener("click", openAllowedWordsModal);
 closeAllowedWordsButton.addEventListener("click", closeAllowedWordsModal);
