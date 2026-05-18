@@ -554,24 +554,16 @@ let currentAudio = null;
     let recordedChunks = [];
     let isRecording = false;
 
-    let audioUnlocked = false;
+    let audioContext = null;
+let scheduledSources = [];
+let currentPlaybackToken = 0;
 
-function unlockAudio() {
-  if (audioUnlocked) return;
-
-  const silentAudio = new Audio(
-    "data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA"
-  );
-
-  silentAudio.volume = 0;
-
-  silentAudio.play()
-    .then(() => {
-      audioUnlocked = true;
-    })
-    .catch(() => {
-      // Some browsers may still block this, but the real audio can try later.
-    });
+async function unlockAudio() {
+  try {
+    await unlockAudioContext();
+  } catch {
+    // Browser may still require another user gesture.
+  }
 }
 
     function getWordDelay() {
@@ -702,7 +694,7 @@ function renderBotReply(text) {
   }
 }
 
-function renderBotReplyWithTimestamps(text, timestampWords, audio) {
+function renderBotReplyWithSchedule(text, timestampWords, wordSchedule) {
   clearAnimationTimers();
   translationCache.clear();
   wordDisplay.innerHTML = "";
@@ -746,73 +738,56 @@ function renderBotReplyWithTimestamps(text, timestampWords, audio) {
     }
   }
 
-const cleanTimestampWords = timestampWords
-  .filter(item => item && item.word)
-  .map(item => ({
-    word: normalizeForSync(item.word),
-    start: Number(item.start),
-    end: Number(item.end)
-  }))
-  .filter(item => item.word && Number.isFinite(item.start));
+  visibleWordUnits.forEach((unit, index) => {
+    const timing = wordSchedule[index];
 
-visibleWordUnits.forEach((unit, index) => {
-  const timing = cleanTimestampWords[index];
+    if (timing) {
+      unit.dataset.playStart = String(timing.playStart);
+      unit.dataset.playEnd = String(timing.playEnd);
+    } else {
+      unit.dataset.playStart = String(index * 0.4);
+      unit.dataset.playEnd = String(index * 0.4 + 0.3);
+    }
+  });
 
-  if (timing) {
-    unit.dataset.start = String(timing.start);
-    unit.dataset.end = String(timing.end);
-  } else {
-    // Fallback if timestamps are missing for some words.
-    unit.dataset.start = String(index * 0.35);
-    unit.dataset.end = String(index * 0.35 + 0.3);
-  }
-});
-  
+  const startTime = performance.now();
+
   function syncFrame() {
-    const currentTime = audio.currentTime;
+    const elapsed = (performance.now() - startTime) / 1000;
 
     for (const unit of visibleWordUnits) {
-      const start = Number(unit.dataset.start);
-      const end = Number(unit.dataset.end);
+      const start = Number(unit.dataset.playStart);
+      const end = Number(unit.dataset.playEnd);
 
       if (!Number.isFinite(start)) continue;
 
-      if (currentTime >= start) {
+      if (elapsed >= start) {
         unit.classList.add("visible");
       }
 
-      if (
-        currentTime >= start &&
-        Number.isFinite(end) &&
-        currentTime <= end + 0.08
-      ) {
+      if (elapsed >= start && elapsed <= end + 0.04) {
         unit.classList.add("active-word");
       } else {
         unit.classList.remove("active-word");
       }
     }
 
-    if (!audio.paused && !audio.ended) {
+    const lastEnd =
+      wordSchedule.length > 0
+        ? wordSchedule[wordSchedule.length - 1].playEnd
+        : 0;
+
+    if (elapsed <= lastEnd + 0.5) {
       requestAnimationFrame(syncFrame);
+    } else {
+      visibleWordUnits.forEach(unit => {
+        unit.classList.add("visible");
+        unit.classList.remove("active-word");
+      });
     }
   }
 
-  audio.addEventListener("play", () => {
   requestAnimationFrame(syncFrame);
-}, { once: true });
-
-audio.addEventListener("ended", () => {
-  visibleWordUnits.forEach(unit => {
-    unit.classList.add("visible");
-    unit.classList.remove("active-word");
-  });
-});
-
-  setTimeout(() => {
-  if (audio.paused) {
-    renderBotReply(text);
-  }
-}, 800);
 }
 
     function waitForAudioMetadata(audio) {
@@ -1139,28 +1114,26 @@ async function prepareAndPlayBotReply(text) {
   }
 
   try {
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-    }
+    stopScheduledSpeech();
+    await unlockAudioContext();
 
     const speech = await fetchSyncedSpeech(text);
 
-    const audioUrl = `data:${speech.mimeType || "audio/mpeg"};base64,${speech.audioBase64}`;
-    currentAudio = new Audio(audioUrl);
+    const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
+    const context = getAudioContext();
+    const audioBuffer = await context.decodeAudioData(arrayBuffer);
 
-    renderBotReplyWithTimestamps(text, speech.words || [], currentAudio);
+    const wordSchedule = buildWordAudioSchedule(
+      speech.words || [],
+      audioBuffer.duration
+    );
 
-    try {
-      await currentAudio.play();
-    } catch (playError) {
-      console.error("Audio play was blocked:", playError);
-      showSystemMessage("Tap the page once, then send again to allow audio.");
-    }
+    renderBotReplyWithSchedule(text, speech.words || [], wordSchedule);
 
+    playScheduledWordAudio(audioBuffer, wordSchedule);
   } catch (error) {
     console.error("Synced speech error:", error);
-    showSystemMessage(error.message || "Could not prepare synced speech.");
+    showSystemMessage(error.message || "Could not play synced speech.");
     renderBotReply(text);
   }
 }
@@ -1233,6 +1206,140 @@ function getAudioPlaybackRate() {
     renderBotReply(text);
   }
 }
+
+function getAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  return audioContext;
+}
+
+async function unlockAudioContext() {
+  const context = getAudioContext();
+
+  if (context.state === "suspended") {
+    await context.resume();
+  }
+}
+
+function base64ToArrayBuffer(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return bytes.buffer;
+}
+
+function stopScheduledSpeech() {
+  scheduledSources.forEach(source => {
+    try {
+      source.stop();
+    } catch {
+      // Already stopped.
+    }
+  });
+
+  scheduledSources = [];
+  currentPlaybackToken++;
+}
+
+function getWordPauseSeconds() {
+  const speed = Number(speedSlider.value);
+
+  const pauses = {
+    1: 0.75,
+    2: 0.60,
+    3: 0.48,
+    4: 0.36,
+    5: 0.26,
+    6: 0.18,
+    7: 0.12,
+    8: 0.08,
+    9: 0.04,
+    10: 0.00
+  };
+
+  return pauses[speed] ?? 0.18;
+}
+
+function buildWordAudioSchedule(timestampWords, audioDuration) {
+  const pause = getWordPauseSeconds();
+  const padding = 0.025;
+
+  const cleanWords = timestampWords
+    .filter(item => item && item.word)
+    .map(item => ({
+      word: item.word,
+      start: Number(item.start),
+      end: Number(item.end)
+    }))
+    .filter(item =>
+      Number.isFinite(item.start) &&
+      Number.isFinite(item.end) &&
+      item.end > item.start
+    );
+
+  const schedule = [];
+  let playhead = 0;
+
+  cleanWords.forEach((item, index) => {
+    const sourceStart = Math.max(0, item.start - padding);
+    const sourceEnd = Math.min(audioDuration, item.end + padding);
+    const duration = Math.max(0.03, sourceEnd - sourceStart);
+
+    schedule.push({
+      word: item.word,
+      index,
+      sourceStart,
+      sourceEnd,
+      duration,
+      playStart: playhead,
+      playEnd: playhead + duration
+    });
+
+    playhead += duration + pause;
+  });
+
+  return schedule;
+}
+
+function playScheduledWordAudio(audioBuffer, wordSchedule) {
+  const context = getAudioContext();
+  const token = currentPlaybackToken;
+  const startAt = context.currentTime + 0.08;
+
+  scheduledSources = [];
+
+  wordSchedule.forEach(item => {
+    const source = context.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(context.destination);
+
+    source.start(
+      startAt + item.playStart,
+      item.sourceStart,
+      item.duration
+    );
+
+    scheduledSources.push(source);
+  });
+
+  const totalDuration =
+    wordSchedule.length > 0
+      ? wordSchedule[wordSchedule.length - 1].playEnd
+      : 0;
+
+  setTimeout(() => {
+    if (token === currentPlaybackToken) {
+      scheduledSources = [];
+    }
+  }, totalDuration * 1000 + 1000);
+}
+    
   </script>
 </body>
 </html>
