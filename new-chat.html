@@ -558,6 +558,121 @@ let currentAudio = null;
 let scheduledSources = [];
 let currentPlaybackToken = 0;
 
+    function getSpeakableWords(text) {
+  return text.match(/[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)?|[\p{N}]+/gu) || [];
+}
+
+    async function fetchIndividualWordSpeech(text) {
+  const words = getSpeakableWords(text);
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      action: "speak-words",
+      words,
+      language: languageSelect.value
+    })
+  });
+
+  const rawText = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Word speech returned non-JSON response: ${rawText}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || `Word speech failed with status ${response.status}`);
+  }
+
+  return data.clips || [];
+}
+
+    async function buildIndividualWordSchedule(clips) {
+  const context = getAudioContext();
+  const pause = getWordPauseSeconds();
+
+  const schedule = [];
+  let playhead = 0;
+
+  for (let i = 0; i < clips.length; i++) {
+    const clip = clips[i];
+    const arrayBuffer = base64ToArrayBuffer(clip.audioBase64);
+    const audioBuffer = await context.decodeAudioData(arrayBuffer);
+
+    schedule.push({
+      word: clip.word,
+      index: i,
+      audioBuffer,
+      duration: audioBuffer.duration,
+      playStart: playhead,
+      playEnd: playhead + audioBuffer.duration
+    });
+
+    playhead += audioBuffer.duration + pause;
+  }
+
+  return schedule;
+}
+
+    function playIndividualWordAudio(wordSchedule) {
+  const context = getAudioContext();
+  const token = currentPlaybackToken;
+  const startAt = context.currentTime + 0.08;
+
+  scheduledSources = [];
+
+  wordSchedule.forEach(item => {
+    const source = context.createBufferSource();
+    source.buffer = item.audioBuffer;
+    source.connect(context.destination);
+
+    source.start(startAt + item.playStart);
+
+    scheduledSources.push(source);
+  });
+
+  const totalDuration =
+    wordSchedule.length > 0
+      ? wordSchedule[wordSchedule.length - 1].playEnd
+      : 0;
+
+  setTimeout(() => {
+    if (token === currentPlaybackToken) {
+      scheduledSources = [];
+    }
+  }, totalDuration * 1000 + 1000);
+}
+
+    async function prepareAndPlayBotReplyIndividualWords(text) {
+  if (!voiceEnabled) {
+    renderBotReply(text);
+    return;
+  }
+
+  try {
+    stopScheduledSpeech();
+    await unlockAudioContext();
+
+    const clips = await fetchIndividualWordSpeech(text);
+    const wordSchedule = await buildIndividualWordSchedule(clips);
+
+    renderBotReplyWithSchedule(text, [], wordSchedule);
+    playIndividualWordAudio(wordSchedule);
+  } catch (error) {
+    console.error("Individual word speech error:", error);
+    showSystemMessage(error.message || "Could not play individual word speech.");
+    renderBotReply(text);
+  }
+}
+
 async function unlockAudio() {
   try {
     await unlockAudioContext();
@@ -914,7 +1029,7 @@ function renderBotReplyWithSchedule(text, timestampWords, wordSchedule) {
         content: data.reply
       });
 
-      await prepareAndPlayBotReply(data.reply);
+      await prepareAndPlayBotReplyIndividualWords(data.reply);
     }
 
     form.addEventListener("submit", async event => {
