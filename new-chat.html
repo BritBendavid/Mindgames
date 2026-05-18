@@ -595,7 +595,60 @@ let currentPlaybackToken = 0;
   return data.clips || [];
 }
 
-    async function buildIndividualWordSchedule(clips) {
+function trimAudioBufferSilence(audioBuffer, threshold = 0.012, paddingSeconds = 0.015) {
+  const sampleRate = audioBuffer.sampleRate;
+  const numberOfChannels = audioBuffer.numberOfChannels;
+  const length = audioBuffer.length;
+
+  let firstSound = 0;
+  let lastSound = length - 1;
+
+  function sampleIsSound(index) {
+    for (let channel = 0; channel < numberOfChannels; channel++) {
+      const data = audioBuffer.getChannelData(channel);
+      if (Math.abs(data[index]) > threshold) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  while (firstSound < length && !sampleIsSound(firstSound)) {
+    firstSound++;
+  }
+
+  while (lastSound > firstSound && !sampleIsSound(lastSound)) {
+    lastSound--;
+  }
+
+  const paddingSamples = Math.floor(paddingSeconds * sampleRate);
+
+  const start = Math.max(0, firstSound - paddingSamples);
+  const end = Math.min(length, lastSound + paddingSamples);
+
+  const trimmedLength = Math.max(1, end - start);
+  const context = getAudioContext();
+
+  const trimmedBuffer = context.createBuffer(
+    numberOfChannels,
+    trimmedLength,
+    sampleRate
+  );
+
+  for (let channel = 0; channel < numberOfChannels; channel++) {
+    const oldData = audioBuffer.getChannelData(channel);
+    const newData = trimmedBuffer.getChannelData(channel);
+
+    for (let i = 0; i < trimmedLength; i++) {
+      newData[i] = oldData[start + i] || 0;
+    }
+  }
+
+  return trimmedBuffer;
+}
+
+async function buildIndividualWordSchedule(clips) {
   const context = getAudioContext();
   const pause = getWordPauseSeconds();
 
@@ -605,7 +658,9 @@ let currentPlaybackToken = 0;
   for (let i = 0; i < clips.length; i++) {
     const clip = clips[i];
     const arrayBuffer = base64ToArrayBuffer(clip.audioBase64);
-    const audioBuffer = await context.decodeAudioData(arrayBuffer);
+    const rawBuffer = await context.decodeAudioData(arrayBuffer);
+
+    const audioBuffer = trimAudioBufferSilence(rawBuffer);
 
     schedule.push({
       word: clip.word,
@@ -1339,19 +1394,19 @@ function getWordPauseSeconds() {
   const speed = Number(speedSlider.value);
 
   const pauses = {
-    1: 0.75,
-    2: 0.60,
-    3: 0.48,
-    4: 0.36,
-    5: 0.26,
-    6: 0.18,
-    7: 0.12,
-    8: 0.08,
-    9: 0.04,
-    10: 0.00
+    1: 1.20,
+    2: 0.95,
+    3: 0.72,
+    4: 0.52,
+    5: 0.35,
+    6: 0.22,
+    7: 0.13,
+    8: 0.07,
+    9: 0.025,
+    10: 0
   };
 
-  return pauses[speed] ?? 0.18;
+  return pauses[speed] ?? 0.22;
 }
 
 function buildWordAudioSchedule(timestampWords, audioDuration) {
