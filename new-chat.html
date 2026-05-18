@@ -1180,33 +1180,6 @@ function getAudioPlaybackRate() {
   return data;
 }
 
-    async function prepareAndPlayBotReply(text) {
-  if (!voiceEnabled) {
-    renderBotReply(text);
-    return;
-  }
-
-  try {
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-    }
-
-    const speech = await fetchSyncedSpeech(text);
-
-    const audioUrl = `data:${speech.mimeType || "audio/mpeg"};base64,${speech.audioBase64}`;
-    currentAudio = new Audio(audioUrl);
-
-    renderBotReplyWithTimestamps(text, speech.words || [], currentAudio);
-
-    await currentAudio.play();
-  } catch (error) {
-    console.error("Synced speech error:", error);
-    showSystemMessage(error.message || "Could not play synced speech.");
-    renderBotReply(text);
-  }
-}
-
 function getAudioContext() {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
