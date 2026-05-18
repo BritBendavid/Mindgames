@@ -554,6 +554,26 @@ let currentAudio = null;
     let recordedChunks = [];
     let isRecording = false;
 
+    let audioUnlocked = false;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+
+  const silentAudio = new Audio(
+    "data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA"
+  );
+
+  silentAudio.volume = 0;
+
+  silentAudio.play()
+    .then(() => {
+      audioUnlocked = true;
+    })
+    .catch(() => {
+      // Some browsers may still block this, but the real audio can try later.
+    });
+}
+
     function getWordDelay() {
   const speed = Number(speedSlider.value);
 
@@ -726,36 +746,28 @@ function renderBotReplyWithTimestamps(text, timestampWords, audio) {
     }
   }
 
-  const cleanTimestampWords = timestampWords
-    .filter(item => item && item.word)
-    .map(item => ({
-      word: normalizeForSync(item.word),
-      start: Number(item.start),
-      end: Number(item.end)
-    }))
-    .filter(item => item.word && Number.isFinite(item.start));
+const cleanTimestampWords = timestampWords
+  .filter(item => item && item.word)
+  .map(item => ({
+    word: normalizeForSync(item.word),
+    start: Number(item.start),
+    end: Number(item.end)
+  }))
+  .filter(item => item.word && Number.isFinite(item.start));
 
-  let timestampIndex = 0;
+visibleWordUnits.forEach((unit, index) => {
+  const timing = cleanTimestampWords[index];
 
-  for (const unit of visibleWordUnits) {
-    const displayedWord = normalizeForSync(unit.dataset.word || "");
-
-    while (
-      timestampIndex < cleanTimestampWords.length &&
-      cleanTimestampWords[timestampIndex].word !== displayedWord
-    ) {
-      timestampIndex++;
-    }
-
-    const timing = cleanTimestampWords[timestampIndex];
-
-    if (timing) {
-      unit.dataset.start = String(timing.start);
-      unit.dataset.end = String(timing.end);
-      timestampIndex++;
-    }
+  if (timing) {
+    unit.dataset.start = String(timing.start);
+    unit.dataset.end = String(timing.end);
+  } else {
+    // Fallback if timestamps are missing for some words.
+    unit.dataset.start = String(index * 0.35);
+    unit.dataset.end = String(index * 0.35 + 0.3);
   }
-
+});
+  
   function syncFrame() {
     const currentTime = audio.currentTime;
 
@@ -786,8 +798,21 @@ function renderBotReplyWithTimestamps(text, timestampWords, audio) {
   }
 
   audio.addEventListener("play", () => {
-    requestAnimationFrame(syncFrame);
-  }, { once: true });
+  requestAnimationFrame(syncFrame);
+}, { once: true });
+
+audio.addEventListener("ended", () => {
+  visibleWordUnits.forEach(unit => {
+    unit.classList.add("visible");
+    unit.classList.remove("active-word");
+  });
+});
+
+  setTimeout(() => {
+  if (audio.paused) {
+    renderBotReply(text);
+  }
+}, 800);
 }
 
     function waitForAudioMetadata(audio) {
@@ -920,6 +945,8 @@ function renderBotReplyWithTimestamps(text, timestampWords, audio) {
     form.addEventListener("submit", async event => {
       event.preventDefault();
 
+      unlockAudio();
+
       const userText = input.value.trim();
       if (!userText) return;
 
@@ -1044,6 +1071,7 @@ function renderBotReplyWithTimestamps(text, timestampWords, audio) {
     }
 
     transcribeButton.addEventListener("click", async () => {
+      unlockAudio();
       try {
         if (isRecording) {
           stopRecording();
@@ -1116,21 +1144,23 @@ async function prepareAndPlayBotReply(text) {
       currentAudio.currentTime = 0;
     }
 
-    currentAudio = await fetchSpeechAudio(text);
+    const speech = await fetchSyncedSpeech(text);
 
-    // Use playbackRate carefully. Big changes sound unnatural.
-    currentAudio.playbackRate = getAudioPlaybackRate();
+    const audioUrl = `data:${speech.mimeType || "audio/mpeg"};base64,${speech.audioBase64}`;
+    currentAudio = new Audio(audioUrl);
 
-    const rawDurationSeconds = await waitForAudioMetadata(currentAudio);
-    const adjustedDurationMs =
-      (rawDurationSeconds * 1000) / currentAudio.playbackRate;
+    renderBotReplyWithTimestamps(text, speech.words || [], currentAudio);
 
-    renderBotReply(text, adjustedDurationMs);
+    try {
+      await currentAudio.play();
+    } catch (playError) {
+      console.error("Audio play was blocked:", playError);
+      showSystemMessage("Tap the page once, then send again to allow audio.");
+    }
 
-    await currentAudio.play();
   } catch (error) {
-    console.error("Speech playback error:", error);
-    showSystemMessage(error.message || "Could not play speech.");
+    console.error("Synced speech error:", error);
+    showSystemMessage(error.message || "Could not prepare synced speech.");
     renderBotReply(text);
   }
 }
