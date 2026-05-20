@@ -589,21 +589,21 @@
     }
 
     function stopAllSpeech() {
-      if (currentFullAudio) {
-        currentFullAudio.pause();
-        currentFullAudio.currentTime = 0;
-        currentFullAudio = null;
-      }
+  if (currentFullAudio) {
+    currentFullAudio.pause();
+    currentFullAudio.currentTime = 0;
+    currentFullAudio = null;
+  }
 
-      scheduledSources.forEach(source => {
-        try {
-          source.stop();
-        } catch {}
-      });
+  scheduledSources.forEach(source => {
+    try {
+      source.stop();
+    } catch {}
+  });
 
-      scheduledSources = [];
-      currentPlaybackToken++;
-    }
+  scheduledSources = [];
+  currentPlaybackToken++;
+}
 
     function splitTextIntoParts(text) {
       return text.match(/[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)?|[\p{N}]+|[^\s\p{L}\p{M}\p{N}]|\s+/gu) || [];
@@ -802,22 +802,27 @@
     }
 
     async function fetchFullSpeech(text) {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          action: "speak-full",
-          text,
-          language: languageSelect.value
-        })
-      });
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      action: "speak-full",
+      text,
+      language: languageSelect.value
+    })
+  });
 
-      return await parseJsonResponse(response, "Speech");
-    }
+  const data = await parseJsonResponse(response, "Speech");
+
+  return {
+    ...data,
+    audioBuffer: null
+  };
+}
 
     async function fetchIndividualWordSpeech(text) {
       const words = getSpeakableWords(text);
@@ -891,16 +896,40 @@
     }
 
     async function playConversationalMessage(state) {
-      stopAllSpeech();
+  stopAllSpeech();
+  await unlockAudioContext();
 
-      clearActiveWords(state.wordsEl);
+  clearActiveWords(state.wordsEl);
 
-      const speech = await getFullSpeechForMessage(state);
-      const audioUrl = `data:${speech.mimeType || "audio/mpeg"};base64,${speech.audioBase64}`;
+  const speech = await getFullSpeechForMessage(state);
 
-      currentFullAudio = new Audio(audioUrl);
-      await currentFullAudio.play();
+  if (!speech.audioBuffer) {
+    const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
+    const context = getAudioContext();
+    speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
+  }
+
+  playFullAudioBuffer(speech.audioBuffer);
+}
+
+    function playFullAudioBuffer(audioBuffer) {
+  const context = getAudioContext();
+  const token = currentPlaybackToken;
+  const source = context.createBufferSource();
+
+  source.buffer = audioBuffer;
+  source.connect(context.destination);
+
+  scheduledSources = [source];
+
+  source.start(context.currentTime + 0.04);
+
+  source.addEventListener("ended", () => {
+    if (token === currentPlaybackToken) {
+      scheduledSources = [];
     }
+  });
+}
 
     function trimAudioBufferSilence(audioBuffer, threshold = 0.012, paddingSeconds = 0.015) {
       const sampleRate = audioBuffer.sampleRate;
@@ -1167,82 +1196,78 @@
     }
 
     async function sendToBot(userText) {
-      messages.push({
-        role: "user",
-        content: userText
-      });
+  messages.push({
+    role: "user",
+    content: userText
+  });
 
-      addUserMessage(userText);
+  addUserMessage(userText);
 
-      const thinkingCard = addThinkingMessage();
+  const thinkingCard = addThinkingMessage();
 
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          messages,
-          language: languageSelect.value
-        })
-      });
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      messages,
+      language: languageSelect.value
+    })
+  });
 
-      const data = await parseJsonResponse(response, "Chat");
+  const data = await parseJsonResponse(response, "Chat");
 
-      messages.push({
-        role: "assistant",
-        content: data.reply
-      });
+  messages.push({
+    role: "assistant",
+    content: data.reply
+  });
 
-      const fullSpeechPromise = fetchFullSpeech(data.reply);
-      const wordClipsPromise = fetchIndividualWordSpeech(data.reply)
-        .catch(error => {
-          return null;
-        });
+  const fullSpeechPromise = fetchFullSpeech(data.reply);
+  const wordClipsPromise = fetchIndividualWordSpeech(data.reply)
+    .catch(() => null);
 
-      const fullSpeech = await fullSpeechPromise;
+  const fullSpeech = await fullSpeechPromise;
 
-      thinkingCard.remove();
+  thinkingCard.remove();
 
-      const botMessageId = addBotMessage(data.reply, {
-        fullSpeech,
-        fullSpeechPromise,
-        wordClipsPromise
-      });
+  const botMessageId = addBotMessage(data.reply, {
+    fullSpeech,
+    fullSpeechPromise,
+    wordClipsPromise
+  });
 
-      const state = messageState.get(botMessageId);
+  const state = messageState.get(botMessageId);
 
-      if (state) {
-        playConversationalMessage(state).catch(error => {
-          showSystemMessage(getReadableError(error));
-        });
-      }
-    }
+  if (state) {
+    await playConversationalMessage(state);
+  }
+}
 
     form.addEventListener("submit", async event => {
-      event.preventDefault();
+  event.preventDefault();
 
-      unlockAudio();
+  await unlockAudio();
 
-      const userText = input.value.trim();
-      if (!userText) return;
+  const userText = input.value.trim();
+  if (!userText) return;
 
-      input.value = "";
-      sendButton.disabled = true;
-      transcribeButton.disabled = true;
+  input.value = "";
+  sendButton.disabled = true;
+  transcribeButton.disabled = true;
 
-      try {
-        await sendToBot(userText);
-      } catch (error) {
-        showSystemMessage(getReadableError(error));
-      } finally {
-        sendButton.disabled = false;
-        transcribeButton.disabled = false;
-        input.focus();
-      }
-    });
+  try {
+    await sendToBot(userText);
+  } catch (error) {
+    showSystemMessage(getReadableError(error));
+  } finally {
+    sendButton.disabled = false;
+    transcribeButton.disabled = false;
+    input.focus();
+  }
+});
 
     function getBestRecordingMimeType() {
   const candidates = [
