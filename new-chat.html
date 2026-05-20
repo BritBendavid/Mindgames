@@ -380,6 +380,38 @@
       text-align: center;
     }
 
+    .user-bubble.user-annotated {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.user-text-part {
+  white-space: pre-wrap;
+}
+
+.user-foreign-part {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: top;
+  margin: 0 0.12em 0.25em;
+  color: #f87171;
+  font-weight: 800;
+}
+
+.user-foreign-original {
+  display: inline-block;
+}
+
+.user-foreign-translation {
+  color: #fca5a5;
+  font-size: 0.78em;
+  line-height: 1.1;
+  margin-top: 0.18em;
+  font-weight: 700;
+  max-width: 180px;
+  word-break: break-word;
+}
+
     @keyframes pulse {
       0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.42); }
       70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
@@ -498,6 +530,8 @@
     const messages = [];
     const translationCache = new Map();
     const messageState = new Map();
+    const userMessageState = new Map();
+let userMessageCounter = 0;
 
     let messageCounter = 0;
 
@@ -629,17 +663,33 @@
     }
 
     function addUserMessage(text) {
-      const card = document.createElement("div");
-      card.className = "message-card user-card";
+  const id = `user-${++userMessageCounter}`;
 
-      const bubble = document.createElement("div");
-      bubble.className = "user-bubble";
-      bubble.textContent = text;
+  const card = document.createElement("div");
+  card.className = "message-card user-card";
+  card.dataset.userMessageId = id;
 
-      card.appendChild(bubble);
-      messageHistory.appendChild(card);
-      scrollMessagesToBottom();
-    }
+  const bubble = document.createElement("div");
+  bubble.className = "user-bubble";
+  bubble.textContent = text;
+
+  card.appendChild(bubble);
+  messageHistory.appendChild(card);
+
+  userMessageState.set(id, {
+    id,
+    text,
+    bubble
+  });
+
+  scrollMessagesToBottom();
+
+  analyzeAndRenderUserMessageLanguage(id).catch(() => {
+    // Keep the plain user message if analysis fails.
+  });
+
+  return id;
+}
 
     function addThinkingMessage() {
       const card = document.createElement("div");
@@ -794,6 +844,78 @@
         });
       }
     }
+
+    async function analyzeUserMessageLanguageParts(text) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      action: "translate-message-parts",
+      text,
+      chatLanguage: languageSelect.value
+    })
+  });
+
+  const data = await parseJsonResponse(response, "User language analysis");
+
+  return Array.isArray(data.parts) ? data.parts : [];
+}
+
+async function analyzeAndRenderUserMessageLanguage(userMessageId) {
+  const state = userMessageState.get(userMessageId);
+  if (!state) return;
+
+  const parts = await analyzeUserMessageLanguageParts(state.text);
+
+  if (!parts.length) return;
+
+  const hasForeignPart = parts.some(part => part && part.isChatLanguage === false);
+
+  if (!hasForeignPart) {
+    return;
+  }
+
+  renderAnalyzedUserMessage(state.bubble, parts);
+}
+
+function renderAnalyzedUserMessage(container, parts) {
+  container.innerHTML = "";
+  container.classList.add("user-annotated");
+
+  for (const part of parts) {
+    if (!part || typeof part.text !== "string") continue;
+
+    if (part.isChatLanguage === false && part.translation) {
+      const foreign = document.createElement("span");
+      foreign.className = "user-foreign-part";
+
+      const original = document.createElement("span");
+      original.className = "user-foreign-original";
+      original.textContent = part.text;
+
+      const translation = document.createElement("span");
+      translation.className = "user-foreign-translation";
+      translation.textContent = part.translation;
+
+      foreign.appendChild(original);
+      foreign.appendChild(translation);
+
+      container.appendChild(foreign);
+    } else {
+      const normal = document.createElement("span");
+      normal.className = "user-text-part";
+      normal.textContent = part.text;
+
+      container.appendChild(normal);
+    }
+  }
+
+  scrollMessagesToBottom();
+}
 
     async function parseJsonResponse(response, label) {
       const rawText = await response.text();
