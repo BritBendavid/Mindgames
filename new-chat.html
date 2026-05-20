@@ -1302,6 +1302,8 @@ async function transcribeAudioBlob(audioBlob, mimeType) {
 
   const formData = new FormData();
   formData.append("audio", audioFile);
+  formData.append("chatLanguage", languageSelect.value);
+  formData.append("fluentLanguage", fluentLanguageSelect.value);
 
   const response = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
     method: "POST",
