@@ -1326,9 +1326,13 @@ async function transcribeAudioBlob(audioBlob, mimeType) {
   );
 
   const formData = new FormData();
-  formData.append("audio", audioFile);
-  formData.append("chatLanguage", languageSelect.value);
-  formData.append("fluentLanguage", fluentLanguageSelect.value);
+formData.append("audio", audioFile);
+formData.append("chatLanguage", languageSelect.value);
+formData.append("fluentLanguage", fluentLanguageSelect.value);
+formData.append(
+  "transcriptionPrompt",
+  `The speaker may switch between languages, especially ${languageSelect.value} and ${fluentLanguageSelect.value}. Transcribe exactly what is spoken. Do not translate. Preserve mixed-language speech.`
+);
 
   const response = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
     method: "POST",
