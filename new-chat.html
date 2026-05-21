@@ -1746,7 +1746,32 @@ async function transcribeAudioBlob(audioBlob, mimeType) {
     `The speaker may switch between languages, especially ${languageSelect.value} and ${fluentLanguageSelect.value}. Transcribe exactly what is spoken. Do not translate. Preserve mixed-language speech.`
   );
 
-  const data = await callTranscribeFunction(formData, "Transcription");
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: formData
+  });
+
+  const rawText = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Transcription returned non-JSON response: ${rawText}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data.error ||
+      data.message ||
+      data?.openai?.error?.message ||
+      `Transcription failed with status ${response.status}`
+    );
+  }
 
   const transcript =
     data.text ||
@@ -1923,7 +1948,7 @@ async function handleSpeechRecordButtonClick(event) {
 }
 
   attachUiHandlers();
-setInputMode("writing");
+setInputMode("speech");
 </script>
 </body>
 </html>
