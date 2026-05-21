@@ -1620,7 +1620,7 @@ if (state) {
   }
 });
 
-    function getBestRecordingMimeType() {
+  function getBestRecordingMimeType() {
   const candidates = [
     "audio/webm;codecs=opus",
     "audio/webm",
@@ -1668,22 +1668,18 @@ async function transcribeAudioBlob(audioBlob, mimeType) {
   const finalMimeType = mimeType || audioBlob.type || "audio/webm";
   const fileName = getAudioFileName(finalMimeType);
 
-  const audioFile = new File(
-    [audioBlob],
-    fileName,
-    {
-      type: finalMimeType
-    }
-  );
+  const audioFile = new File([audioBlob], fileName, {
+    type: finalMimeType
+  });
 
   const formData = new FormData();
-formData.append("audio", audioFile);
-formData.append("chatLanguage", languageSelect.value);
-formData.append("fluentLanguage", fluentLanguageSelect.value);
-formData.append(
-  "transcriptionPrompt",
-  `The speaker may switch between languages, especially ${languageSelect.value} and ${fluentLanguageSelect.value}. Transcribe exactly what is spoken. Do not translate. Preserve mixed-language speech.`
-);
+  formData.append("audio", audioFile);
+  formData.append("chatLanguage", languageSelect.value);
+  formData.append("fluentLanguage", fluentLanguageSelect.value);
+  formData.append(
+    "transcriptionPrompt",
+    `The speaker may switch between languages, especially ${languageSelect.value} and ${fluentLanguageSelect.value}. Transcribe exactly what is spoken. Do not translate. Preserve mixed-language speech.`
+  );
 
   const response = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
     method: "POST",
@@ -1710,6 +1706,8 @@ formData.append(
 }
 
 async function startRecording() {
+  showSystemMessage("Requesting microphone...");
+
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showSystemMessage("Audio recording is not supported in this browser.");
     return;
@@ -1725,10 +1723,7 @@ async function startRecording() {
   recordedChunks = [];
 
   const mimeType = getBestRecordingMimeType();
-
-  const options = mimeType
-    ? { mimeType }
-    : {};
+  const options = mimeType ? { mimeType } : {};
 
   try {
     mediaRecorder = new MediaRecorder(stream, options);
@@ -1740,6 +1735,14 @@ async function startRecording() {
     if (event.data && event.data.size > 0) {
       recordedChunks.push(event.data);
     }
+  });
+
+  mediaRecorder.addEventListener("start", () => {
+    isRecording = true;
+    transcribeButton.classList.add("recording");
+    transcribeButton.textContent = "■";
+    input.placeholder = "Recording... click again to stop";
+    showSystemMessage("Recording...");
   });
 
   mediaRecorder.addEventListener("stop", async () => {
@@ -1758,10 +1761,14 @@ async function startRecording() {
         type: actualMimeType
       });
 
+      showSystemMessage(`Transcribing ${getAudioFileName(actualMimeType)}...`);
+
       const transcript = await transcribeAudioBlob(audioBlob, actualMimeType);
 
       input.value = transcript;
       input.focus();
+
+      showSystemMessage("Transcription complete.");
     } catch (error) {
       showSystemMessage(getReadableError(error));
     } finally {
@@ -1776,17 +1783,50 @@ async function startRecording() {
   });
 
   mediaRecorder.start();
-
-  isRecording = true;
-  transcribeButton.classList.add("recording");
-  transcribeButton.textContent = "■";
-  input.placeholder = "Recording... click again to stop";
 }
 
 function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === "recording") {
+    showSystemMessage("Stopping recording...");
     mediaRecorder.stop();
+  } else {
+    showSystemMessage("No active recording was found.");
   }
+}
+
+/*
+  IMPORTANT:
+  This must appear AFTER:
+  const transcribeButton = document.getElementById("transcribeButton");
+  and AFTER startRecording / stopRecording are defined.
+*/
+if (!transcribeButton) {
+  showSystemMessage("Mic button was not found. Check id='transcribeButton'.");
+} else {
+  transcribeButton.addEventListener("click", async event => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    showSystemMessage("Mic button clicked.");
+
+    try {
+      await unlockAudio();
+
+      if (isRecording) {
+        stopRecording();
+      } else {
+        await startRecording();
+      }
+    } catch (error) {
+      showSystemMessage(getReadableError(error));
+
+      isRecording = false;
+      transcribeButton.disabled = false;
+      transcribeButton.classList.remove("recording");
+      transcribeButton.textContent = "🎤";
+      input.placeholder = "Ask something...";
+    }
+  });
 }
 
 transcribeButton.addEventListener("click", async () => {
