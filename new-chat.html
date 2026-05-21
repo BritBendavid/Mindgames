@@ -704,51 +704,60 @@ let userMessageCounter = 0;
     }
 
     function addBotMessage(text, options = {}) {
-      const id = `bot-${++messageCounter}`;
+  const id = `bot-${++messageCounter}`;
 
-      const card = document.createElement("div");
-      card.className = "message-card bot-card";
-      card.dataset.messageId = id;
+  const card = document.createElement("div");
+  card.className = "message-card bot-card";
+  card.dataset.messageId = id;
 
-      const wordsEl = document.createElement("div");
-      wordsEl.className = "bot-words";
-      wordsEl.setAttribute("dir", "auto");
+  const wordsEl = document.createElement("div");
+  wordsEl.className = "bot-words";
+  wordsEl.setAttribute("dir", "auto");
 
-      renderWordsIntoElement(text, wordsEl, id);
+  messageState.set(id, {
+    id,
+    text,
+    wordsEl,
+    mode: "conversational",
 
-      const controls = createMessageAudioControls(id);
+    speakableTokens: [],
 
-      card.appendChild(wordsEl);
-      card.appendChild(controls);
+    fullSpeech: options.fullSpeech || null,
+    fullSpeechPromise: options.fullSpeechPromise || null,
 
-      messageHistory.appendChild(card);
+    wordClips: null,
+    wordClipMap: null,
+    wordClipsPromise: options.wordClipsPromise || null,
+    wordSchedule: null,
 
-      messageState.set(id, {
-        id,
-        text,
-        wordsEl,
-        mode: "conversational",
+    loadingFullSpeech: false,
+    loadingWordSpeech: false
+  });
 
-        fullSpeech: options.fullSpeech || null,
-        fullSpeechPromise: options.fullSpeechPromise || null,
+  const speakableTokens = renderWordsIntoElement(text, wordsEl, id);
+  const state = messageState.get(id);
 
-        wordClips: null,
-        wordClipsPromise: options.wordClipsPromise || null,
-        wordSchedule: null,
+  if (state) {
+    state.speakableTokens = speakableTokens;
+  }
 
-        loadingFullSpeech: false,
-        loadingWordSpeech: false
-      });
+  const controls = createMessageAudioControls(id);
 
-      scrollMessagesToBottom();
-      return id;
-    }
+  card.appendChild(wordsEl);
+  card.appendChild(controls);
 
-    function renderWordsIntoElement(text, container, messageId) {
+  messageHistory.appendChild(card);
+
+  scrollMessagesToBottom();
+  return id;
+}
+
+   function renderWordsIntoElement(text, container, messageId) {
   container.innerHTML = "";
 
   const parts = splitTextIntoParts(text);
-  let wordIndex = 0;
+  const speakableTokens = [];
+  let tokenIndex = 0;
 
   for (const part of parts) {
     if (/^\s+$/.test(part)) {
@@ -757,10 +766,12 @@ let userMessageCounter = 0;
     }
 
     if (isClickableWord(part)) {
+      const tokenId = `${messageId}-tok-${tokenIndex}`;
+
       const unit = document.createElement("span");
       unit.className = "word-unit";
       unit.dataset.word = part;
-      unit.dataset.wordIndex = String(wordIndex);
+      unit.dataset.tokenId = tokenId;
 
       const mainWord = document.createElement("span");
       mainWord.className = "main-word";
@@ -777,7 +788,14 @@ let userMessageCounter = 0;
       });
 
       container.appendChild(unit);
-      wordIndex++;
+
+      speakableTokens.push({
+        tokenId,
+        word: part,
+        sentence: text
+      });
+
+      tokenIndex++;
     } else {
       const punct = document.createElement("span");
       punct.className = "punct";
@@ -785,6 +803,16 @@ let userMessageCounter = 0;
       container.appendChild(punct);
     }
   }
+
+  const state = messageState.get(messageId);
+
+  if (state) {
+    state.speakableTokens = speakableTokens;
+  } else {
+    container.dataset.speakableTokens = JSON.stringify(speakableTokens);
+  }
+
+  return speakableTokens;
 }
 
    function handleBotWordClick(unit, word, messageId, fallbackSentence) {
@@ -848,14 +876,15 @@ async function playPreloadedWord(unit, word, messageId) {
     throw new Error("Could not find this message.");
   }
 
-  const wordIndex = Number(unit.dataset.wordIndex);
+  const tokenId = unit.dataset.tokenId;
 
-  if (!Number.isFinite(wordIndex)) {
-    throw new Error("Could not find this word index.");
+  if (!tokenId) {
+    throw new Error("Could not find this word token.");
   }
 
-  const clips = await getWordClipsForMessage(state);
-  const clip = clips[wordIndex];
+  await getWordClipsForMessage(state);
+
+  const clip = state.wordClipMap?.get(tokenId);
 
   if (!clip || !clip.audioBase64) {
     throw new Error("This word recording is not ready yet.");
@@ -1065,26 +1094,34 @@ function renderAnalyzedUserMessage(container, parts) {
   };
 }
 
-    async function fetchIndividualWordSpeech(text) {
-      const words = getSpeakableWords(text);
+    async function fetchIndividualWordSpeechForTokens(tokens) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      action: "speak-words",
+      items: tokens,
+      language: languageSelect.value
+    })
+  });
 
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          action: "speak-words",
-          words,
-          language: languageSelect.value
-        })
-      });
+  const data = await parseJsonResponse(response, "Word speech");
+  return data.clips || [];
+}
 
-      const data = await parseJsonResponse(response, "Word speech");
-      return data.clips || [];
-    }
+async function fetchIndividualWordSpeech(text, tokens = null) {
+  const items = tokens || getSpeakableWords(text).map((word, index) => ({
+    tokenId: `fallback-${index}`,
+    word,
+    sentence: text
+  }));
+
+  return await fetchIndividualWordSpeechForTokens(items);
+}
 
     async function getFullSpeechForMessage(state) {
       if (state.fullSpeech) return state.fullSpeech;
@@ -1110,31 +1147,61 @@ function renderAnalyzedUserMessage(container, parts) {
     }
 
     async function preloadSlowSpeech(state) {
-      if (state.wordClips || state.wordClipsPromise) return;
+  if (state.wordClips || state.wordClipsPromise) return;
 
-      state.wordClipsPromise = fetchIndividualWordSpeech(state.text)
-        .then(clips => {
-          state.wordClips = clips;
-          return clips;
-        })
-        .catch(error => {
-          state.wordClipsPromise = null;
-          throw error;
-        });
-    }
+  const tokens = state.speakableTokens || [];
 
-    async function getWordClipsForMessage(state) {
-      if (state.wordClips) return state.wordClips;
+  if (!tokens.length) {
+    return;
+  }
 
-      if (state.wordClipsPromise) {
-        state.wordClips = await state.wordClipsPromise;
-        return state.wordClips;
-      }
+  state.wordClipsPromise = fetchIndividualWordSpeechForTokens(tokens)
+    .then(clips => {
+      state.wordClips = clips;
+      state.wordClipMap = new Map(
+        clips
+          .filter(clip => clip && clip.tokenId)
+          .map(clip => [clip.tokenId, clip])
+      );
 
-      state.wordClipsPromise = fetchIndividualWordSpeech(state.text);
-      state.wordClips = await state.wordClipsPromise;
-      return state.wordClips;
-    }
+      return clips;
+    })
+    .catch(error => {
+      state.wordClipsPromise = null;
+      throw error;
+    });
+}
+
+async function getWordClipsForMessage(state) {
+  if (state.wordClips) return state.wordClips;
+
+  if (state.wordClipsPromise) {
+    state.wordClips = await state.wordClipsPromise;
+    state.wordClipMap = new Map(
+      state.wordClips
+        .filter(clip => clip && clip.tokenId)
+        .map(clip => [clip.tokenId, clip])
+    );
+
+    return state.wordClips;
+  }
+
+  const tokens = state.speakableTokens || [];
+
+  if (!tokens.length) {
+    throw new Error("No speakable words were found for this message.");
+  }
+
+  state.wordClipsPromise = fetchIndividualWordSpeechForTokens(tokens);
+  state.wordClips = await state.wordClipsPromise;
+  state.wordClipMap = new Map(
+    state.wordClips
+      .filter(clip => clip && clip.tokenId)
+      .map(clip => [clip.tokenId, clip])
+  );
+
+  return state.wordClips;
+}
 
     async function playConversationalMessage(state) {
   stopAllSpeech();
@@ -1230,52 +1297,60 @@ function renderAnalyzedUserMessage(container, parts) {
       return 0.18;
     }
 
-    async function buildIndividualWordSchedule(clips) {
-      const context = getAudioContext();
-      const pause = getSlowPauseSeconds();
+    async function buildIndividualWordScheduleForMessage(state) {
+  const context = getAudioContext();
+  const pause = getSlowPauseSeconds();
 
-      const schedule = [];
-      let playhead = 0;
+  await getWordClipsForMessage(state);
 
-      for (let i = 0; i < clips.length; i++) {
-        const clip = clips[i];
+  const clipMap = state.wordClipMap || new Map();
+  const schedule = [];
+  let playhead = 0;
 
-        if (!clip || !clip.audioBase64) {
-          continue;
-        }
+  for (const token of state.speakableTokens || []) {
+    const clip = clipMap.get(token.tokenId);
 
-        const arrayBuffer = base64ToArrayBuffer(clip.audioBase64);
-        const rawBuffer = await context.decodeAudioData(arrayBuffer);
-        const audioBuffer = trimAudioBufferSilence(rawBuffer);
-
-        schedule.push({
-          word: clip.word,
-          index: i,
-          audioBuffer,
-          duration: audioBuffer.duration,
-          playStart: playhead,
-          playEnd: playhead + audioBuffer.duration
-        });
-
-        playhead += audioBuffer.duration + pause;
-      }
-
-      return schedule;
+    if (!clip || !clip.audioBase64) {
+      continue;
     }
+
+    let audioBuffer;
+
+    if (clip.audioBuffer) {
+      audioBuffer = clip.audioBuffer;
+    } else {
+      const arrayBuffer = base64ToArrayBuffer(clip.audioBase64);
+      const rawBuffer = await context.decodeAudioData(arrayBuffer);
+      audioBuffer = trimAudioBufferSilence(rawBuffer);
+      clip.audioBuffer = audioBuffer;
+    }
+
+    schedule.push({
+      tokenId: token.tokenId,
+      word: token.word,
+      audioBuffer,
+      duration: audioBuffer.duration,
+      playStart: playhead,
+      playEnd: playhead + audioBuffer.duration
+    });
+
+    playhead += audioBuffer.duration + pause;
+  }
+
+  return schedule;
+}
 
     async function playSlowMessage(state) {
-      stopAllSpeech();
-      await unlockAudioContext();
+  stopAllSpeech();
+  await unlockAudioContext();
 
-      const clips = await getWordClipsForMessage(state);
+  if (!state.wordSchedule) {
+    state.wordSchedule = await buildIndividualWordScheduleForMessage(state);
+  }
 
-      if (!state.wordSchedule) {
-        state.wordSchedule = await buildIndividualWordSchedule(clips);
-      }
-
-      assignScheduleToVisibleWords(state.wordsEl, state.wordSchedule);
-      playIndividualWordAudio(state.wordSchedule, state.wordsEl);
-    }
+  assignScheduleToVisibleWords(state.wordsEl, state.wordSchedule);
+  playIndividualWordAudio(state.wordSchedule, state.wordsEl);
+}
 
     function clearActiveWords(container) {
       container.querySelectorAll(".word-unit").forEach(unit => {
@@ -1284,20 +1359,27 @@ function renderAnalyzedUserMessage(container, parts) {
     }
 
     function assignScheduleToVisibleWords(container, schedule) {
-      const units = [...container.querySelectorAll(".word-unit")];
+  const scheduleMap = new Map(
+    schedule
+      .filter(item => item && item.tokenId)
+      .map(item => [item.tokenId, item])
+  );
 
-      units.forEach((unit, index) => {
-        const timing = schedule[index];
+  const units = [...container.querySelectorAll(".word-unit")];
 
-        if (timing) {
-          unit.dataset.playStart = String(timing.playStart);
-          unit.dataset.playEnd = String(timing.playEnd);
-        } else {
-          unit.dataset.playStart = "";
-          unit.dataset.playEnd = "";
-        }
-      });
+  units.forEach(unit => {
+    const tokenId = unit.dataset.tokenId;
+    const timing = scheduleMap.get(tokenId);
+
+    if (timing) {
+      unit.dataset.playStart = String(timing.playStart);
+      unit.dataset.playEnd = String(timing.playEnd);
+    } else {
+      unit.dataset.playStart = "";
+      unit.dataset.playEnd = "";
     }
+  });
+}
 
     function playIndividualWordAudio(wordSchedule, wordsEl) {
       const context = getAudioContext();
@@ -1478,18 +1560,35 @@ function renderAnalyzedUserMessage(container, parts) {
   });
 
   const fullSpeechPromise = fetchFullSpeech(data.reply);
-  const wordClipsPromise = fetchIndividualWordSpeech(data.reply)
+const fullSpeech = await fullSpeechPromise;
+
+thinkingCard.remove();
+
+const botMessageId = addBotMessage(data.reply, {
+  fullSpeech,
+  fullSpeechPromise
+});
+
+const state = messageState.get(botMessageId);
+
+if (state) {
+  state.wordClipsPromise = fetchIndividualWordSpeechForTokens(state.speakableTokens)
+    .then(clips => {
+      state.wordClips = clips;
+      state.wordClipMap = new Map(
+        clips
+          .filter(clip => clip && clip.tokenId)
+          .map(clip => [clip.tokenId, clip])
+      );
+
+      return clips;
+    })
     .catch(() => null);
 
-  const fullSpeech = await fullSpeechPromise;
-
-  thinkingCard.remove();
-
-  const botMessageId = addBotMessage(data.reply, {
-    fullSpeech,
-    fullSpeechPromise,
-    wordClipsPromise
+  playConversationalMessage(state).catch(error => {
+    showSystemMessage(getReadableError(error));
   });
+}
 
   const state = messageState.get(botMessageId);
 
