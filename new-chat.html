@@ -580,6 +580,88 @@
   word-break: break-word;
 }
 
+    .correction-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.correction-play-button {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.22), transparent 28%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.06));
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 18px 55px rgba(0, 0, 0, 0.42),
+    inset 0 0 28px rgba(255, 255, 255, 0.05);
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.correction-play-button:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 24px 70px rgba(0, 0, 0, 0.52),
+    0 0 34px rgba(96, 165, 250, 0.18),
+    inset 0 0 28px rgba(255, 255, 255, 0.06);
+}
+
+.correction-play-button.loading {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.correction-slow-toggle {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #d1d5db;
+  font-weight: 900;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.correction-slow-toggle.active {
+  background: white;
+  color: black;
+}
+
+.correction-suggestion {
+  color: white;
+  font-size: 1.22rem;
+  line-height: 1.45;
+  font-weight: 750;
+}
+
+.correction-suggestion-label {
+  color: #9ca3af;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.correction-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
     @keyframes pulse {
       0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.42); }
       70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
@@ -748,6 +830,9 @@ let inputMode = "writing";
   let activeSpeechCorrection = null;
 let pendingBackgroundBot = null;
 
+    let correctionCounter = 0;
+const correctionState = new Map();
+
     function buildChatLanguageSuggestion(parts) {
   return parts
     .map(part => {
@@ -766,20 +851,6 @@ function hasForeignLanguageParts(parts) {
   return parts.some(part => part && part.isChatLanguage === false);
 }
 
-async function speakInstruction(text) {
-  const speech = await fetchFullSpeech(text);
-
-  if (!speech.audioBuffer) {
-    const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
-    const context = getAudioContext();
-    speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
-  }
-
-  stopAllSpeech();
-  await unlockAudioContext();
-  playFullAudioBuffer(speech.audioBuffer);
-}
-
 function removeSpeechReviewCard() {
   const existing = document.querySelector(".speech-review-card");
   if (existing) {
@@ -790,24 +861,85 @@ function removeSpeechReviewCard() {
 function addSpeechReviewCard({ transcript, suggestion, parts, onRetry, onContinue }) {
   removeSpeechReviewCard();
 
+  const correctionId = `correction-${++correctionCounter}`;
+  const correctionText = `Try again in ${languageSelect.value}. Say: ${suggestion}`;
+  const tokens = createCorrectionTokens(correctionText, correctionId);
+
   const card = document.createElement("div");
   card.className = "speech-review-card";
+  card.dataset.correctionId = correctionId;
 
   const title = document.createElement("div");
   title.className = "speech-review-title";
   title.textContent = "Try again in the chat language";
 
-  const text = document.createElement("div");
-  text.className = "speech-review-text";
+  const analyzedText = document.createElement("div");
+  analyzedText.className = "speech-review-text";
 
-  renderAnalyzedUserMessage(text, parts);
+  /*
+    This already shows translations underneath the non-chat-language parts,
+    using the same visual format as your user-message language analysis.
+  */
+  renderAnalyzedUserMessage(analyzedText, parts);
+
+  const suggestionLabel = document.createElement("div");
+  suggestionLabel.className = "correction-suggestion-label";
+  suggestionLabel.textContent = "Suggested version";
 
   const suggestionLine = document.createElement("div");
-  suggestionLine.className = "speech-review-text";
-  suggestionLine.textContent = `Try saying: ${suggestion}`;
+  suggestionLine.className = "correction-suggestion";
+  suggestionLine.textContent = suggestion;
+
+  const player = document.createElement("div");
+  player.className = "correction-player";
+
+  const playButton = document.createElement("button");
+  playButton.type = "button";
+  playButton.className = "correction-play-button";
+  playButton.textContent = "▶";
+  playButton.dataset.correctionPlay = correctionId;
+
+  const slowToggle = document.createElement("button");
+  slowToggle.type = "button";
+  slowToggle.className = "correction-slow-toggle";
+  slowToggle.textContent = "Slow";
+
+  playButton.addEventListener("click", async () => {
+    await playCorrection(correctionId);
+  });
+
+  slowToggle.addEventListener("click", () => {
+    const state = correctionState.get(correctionId);
+    if (!state) return;
+
+    state.slow = !state.slow;
+    slowToggle.classList.toggle("active", state.slow);
+
+    if (state.slow && !state.wordClipsPromise && !state.wordClips) {
+      state.wordClipsPromise = fetchIndividualWordSpeechForTokens(state.tokens)
+        .then(clips => {
+          state.wordClips = clips;
+          state.wordClipMap = new Map(
+            clips
+              .filter(clip => clip && clip.tokenId)
+              .map(clip => [clip.tokenId, clip])
+          );
+
+          return clips;
+        })
+        .catch(error => {
+          state.wordClipsPromise = null;
+          showSystemMessage(getReadableError(error));
+          return null;
+        });
+    }
+  });
+
+  player.appendChild(playButton);
+  player.appendChild(slowToggle);
 
   const actions = document.createElement("div");
-  actions.className = "speech-review-actions";
+  actions.className = "speech-review-actions correction-actions-row";
 
   const retryButton = document.createElement("button");
   retryButton.type = "button";
@@ -833,11 +965,30 @@ function addSpeechReviewCard({ transcript, suggestion, parts, onRetry, onContinu
   actions.appendChild(continueButton);
 
   card.appendChild(title);
-  card.appendChild(text);
+  card.appendChild(analyzedText);
+  card.appendChild(suggestionLabel);
   card.appendChild(suggestionLine);
+  card.appendChild(player);
   card.appendChild(actions);
 
   messageHistory.appendChild(card);
+
+  correctionState.set(correctionId, {
+    id: correctionId,
+    transcript,
+    suggestion,
+    parts,
+    correctionText,
+    tokens,
+    slow: false,
+    fullSpeech: null,
+    fullSpeechPromise: fetchFullSpeech(correctionText),
+    wordClips: null,
+    wordClipMap: null,
+    wordClipsPromise: null,
+    wordSchedule: null
+  });
+
   scrollMessagesToBottom();
 
   return card;
@@ -904,6 +1055,180 @@ function resetSpeechButton() {
 
     setTimeout(() => div.remove(), 5200);
   }
+
+    function createCorrectionTokens(text, correctionId) {
+  const parts = splitTextIntoParts(text);
+  const tokens = [];
+  let tokenIndex = 0;
+
+  for (const part of parts) {
+    if (isClickableWord(part)) {
+      tokens.push({
+        tokenId: `${correctionId}-tok-${tokenIndex}`,
+        word: part,
+        sentence: text
+      });
+
+      tokenIndex++;
+    }
+  }
+
+  return tokens;
+}
+
+async function getCorrectionFullSpeech(state) {
+  if (state.fullSpeech) {
+    return state.fullSpeech;
+  }
+
+  if (state.fullSpeechPromise) {
+    state.fullSpeech = await state.fullSpeechPromise;
+    return state.fullSpeech;
+  }
+
+  state.fullSpeechPromise = fetchFullSpeech(state.correctionText);
+  state.fullSpeech = await state.fullSpeechPromise;
+  return state.fullSpeech;
+}
+
+async function getCorrectionWordClips(state) {
+  if (state.wordClips) {
+    return state.wordClips;
+  }
+
+  if (state.wordClipsPromise) {
+    state.wordClips = await state.wordClipsPromise;
+    state.wordClipMap = new Map(
+      state.wordClips
+        .filter(clip => clip && clip.tokenId)
+        .map(clip => [clip.tokenId, clip])
+    );
+
+    return state.wordClips;
+  }
+
+  state.wordClipsPromise = fetchIndividualWordSpeechForTokens(state.tokens);
+  state.wordClips = await state.wordClipsPromise;
+  state.wordClipMap = new Map(
+    state.wordClips
+      .filter(clip => clip && clip.tokenId)
+      .map(clip => [clip.tokenId, clip])
+  );
+
+  return state.wordClips;
+}
+
+async function buildCorrectionWordSchedule(state) {
+  const context = getAudioContext();
+  const pause = getSlowPauseSeconds();
+
+  await getCorrectionWordClips(state);
+
+  const clipMap = state.wordClipMap || new Map();
+  const schedule = [];
+  let playhead = 0;
+
+  for (const token of state.tokens || []) {
+    const clip = clipMap.get(token.tokenId);
+
+    if (!clip || !clip.audioBase64) {
+      continue;
+    }
+
+    let audioBuffer;
+
+    if (clip.audioBuffer) {
+      audioBuffer = clip.audioBuffer;
+    } else {
+      const arrayBuffer = base64ToArrayBuffer(clip.audioBase64);
+      const rawBuffer = await context.decodeAudioData(arrayBuffer);
+      audioBuffer = trimAudioBufferSilence(rawBuffer);
+      clip.audioBuffer = audioBuffer;
+    }
+
+    schedule.push({
+      tokenId: token.tokenId,
+      word: token.word,
+      audioBuffer,
+      duration: audioBuffer.duration,
+      playStart: playhead,
+      playEnd: playhead + audioBuffer.duration
+    });
+
+    playhead += audioBuffer.duration + pause;
+  }
+
+  return schedule;
+}
+
+async function playCorrection(correctionId) {
+  const state = correctionState.get(correctionId);
+  if (!state) return;
+
+  const playButton = document.querySelector(`[data-correction-play="${correctionId}"]`);
+
+  try {
+    stopAllSpeech();
+    await unlockAudioContext();
+
+    if (playButton) {
+      playButton.classList.add("loading");
+      playButton.textContent = "…";
+    }
+
+    if (state.slow) {
+      if (!state.wordSchedule) {
+        state.wordSchedule = await buildCorrectionWordSchedule(state);
+      }
+
+      playCorrectionWordSchedule(state);
+    } else {
+      const speech = await getCorrectionFullSpeech(state);
+
+      if (!speech.audioBuffer) {
+        const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
+        const context = getAudioContext();
+        speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
+      }
+
+      playFullAudioBuffer(speech.audioBuffer);
+    }
+  } catch (error) {
+    showSystemMessage(getReadableError(error));
+  } finally {
+    if (playButton) {
+      playButton.classList.remove("loading");
+      playButton.textContent = "▶";
+    }
+  }
+}
+
+function playCorrectionWordSchedule(state) {
+  const context = getAudioContext();
+  const token = currentPlaybackToken;
+  const startAt = context.currentTime + 0.08;
+
+  scheduledSources = [];
+
+  state.wordSchedule.forEach(item => {
+    const source = context.createBufferSource();
+    source.buffer = item.audioBuffer;
+    source.connect(context.destination);
+    source.start(startAt + item.playStart);
+    scheduledSources.push(source);
+  });
+
+  const totalDuration =
+    state.wordSchedule.length > 0
+      ? state.wordSchedule[state.wordSchedule.length - 1].playEnd
+      : 0;
+
+  setTimeout(() => {
+    if (token === currentPlaybackToken) {
+      scheduledSources = [];
+    }
+  }, totalDuration * 1000 + 1000);
+}
 
   async function parseJsonResponse(response, label) {
     const rawText = await response.text();
@@ -1141,36 +1466,41 @@ async function callChatFunction(payload, label = "Chat") {
 
   const suggestion = buildChatLanguageSuggestion(parts);
 
-  const instructionText =
-    `Try again in ${languageSelect.value}. Say: ${suggestion}`;
-
   activeSpeechCorrection = {
-    transcript,
-    parts,
-    suggestion,
-    prepared: pendingBackgroundBot
-  };
+  transcript,
+  parts,
+  suggestion,
+  prepared: pendingBackgroundBot
+};
 
-  addSpeechReviewCard({
-    transcript,
-    suggestion,
-    parts,
-    onRetry: () => {
-      setSpeechStatus("Tap to re-record");
-    },
-    onContinue: async () => {
-      const prepared = activeSpeechCorrection?.prepared || pendingBackgroundBot;
+const correctionCard = addSpeechReviewCard({
+  transcript,
+  suggestion,
+  parts,
+  onRetry: () => {
+    setSpeechStatus("Tap to re-record");
+  },
+  onContinue: async () => {
+    const prepared = activeSpeechCorrection?.prepared || pendingBackgroundBot;
 
-      activeSpeechCorrection = null;
-      pendingBackgroundBot = null;
+    activeSpeechCorrection = null;
+    pendingBackgroundBot = null;
 
-      if (prepared) {
-        await revealPreparedBotResponse(prepared);
-      }
+    if (prepared) {
+      await revealPreparedBotResponse(prepared);
     }
-  });
+  }
+});
 
-  speakInstruction(instructionText).catch(() => {});
+/*
+  Auto-play the correction once.
+  The user can replay it with the circular Play button.
+*/
+const correctionId = correctionCard.dataset.correctionId;
+
+if (correctionId) {
+  playCorrection(correctionId).catch(() => {});
+}
 }
 
   async function analyzeUserMessageLanguageParts(text) {
