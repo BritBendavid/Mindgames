@@ -1595,8 +1595,6 @@
   }
 
   async function startRecording() {
-    showSystemMessage("Requesting microphone...");
-
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       showSystemMessage("Audio recording is not supported in this browser.");
       return;
@@ -1631,7 +1629,6 @@
       transcribeButton.classList.add("recording");
       transcribeButton.textContent = "■";
       input.placeholder = "Recording... click again to stop";
-      showSystemMessage("Recording...");
     });
 
     mediaRecorder.addEventListener("stop", async () => {
@@ -1656,8 +1653,6 @@
 
         input.value = transcript;
         input.focus();
-
-        showSystemMessage("Transcription complete.");
       } catch (error) {
         showSystemMessage(getReadableError(error));
       } finally {
@@ -1676,10 +1671,7 @@
 
   function stopRecording() {
     if (mediaRecorder && mediaRecorder.state === "recording") {
-      showSystemMessage("Stopping recording...");
       mediaRecorder.stop();
-    } else {
-      showSystemMessage("No active recording was found.");
     }
   }
 
@@ -1725,8 +1717,6 @@
       event.preventDefault();
       event.stopPropagation();
 
-      showSystemMessage("Mic button clicked.");
-
       try {
         await unlockAudio();
 
@@ -1748,7 +1738,6 @@
   }
 
   attachUiHandlers();
-  showSystemMessage("Interface ready.");
 </script>
 </body>
 </html>
