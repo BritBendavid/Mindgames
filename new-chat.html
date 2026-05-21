@@ -206,33 +206,33 @@
     }
 
     .word-unit:hover .main-word {
-      color: var(--accent);
-    }
+  color: var(--accent);
+}
 
-    .word-unit.active-word .main-word {
-      color: var(--accent);
-    }
+.word-unit.active-word .main-word {
+  color: var(--accent);
+}
 
-    .word-unit.translated .main-word {
-      color: var(--translated);
-    }
+.word-unit.translated .main-word {
+  color: var(--translated);
+}
 
-    .translation {
-      display: none;
-      font-size: clamp(0.8rem, 1.3vw, 1.05rem);
-      letter-spacing: normal;
-      line-height: 1.1;
-      font-weight: 600;
-      color: var(--translated);
-      margin-top: 0.25em;
-      max-width: 180px;
-      word-break: break-word;
-    }
+.translation {
+  display: none;
+  font-size: clamp(0.8rem, 1.3vw, 1.05rem);
+  letter-spacing: normal;
+  line-height: 1.1;
+  font-weight: 600;
+  color: var(--translated);
+  margin-top: 0.25em;
+  max-width: 180px;
+  word-break: break-word;
+}
 
-    .word-unit.translated .translation,
-    .word-unit.translating .translation {
-      display: block;
-    }
+.word-unit.translated .translation,
+.word-unit.translating .translation {
+  display: block;
+}
 
     .message-audio-controls {
       display: inline-flex;
@@ -528,8 +528,12 @@
     const fluentLanguageSelect = document.getElementById("fluentLanguageSelect");
 
     const messages = [];
-    const translationCache = new Map();
-    const messageState = new Map();
+const translationCache = new Map();
+const singleWordAudioCache = new Map();
+const wordClickTimers = new WeakMap();
+const messageState = new Map();
+
+const WORD_DOUBLE_CLICK_DELAY = 260;
     const userMessageState = new Map();
 let userMessageCounter = 0;
 
@@ -768,9 +772,8 @@ let userMessageCounter = 0;
           unit.appendChild(translation);
 
           unit.addEventListener("click", () => {
-            const state = messageState.get(messageId);
-            translateWordUnit(unit, part, state?.text || text);
-          });
+  handleBotWordClick(unit, part, messageId, text);
+});
 
           container.appendChild(unit);
         } else {
@@ -782,6 +785,124 @@ let userMessageCounter = 0;
       }
     }
 
+    function handleBotWordClick(unit, word, messageId, fallbackSentence) {
+  const existingTimer = wordClickTimers.get(unit);
+
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    wordClickTimers.delete(unit);
+
+    const state = messageState.get(messageId);
+    handleBotWordDoubleClick(unit, word, state?.text || fallbackSentence);
+    return;
+  }
+
+  const timer = setTimeout(() => {
+    wordClickTimers.delete(unit);
+
+    handleBotWordSingleClick(unit, word);
+  }, WORD_DOUBLE_CLICK_DELAY);
+
+  wordClickTimers.set(unit, timer);
+}
+
+async function handleBotWordSingleClick(unit, word) {
+  try {
+    unit.classList.remove("translated", "translating");
+    unit.classList.add("active-word");
+
+    await playSingleWord(word);
+
+    setTimeout(() => {
+      unit.classList.remove("active-word");
+    }, 450);
+  } catch (error) {
+    unit.classList.remove("active-word");
+    showSystemMessage(getReadableError(error));
+  }
+}
+
+async function handleBotWordDoubleClick(unit, word, sentence) {
+  try {
+    unit.classList.add("active-word");
+
+    await Promise.allSettled([
+      playSingleWord(word),
+      translateWordUnit(unit, word, sentence)
+    ]);
+
+    unit.classList.remove("active-word");
+  } catch (error) {
+    unit.classList.remove("active-word");
+    showSystemMessage(getReadableError(error));
+  }
+}
+
+    async function fetchSingleWordSpeech(word) {
+  const cleanWord = word.trim();
+
+  if (!cleanWord) {
+    throw new Error("No word was selected.");
+  }
+
+  const cacheKey = `${cleanWord}|${languageSelect.value}`;
+
+  if (singleWordAudioCache.has(cacheKey)) {
+    return singleWordAudioCache.get(cacheKey);
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      action: "speak-words",
+      words: [cleanWord],
+      language: languageSelect.value
+    })
+  });
+
+  const data = await parseJsonResponse(response, "Single word speech");
+  const clip = Array.isArray(data.clips) ? data.clips[0] : null;
+
+  if (!clip || !clip.audioBase64) {
+    throw new Error("No word audio was returned.");
+  }
+
+  singleWordAudioCache.set(cacheKey, clip);
+  return clip;
+}
+
+async function playSingleWord(word) {
+  stopAllSpeech();
+  await unlockAudioContext();
+
+  const clip = await fetchSingleWordSpeech(word);
+  const context = getAudioContext();
+
+  const arrayBuffer = base64ToArrayBuffer(clip.audioBase64);
+  const rawBuffer = await context.decodeAudioData(arrayBuffer);
+  const audioBuffer = trimAudioBufferSilence(rawBuffer);
+
+  const source = context.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(context.destination);
+
+  scheduledSources = [source];
+
+  source.start(context.currentTime + 0.04);
+
+  return new Promise(resolve => {
+    source.addEventListener("ended", () => {
+      scheduledSources = [];
+      resolve();
+    });
+  });
+}
+    
     function createMessageAudioControls(messageId) {
       const wrapper = document.createElement("div");
       wrapper.className = "message-audio-controls";
@@ -1274,59 +1395,71 @@ function renderAnalyzedUserMessage(container, parts) {
       }
     }
 
-    async function translateWordUnit(unit, word, sentence) {
-      const cleanWord = word.trim();
-      if (!cleanWord) return;
+   async function translateWordUnit(unit, word, sentence) {
+  const cleanWord = word.trim();
+  if (!cleanWord) return;
 
-      const translationEl = unit.querySelector(".translation");
-      const chatLanguage = languageSelect.value;
-      const fluentLanguage = fluentLanguageSelect.value;
+  const translationEl = unit.querySelector(".translation");
+  const chatLanguage = languageSelect.value;
+  const fluentLanguage = fluentLanguageSelect.value;
 
-      const cacheKey = `${cleanWord}|${chatLanguage}|${fluentLanguage}|${sentence}`;
+  const cacheKey = `${cleanWord}|${chatLanguage}|${fluentLanguage}|${sentence}`;
 
-      unit.classList.remove("translated");
-      unit.classList.add("translating");
-      translationEl.textContent = "…";
+  unit.classList.remove("translated");
+  unit.classList.add("translating");
 
-      if (translationCache.has(cacheKey)) {
-        translationEl.textContent = translationCache.get(cacheKey);
-        unit.classList.remove("translating");
-        unit.classList.add("translated");
-        return;
-      }
+  if (translationEl) {
+    translationEl.textContent = "…";
+  }
 
-      try {
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({
-            action: "translate-word",
-            word: cleanWord,
-            sentence,
-            chatLanguage,
-            fluentLanguage
-          })
-        });
-
-        const data = await parseJsonResponse(response, "Translation");
-
-        const translated = data.translation || "";
-        translationCache.set(cacheKey, translated);
-
-        translationEl.textContent = translated;
-        unit.classList.remove("translating");
-        unit.classList.add("translated");
-      } catch (error) {
-        translationEl.textContent = "failed";
-        unit.classList.remove("translating");
-        unit.classList.add("translated");
-        showSystemMessage(getReadableError(error));
-      }
+  if (translationCache.has(cacheKey)) {
+    if (translationEl) {
+      translationEl.textContent = translationCache.get(cacheKey);
     }
+
+    unit.classList.remove("translating");
+    unit.classList.add("translated");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({
+        action: "translate-word",
+        word: cleanWord,
+        sentence,
+        chatLanguage,
+        fluentLanguage
+      })
+    });
+
+    const data = await parseJsonResponse(response, "Translation");
+
+    const translated = data.translation || "";
+    translationCache.set(cacheKey, translated);
+
+    if (translationEl) {
+      translationEl.textContent = translated;
+    }
+
+    unit.classList.remove("translating");
+    unit.classList.add("translated");
+  } catch (error) {
+    if (translationEl) {
+      translationEl.textContent = "failed";
+    }
+
+    unit.classList.remove("translating");
+    unit.classList.add("translated");
+    showSystemMessage(getReadableError(error));
+  }
+}
 
     async function sendToBot(userText) {
   messages.push({
