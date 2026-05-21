@@ -358,10 +358,128 @@
       transform: none;
     }
 
-    .recording {
-      background: var(--danger);
-      animation: pulse 1s infinite;
-    }
+    .hidden {
+  display: none !important;
+}
+
+.mode-card {
+  gap: 12px;
+}
+
+.input-mode-toggle {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.input-mode-option {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 13px;
+  background: transparent;
+  color: #9ca3af;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.input-mode-option.active {
+  background: white;
+  color: black;
+}
+
+.speech-shell {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0 8px;
+  background:
+    linear-gradient(
+      to top,
+      rgba(3, 3, 3, 0.98),
+      rgba(3, 3, 3, 0.82),
+      rgba(3, 3, 3, 0)
+    );
+}
+
+.speech-record-button {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.22), transparent 28%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));
+  color: white;
+  font-size: 2.2rem;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 20px 70px rgba(0, 0, 0, 0.45),
+    inset 0 0 30px rgba(255, 255, 255, 0.05);
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.speech-record-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 26px 80px rgba(0, 0, 0, 0.52),
+    0 0 36px rgba(96, 165, 250, 0.16),
+    inset 0 0 30px rgba(255, 255, 255, 0.06);
+}
+
+.speech-record-button.recording {
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.24), transparent 28%),
+    linear-gradient(145deg, rgba(239, 68, 68, 0.95), rgba(127, 29, 29, 0.95));
+  animation: recordPulse 1.15s infinite;
+}
+
+.speech-record-button.processing {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.mic-symbol {
+  display: inline-block;
+  transform: translateY(2px);
+}
+
+.speech-status {
+  color: #9ca3af;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+@keyframes recordPulse {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(239, 68, 68, 0.55),
+      0 20px 70px rgba(0, 0, 0, 0.45);
+  }
+
+  70% {
+    box-shadow:
+      0 0 0 18px rgba(239, 68, 68, 0),
+      0 20px 70px rgba(0, 0, 0, 0.45);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(239, 68, 68, 0),
+      0 20px 70px rgba(0, 0, 0, 0.45);
+  }
+}
 
     .system-message {
       position: fixed;
@@ -458,61 +576,81 @@
       </div>
 
       <div class="controls">
-        <div class="control-card">
-          <label for="languageSelect">Chat</label>
-          <div class="select-wrap">
-            <select id="languageSelect">
-              <option value="English" selected>🇺🇸 English</option>
-              <option value="Hebrew">🇮🇱 Hebrew</option>
-              <option value="Spanish">🇪🇸 Spanish</option>
-              <option value="French">🇫🇷 French</option>
-              <option value="German">🇩🇪 German</option>
-              <option value="Arabic">🇸🇦 Arabic</option>
-              <option value="Russian">🇷🇺 Russian</option>
-              <option value="Italian">🇮🇹 Italian</option>
-              <option value="Portuguese">🇵🇹 Portuguese</option>
-              <option value="Chinese">🇨🇳 Chinese</option>
-              <option value="Japanese">🇯🇵 Japanese</option>
-              <option value="Korean">🇰🇷 Korean</option>
-            </select>
-          </div>
-        </div>
+  <div class="control-card">
+    <label for="languageSelect">Chat</label>
+    <div class="select-wrap">
+      <select id="languageSelect">
+        <option value="English" selected>🇺🇸 English</option>
+        <option value="Hebrew">🇮🇱 Hebrew</option>
+        <option value="Spanish">🇪🇸 Spanish</option>
+        <option value="French">🇫🇷 French</option>
+        <option value="German">🇩🇪 German</option>
+        <option value="Arabic">🇸🇦 Arabic</option>
+        <option value="Russian">🇷🇺 Russian</option>
+        <option value="Italian">🇮🇹 Italian</option>
+        <option value="Portuguese">🇵🇹 Portuguese</option>
+        <option value="Chinese">🇨🇳 Chinese</option>
+        <option value="Japanese">🇯🇵 Japanese</option>
+        <option value="Korean">🇰🇷 Korean</option>
+      </select>
+    </div>
+  </div>
 
-        <div class="control-card">
-          <label for="fluentLanguageSelect">Fluent</label>
-          <div class="select-wrap">
-            <select id="fluentLanguageSelect">
-              <option value="English" selected>🇺🇸 English</option>
-              <option value="Hebrew">🇮🇱 Hebrew</option>
-              <option value="Spanish">🇪🇸 Spanish</option>
-              <option value="French">🇫🇷 French</option>
-              <option value="German">🇩🇪 German</option>
-              <option value="Arabic">🇸🇦 Arabic</option>
-              <option value="Russian">🇷🇺 Russian</option>
-              <option value="Italian">🇮🇹 Italian</option>
-              <option value="Portuguese">🇵🇹 Portuguese</option>
-              <option value="Chinese">🇨🇳 Chinese</option>
-              <option value="Japanese">🇯🇵 Japanese</option>
-              <option value="Korean">🇰🇷 Korean</option>
-            </select>
-          </div>
-        </div>
-      </div>
+  <div class="control-card">
+    <label for="fluentLanguageSelect">Fluent</label>
+    <div class="select-wrap">
+      <select id="fluentLanguageSelect">
+        <option value="English" selected>🇺🇸 English</option>
+        <option value="Hebrew">🇮🇱 Hebrew</option>
+        <option value="Spanish">🇪🇸 Spanish</option>
+        <option value="French">🇫🇷 French</option>
+        <option value="German">🇩🇪 German</option>
+        <option value="Arabic">🇸🇦 Arabic</option>
+        <option value="Russian">🇷🇺 Russian</option>
+        <option value="Italian">🇮🇹 Italian</option>
+        <option value="Portuguese">🇵🇹 Portuguese</option>
+        <option value="Chinese">🇨🇳 Chinese</option>
+        <option value="Japanese">🇯🇵 Japanese</option>
+        <option value="Korean">🇰🇷 Korean</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="control-card mode-card">
+    <label>Mode</label>
+    <div class="input-mode-toggle">
+      <button id="writingModeButton" class="input-mode-option active" type="button">
+        Writing
+      </button>
+      <button id="speechModeButton" class="input-mode-option" type="button">
+        Speech
+      </button>
+    </div>
+  </div>
+</div>
     </header>
 
     <main id="messageHistory" class="message-history"></main>
 
-    <div class="composer-shell">
-      <form id="chatForm" onsubmit="return false;">
-  <button id="transcribeButton" class="icon-button" type="button" title="Record speech">
-    🎤
+    <div id="composerShell" class="composer-shell">
+  <form id="chatForm" onsubmit="return false;">
+    <input id="userInput" autocomplete="off" placeholder="Ask something..." />
+
+    <button id="sendButton" class="send-button" type="button">
+      Send
+    </button>
+  </form>
+</div>
+
+<div id="speechShell" class="speech-shell hidden">
+  <button id="speechRecordButton" class="speech-record-button" type="button" title="Record speech">
+    <span class="mic-symbol">🎤</span>
   </button>
 
-  <input id="userInput" autocomplete="off" placeholder="Ask something..." />
-
-  <button id="sendButton" class="send-button" type="button">Send</button>
-</form>
-    </div>
+  <div id="speechStatus" class="speech-status">
+    Tap to speak
+  </div>
+</div>
   </div>
 
   <script>
@@ -520,12 +658,22 @@
   const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
 
   const form = document.getElementById("chatForm");
-  const input = document.getElementById("userInput");
-  const sendButton = document.getElementById("sendButton");
-  const transcribeButton = document.getElementById("transcribeButton");
-  const messageHistory = document.getElementById("messageHistory");
-  const languageSelect = document.getElementById("languageSelect");
-  const fluentLanguageSelect = document.getElementById("fluentLanguageSelect");
+const input = document.getElementById("userInput");
+const sendButton = document.getElementById("sendButton");
+
+const composerShell = document.getElementById("composerShell");
+const speechShell = document.getElementById("speechShell");
+const speechRecordButton = document.getElementById("speechRecordButton");
+const speechStatus = document.getElementById("speechStatus");
+
+const writingModeButton = document.getElementById("writingModeButton");
+const speechModeButton = document.getElementById("speechModeButton");
+
+const messageHistory = document.getElementById("messageHistory");
+const languageSelect = document.getElementById("languageSelect");
+const fluentLanguageSelect = document.getElementById("fluentLanguageSelect");
+
+let inputMode = "writing";
 
   const messages = [];
   const translationCache = new Map();
@@ -547,6 +695,36 @@
   let currentPlaybackToken = 0;
   let currentFullAudio = null;
 
+  function setInputMode(mode) {
+  inputMode = mode === "speech" ? "speech" : "writing";
+
+  const isSpeech = inputMode === "speech";
+
+  writingModeButton.classList.toggle("active", !isSpeech);
+  speechModeButton.classList.toggle("active", isSpeech);
+
+  composerShell.classList.toggle("hidden", isSpeech);
+  speechShell.classList.toggle("hidden", !isSpeech);
+
+  if (!isSpeech) {
+    input.focus();
+  }
+}
+
+function setSpeechStatus(text) {
+  if (speechStatus) {
+    speechStatus.textContent = text;
+  }
+}
+
+function resetSpeechButton() {
+  if (!speechRecordButton) return;
+
+  speechRecordButton.disabled = false;
+  speechRecordButton.classList.remove("recording", "processing");
+  speechRecordButton.innerHTML = `<span class="mic-symbol">🎤</span>`;
+}
+    
   function getReadableError(error) {
     if (!error) return "Unknown error";
     if (typeof error === "string") return error;
@@ -1493,205 +1671,218 @@
   }
 
   async function handleSend() {
-    await unlockAudio();
+  await unlockAudio();
 
-    const userText = input.value.trim();
-    if (!userText) return;
+  const userText = input.value.trim();
+  if (!userText) return;
 
-    input.value = "";
-    sendButton.disabled = true;
-    transcribeButton.disabled = true;
+  input.value = "";
+  sendButton.disabled = true;
 
-    try {
-      await sendToBot(userText);
-    } catch (error) {
-      showSystemMessage(getReadableError(error));
-    } finally {
-      sendButton.disabled = false;
-      transcribeButton.disabled = false;
-      input.focus();
-    }
+  try {
+    await sendToBot(userText);
+  } catch (error) {
+    showSystemMessage(getReadableError(error));
+  } finally {
+    sendButton.disabled = false;
+    input.focus();
   }
+}
 
   function getBestRecordingMimeType() {
-    const candidates = [
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/mp4;codecs=mp4a.40.2",
-      "audio/mp4",
-      "audio/ogg;codecs=opus",
-      "audio/ogg"
-    ];
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+    "audio/ogg;codecs=opus",
+    "audio/ogg"
+  ];
 
-    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
+  if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
 
-    for (const type of candidates) {
-      if (MediaRecorder.isTypeSupported(type)) return type;
-    }
-
-    return "";
+  for (const type of candidates) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
   }
 
-  function getAudioFileExtension(mimeType) {
-    const type = (mimeType || "").toLowerCase();
+  return "";
+}
 
-    if (type.includes("webm")) return "webm";
-    if (type.includes("mp4")) return "mp4";
-    if (type.includes("mpeg")) return "mp3";
-    if (type.includes("mp3")) return "mp3";
-    if (type.includes("wav")) return "wav";
-    if (type.includes("ogg")) return "ogg";
+function getAudioFileExtension(mimeType) {
+  const type = (mimeType || "").toLowerCase();
 
-    return "webm";
+  if (type.includes("webm")) return "webm";
+  if (type.includes("mp4")) return "mp4";
+  if (type.includes("mpeg")) return "mp3";
+  if (type.includes("mp3")) return "mp3";
+  if (type.includes("wav")) return "wav";
+  if (type.includes("ogg")) return "ogg";
+
+  return "webm";
+}
+
+function getAudioFileName(mimeType) {
+  return `recording.${getAudioFileExtension(mimeType)}`;
+}
+
+async function transcribeAudioBlob(audioBlob, mimeType) {
+  if (!audioBlob || audioBlob.size < 1000) {
+    throw new Error("The recording was too short or empty.");
   }
 
-  function getAudioFileName(mimeType) {
-    return `recording.${getAudioFileExtension(mimeType)}`;
+  const finalMimeType = mimeType || audioBlob.type || "audio/webm";
+  const fileName = getAudioFileName(finalMimeType);
+
+  const audioFile = new File([audioBlob], fileName, {
+    type: finalMimeType
+  });
+
+  const formData = new FormData();
+  formData.append("audio", audioFile);
+  formData.append("chatLanguage", languageSelect.value);
+  formData.append("fluentLanguage", fluentLanguageSelect.value);
+  formData.append(
+    "transcriptionPrompt",
+    `The speaker may switch between languages, especially ${languageSelect.value} and ${fluentLanguageSelect.value}. Transcribe exactly what is spoken. Do not translate. Preserve mixed-language speech.`
+  );
+
+  const data = await callTranscribeFunction(formData, "Transcription");
+
+  const transcript =
+    data.text ||
+    data.transcript ||
+    data.transcription ||
+    "";
+
+  if (!transcript.trim()) {
+    throw new Error("No transcript was returned.");
   }
 
-  async function transcribeAudioBlob(audioBlob, mimeType) {
-    if (!audioBlob || audioBlob.size < 1000) {
-      throw new Error("The recording was too short or empty.");
-    }
+  return transcript.trim();
+}
 
-    const finalMimeType = mimeType || audioBlob.type || "audio/webm";
-    const fileName = getAudioFileName(finalMimeType);
-
-    const audioFile = new File([audioBlob], fileName, {
-      type: finalMimeType
-    });
-
-    const formData = new FormData();
-    formData.append("audio", audioFile);
-    formData.append("chatLanguage", languageSelect.value);
-    formData.append("fluentLanguage", fluentLanguageSelect.value);
-    formData.append(
-      "transcriptionPrompt",
-      `The speaker may switch between languages, especially ${languageSelect.value} and ${fluentLanguageSelect.value}. Transcribe exactly what is spoken. Do not translate. Preserve mixed-language speech.`
-    );
-
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/transcribe-audio`, {
-      method: "POST",
-      headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-      },
-      body: formData
-    });
-
-    const data = await parseJsonResponse(response, "Transcription");
-
-    const transcript =
-      data.text ||
-      data.transcript ||
-      data.transcription ||
-      "";
-
-    if (!transcript.trim()) {
-      throw new Error("No transcript was returned.");
-    }
-
-    return transcript.trim();
+async function startRecording() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showSystemMessage("Audio recording is not supported in this browser.");
+    return;
   }
 
-  async function startRecording() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showSystemMessage("Audio recording is not supported in this browser.");
-      return;
+  if (!window.MediaRecorder) {
+    showSystemMessage("MediaRecorder is not supported in this browser.");
+    return;
+  }
+
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  recordedChunks = [];
+
+  const mimeType = getBestRecordingMimeType();
+  const options = mimeType ? { mimeType } : {};
+
+  try {
+    mediaRecorder = new MediaRecorder(stream, options);
+  } catch {
+    mediaRecorder = new MediaRecorder(stream);
+  }
+
+  mediaRecorder.addEventListener("dataavailable", event => {
+    if (event.data && event.data.size > 0) {
+      recordedChunks.push(event.data);
     }
+  });
 
-    if (!window.MediaRecorder) {
-      showSystemMessage("MediaRecorder is not supported in this browser.");
-      return;
-    }
+  mediaRecorder.addEventListener("start", () => {
+    isRecording = true;
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    speechRecordButton.classList.add("recording");
+    speechRecordButton.classList.remove("processing");
+    speechRecordButton.innerHTML = `<span class="mic-symbol">■</span>`;
 
-    recordedChunks = [];
+    setSpeechStatus("Recording");
+  });
 
-    const mimeType = getBestRecordingMimeType();
-    const options = mimeType ? { mimeType } : {};
+  mediaRecorder.addEventListener("stop", async () => {
+    speechRecordButton.disabled = true;
+    speechRecordButton.classList.remove("recording");
+    speechRecordButton.classList.add("processing");
+    speechRecordButton.innerHTML = `<span class="mic-symbol">…</span>`;
+    setSpeechStatus("Transcribing");
 
     try {
-      mediaRecorder = new MediaRecorder(stream, options);
-    } catch {
-      mediaRecorder = new MediaRecorder(stream);
-    }
+      const actualMimeType =
+        mediaRecorder.mimeType ||
+        mimeType ||
+        recordedChunks[0]?.type ||
+        "audio/webm";
 
-    mediaRecorder.addEventListener("dataavailable", event => {
-      if (event.data && event.data.size > 0) {
-        recordedChunks.push(event.data);
-      }
-    });
+      const audioBlob = new Blob(recordedChunks, {
+        type: actualMimeType
+      });
 
-    mediaRecorder.addEventListener("start", () => {
-      isRecording = true;
-      transcribeButton.classList.add("recording");
-      transcribeButton.textContent = "■";
-      input.placeholder = "Recording... click again to stop";
-    });
+      const transcript = await transcribeAudioBlob(audioBlob, actualMimeType);
 
-    mediaRecorder.addEventListener("stop", async () => {
-      transcribeButton.disabled = true;
-      transcribeButton.textContent = "…";
-      input.placeholder = "Transcribing...";
+      if (inputMode === "speech") {
+        setSpeechStatus("Sending");
 
-      try {
-        const actualMimeType =
-          mediaRecorder.mimeType ||
-          mimeType ||
-          recordedChunks[0]?.type ||
-          "audio/webm";
+        await sendToBot(transcript);
 
-        const audioBlob = new Blob(recordedChunks, {
-          type: actualMimeType
-        });
-
-        const transcript = await transcribeAudioBlob(audioBlob, actualMimeType);
-
+        setSpeechStatus("Tap to speak");
+      } else {
         input.value = transcript;
         input.focus();
-      } catch (error) {
-        showSystemMessage(getReadableError(error));
-      } finally {
-        stream.getTracks().forEach(track => track.stop());
-
-        isRecording = false;
-        transcribeButton.disabled = false;
-        transcribeButton.classList.remove("recording");
-        transcribeButton.textContent = "🎤";
-        input.placeholder = "Ask something...";
+        setSpeechStatus("Tap to speak");
       }
-    });
+    } catch (error) {
+      showSystemMessage(getReadableError(error));
+      setSpeechStatus("Tap to speak");
+    } finally {
+      stream.getTracks().forEach(track => track.stop());
 
-    mediaRecorder.start();
-  }
-
-  function stopRecording() {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      mediaRecorder.stop();
+      isRecording = false;
+      resetSpeechButton();
     }
+  });
+
+  mediaRecorder.start();
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === "recording") {
+    mediaRecorder.stop();
   }
+}
+
+async function handleSpeechRecordButtonClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  try {
+    await unlockAudio();
+
+    if (isRecording) {
+      stopRecording();
+    } else {
+      await startRecording();
+    }
+  } catch (error) {
+    showSystemMessage(getReadableError(error));
+
+    isRecording = false;
+    resetSpeechButton();
+    setSpeechStatus("Tap to speak");
+  }
+}
 
   function attachUiHandlers() {
-    if (!sendButton) {
-      showSystemMessage("Send button was not found.");
-      return;
-    }
+  if (form) {
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    });
+  }
 
-    if (!transcribeButton) {
-      showSystemMessage("Mic button was not found.");
-      return;
-    }
-
-    if (form) {
-      form.addEventListener("submit", event => {
-        event.preventDefault();
-        event.stopPropagation();
-        return false;
-      });
-    }
-
+  if (sendButton) {
     sendButton.addEventListener("click", event => {
       event.preventDefault();
       event.stopPropagation();
@@ -1700,7 +1891,9 @@
         showSystemMessage(getReadableError(error));
       });
     });
+  }
 
+  if (input) {
     input.addEventListener("keydown", event => {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
@@ -1710,32 +1903,27 @@
         });
       }
     });
+  }
 
-    transcribeButton.addEventListener("click", async event => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      try {
-        await unlockAudio();
-
-        if (isRecording) {
-          stopRecording();
-        } else {
-          await startRecording();
-        }
-      } catch (error) {
-        showSystemMessage(getReadableError(error));
-
-        isRecording = false;
-        transcribeButton.disabled = false;
-        transcribeButton.classList.remove("recording");
-        transcribeButton.textContent = "🎤";
-        input.placeholder = "Ask something...";
-      }
+  if (writingModeButton) {
+    writingModeButton.addEventListener("click", () => {
+      setInputMode("writing");
     });
   }
 
+  if (speechModeButton) {
+    speechModeButton.addEventListener("click", () => {
+      setInputMode("speech");
+    });
+  }
+
+  if (speechRecordButton) {
+    speechRecordButton.addEventListener("click", handleSpeechRecordButtonClick);
+  }
+}
+
   attachUiHandlers();
+setInputMode("writing");
 </script>
 </body>
 </html>
