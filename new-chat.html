@@ -529,7 +529,6 @@
 
     const messages = [];
 const translationCache = new Map();
-const singleWordAudioCache = new Map();
 const wordClickTimers = new WeakMap();
 const messageState = new Map();
 
@@ -746,46 +745,49 @@ let userMessageCounter = 0;
     }
 
     function renderWordsIntoElement(text, container, messageId) {
-      container.innerHTML = "";
+  container.innerHTML = "";
 
-      const parts = splitTextIntoParts(text);
+  const parts = splitTextIntoParts(text);
+  let wordIndex = 0;
 
-      for (const part of parts) {
-        if (/^\s+$/.test(part)) {
-          container.appendChild(document.createTextNode(" "));
-          continue;
-        }
-
-        if (isClickableWord(part)) {
-          const unit = document.createElement("span");
-          unit.className = "word-unit";
-          unit.dataset.word = part;
-
-          const mainWord = document.createElement("span");
-          mainWord.className = "main-word";
-          mainWord.textContent = part;
-
-          const translation = document.createElement("span");
-          translation.className = "translation";
-
-          unit.appendChild(mainWord);
-          unit.appendChild(translation);
-
-          unit.addEventListener("click", () => {
-  handleBotWordClick(unit, part, messageId, text);
-});
-
-          container.appendChild(unit);
-        } else {
-          const punct = document.createElement("span");
-          punct.className = "punct";
-          punct.textContent = part;
-          container.appendChild(punct);
-        }
-      }
+  for (const part of parts) {
+    if (/^\s+$/.test(part)) {
+      container.appendChild(document.createTextNode(" "));
+      continue;
     }
 
-    function handleBotWordClick(unit, word, messageId, fallbackSentence) {
+    if (isClickableWord(part)) {
+      const unit = document.createElement("span");
+      unit.className = "word-unit";
+      unit.dataset.word = part;
+      unit.dataset.wordIndex = String(wordIndex);
+
+      const mainWord = document.createElement("span");
+      mainWord.className = "main-word";
+      mainWord.textContent = part;
+
+      const translation = document.createElement("span");
+      translation.className = "translation";
+
+      unit.appendChild(mainWord);
+      unit.appendChild(translation);
+
+      unit.addEventListener("click", () => {
+        handleBotWordClick(unit, part, messageId, text);
+      });
+
+      container.appendChild(unit);
+      wordIndex++;
+    } else {
+      const punct = document.createElement("span");
+      punct.className = "punct";
+      punct.textContent = part;
+      container.appendChild(punct);
+    }
+  }
+}
+
+   function handleBotWordClick(unit, word, messageId, fallbackSentence) {
   const existingTimer = wordClickTimers.get(unit);
 
   if (existingTimer) {
@@ -793,41 +795,39 @@ let userMessageCounter = 0;
     wordClickTimers.delete(unit);
 
     const state = messageState.get(messageId);
-    handleBotWordDoubleClick(unit, word, state?.text || fallbackSentence);
+    handleBotWordDoubleClick(unit, word, messageId, state?.text || fallbackSentence);
     return;
   }
 
   const timer = setTimeout(() => {
     wordClickTimers.delete(unit);
-
-    handleBotWordSingleClick(unit, word);
+    handleBotWordSingleClick(unit, word, messageId);
   }, WORD_DOUBLE_CLICK_DELAY);
 
   wordClickTimers.set(unit, timer);
 }
 
-async function handleBotWordSingleClick(unit, word) {
+async function handleBotWordSingleClick(unit, word, messageId) {
   try {
-    unit.classList.remove("translated", "translating");
     unit.classList.add("active-word");
 
-    await playSingleWord(word);
+    await playPreloadedWord(unit, word, messageId);
 
     setTimeout(() => {
       unit.classList.remove("active-word");
-    }, 450);
+    }, 250);
   } catch (error) {
     unit.classList.remove("active-word");
     showSystemMessage(getReadableError(error));
   }
 }
 
-async function handleBotWordDoubleClick(unit, word, sentence) {
+async function handleBotWordDoubleClick(unit, word, messageId, sentence) {
   try {
     unit.classList.add("active-word");
 
     await Promise.allSettled([
-      playSingleWord(word),
+      playPreloadedWord(unit, word, messageId),
       translateWordUnit(unit, word, sentence)
     ]);
 
@@ -838,54 +838,41 @@ async function handleBotWordDoubleClick(unit, word, sentence) {
   }
 }
 
-    async function fetchSingleWordSpeech(word) {
-  const cleanWord = word.trim();
-
-  if (!cleanWord) {
-    throw new Error("No word was selected.");
-  }
-
-  const cacheKey = `${cleanWord}|${languageSelect.value}`;
-
-  if (singleWordAudioCache.has(cacheKey)) {
-    return singleWordAudioCache.get(cacheKey);
-  }
-
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": SUPABASE_ANON_KEY,
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-    },
-    body: JSON.stringify({
-      action: "speak-words",
-      words: [cleanWord],
-      language: languageSelect.value
-    })
-  });
-
-  const data = await parseJsonResponse(response, "Single word speech");
-  const clip = Array.isArray(data.clips) ? data.clips[0] : null;
-
-  if (!clip || !clip.audioBase64) {
-    throw new Error("No word audio was returned.");
-  }
-
-  singleWordAudioCache.set(cacheKey, clip);
-  return clip;
-}
-
-async function playSingleWord(word) {
+async function playPreloadedWord(unit, word, messageId) {
   stopAllSpeech();
   await unlockAudioContext();
 
-  const clip = await fetchSingleWordSpeech(word);
+  const state = messageState.get(messageId);
+
+  if (!state) {
+    throw new Error("Could not find this message.");
+  }
+
+  const wordIndex = Number(unit.dataset.wordIndex);
+
+  if (!Number.isFinite(wordIndex)) {
+    throw new Error("Could not find this word index.");
+  }
+
+  const clips = await getWordClipsForMessage(state);
+  const clip = clips[wordIndex];
+
+  if (!clip || !clip.audioBase64) {
+    throw new Error("This word recording is not ready yet.");
+  }
+
   const context = getAudioContext();
 
-  const arrayBuffer = base64ToArrayBuffer(clip.audioBase64);
-  const rawBuffer = await context.decodeAudioData(arrayBuffer);
-  const audioBuffer = trimAudioBufferSilence(rawBuffer);
+  let audioBuffer;
+
+  if (clip.audioBuffer) {
+    audioBuffer = clip.audioBuffer;
+  } else {
+    const arrayBuffer = base64ToArrayBuffer(clip.audioBase64);
+    const rawBuffer = await context.decodeAudioData(arrayBuffer);
+    audioBuffer = trimAudioBufferSilence(rawBuffer);
+    clip.audioBuffer = audioBuffer;
+  }
 
   const source = context.createBufferSource();
   source.buffer = audioBuffer;
@@ -1405,10 +1392,9 @@ function renderAnalyzedUserMessage(container, parts) {
 
   const cacheKey = `${cleanWord}|${chatLanguage}|${fluentLanguage}|${sentence}`;
 
-  unit.classList.remove("translated");
   unit.classList.add("translating");
 
-  if (translationEl) {
+  if (translationEl && !translationEl.textContent) {
     translationEl.textContent = "…";
   }
 
