@@ -461,6 +461,56 @@
   font-weight: 800;
 }
 
+.speech-review-card {
+  width: min(900px, 100%);
+  margin: 0 auto;
+  background: rgba(239, 68, 68, 0.09);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: 24px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.speech-review-title {
+  color: #fecaca;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.86rem;
+}
+
+.speech-review-text {
+  color: white;
+  font-size: 1.15rem;
+  line-height: 1.5;
+}
+
+.speech-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.speech-review-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.speech-review-button.primary {
+  background: white;
+  color: black;
+}
+
+.speech-review-button.secondary {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
 @keyframes recordPulse {
   0% {
     box-shadow:
@@ -695,6 +745,104 @@ let inputMode = "writing";
   let currentPlaybackToken = 0;
   let currentFullAudio = null;
 
+  let activeSpeechCorrection = null;
+let pendingBackgroundBot = null;
+
+    function buildChatLanguageSuggestion(parts) {
+  return parts
+    .map(part => {
+      if (part.isChatLanguage === false && part.translation) {
+        return part.translation;
+      }
+
+      return part.text || "";
+    })
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasForeignLanguageParts(parts) {
+  return parts.some(part => part && part.isChatLanguage === false);
+}
+
+async function speakInstruction(text) {
+  const speech = await fetchFullSpeech(text);
+
+  if (!speech.audioBuffer) {
+    const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
+    const context = getAudioContext();
+    speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
+  }
+
+  stopAllSpeech();
+  await unlockAudioContext();
+  playFullAudioBuffer(speech.audioBuffer);
+}
+
+function removeSpeechReviewCard() {
+  const existing = document.querySelector(".speech-review-card");
+  if (existing) {
+    existing.remove();
+  }
+}
+
+function addSpeechReviewCard({ transcript, suggestion, parts, onRetry, onContinue }) {
+  removeSpeechReviewCard();
+
+  const card = document.createElement("div");
+  card.className = "speech-review-card";
+
+  const title = document.createElement("div");
+  title.className = "speech-review-title";
+  title.textContent = "Try again in the chat language";
+
+  const text = document.createElement("div");
+  text.className = "speech-review-text";
+
+  renderAnalyzedUserMessage(text, parts);
+
+  const suggestionLine = document.createElement("div");
+  suggestionLine.className = "speech-review-text";
+  suggestionLine.textContent = `Try saying: ${suggestion}`;
+
+  const actions = document.createElement("div");
+  actions.className = "speech-review-actions";
+
+  const retryButton = document.createElement("button");
+  retryButton.type = "button";
+  retryButton.className = "speech-review-button primary";
+  retryButton.textContent = "Re-record";
+
+  const continueButton = document.createElement("button");
+  continueButton.type = "button";
+  continueButton.className = "speech-review-button secondary";
+  continueButton.textContent = "Continue anyway";
+
+  retryButton.addEventListener("click", () => {
+    removeSpeechReviewCard();
+    onRetry();
+  });
+
+  continueButton.addEventListener("click", () => {
+    removeSpeechReviewCard();
+    onContinue();
+  });
+
+  actions.appendChild(retryButton);
+  actions.appendChild(continueButton);
+
+  card.appendChild(title);
+  card.appendChild(text);
+  card.appendChild(suggestionLine);
+  card.appendChild(actions);
+
+  messageHistory.appendChild(card);
+  scrollMessagesToBottom();
+
+  return card;
+}
+
   function setInputMode(mode) {
   inputMode = mode === "speech" ? "speech" : "writing";
 
@@ -871,6 +1019,135 @@ function resetSpeechButton() {
     scrollMessagesToBottom();
     return card;
   }
+
+    async function prepareBotResponseInBackground(userText) {
+  messages.push({
+    role: "user",
+    content: userText
+  });
+
+  const responsePromise = callChatFunction(
+    {
+      messages,
+      language: languageSelect.value
+    },
+    "Chat"
+  );
+
+  return {
+    userText,
+    responsePromise
+  };
+}
+
+    async function revealPreparedBotResponse(prepared) {
+  const thinkingCard = addThinkingMessage();
+
+  try {
+    const data = await prepared.responsePromise;
+
+    messages.push({
+      role: "assistant",
+      content: data.reply
+    });
+
+    const fullSpeechPromise = fetchFullSpeech(data.reply);
+    const fullSpeech = await fullSpeechPromise;
+
+    thinkingCard.remove();
+
+    const botMessageId = addBotMessage(data.reply, {
+      fullSpeech,
+      fullSpeechPromise
+    });
+
+    const state = messageState.get(botMessageId);
+
+    if (state) {
+      state.wordClipsPromise = fetchIndividualWordSpeechForTokens(state.speakableTokens)
+        .then(clips => {
+          state.wordClips = clips;
+          state.wordClipMap = new Map(
+            clips
+              .filter(clip => clip && clip.tokenId)
+              .map(clip => [clip.tokenId, clip])
+          );
+
+          return clips;
+        })
+        .catch(() => null);
+
+      await playConversationalMessage(state);
+    }
+  } catch (error) {
+    thinkingCard.remove();
+    showSystemMessage(getReadableError(error));
+  }
+}
+
+    async function handleSpeechTranscript(transcript) {
+  if (!transcript.trim()) return;
+
+  addUserMessage(transcript);
+
+  /*
+    Start the chatbot immediately.
+    Do not wait for the language check.
+  */
+  pendingBackgroundBot = await prepareBotResponseInBackground(transcript);
+
+  let parts = [];
+
+  try {
+    parts = await analyzeUserMessageLanguageParts(transcript);
+  } catch {
+    /*
+      If language analysis fails, do not block the conversation.
+    */
+    await revealPreparedBotResponse(pendingBackgroundBot);
+    pendingBackgroundBot = null;
+    return;
+  }
+
+  if (!hasForeignLanguageParts(parts)) {
+    await revealPreparedBotResponse(pendingBackgroundBot);
+    pendingBackgroundBot = null;
+    return;
+  }
+
+  const suggestion = buildChatLanguageSuggestion(parts);
+
+  const instructionText =
+    `Try again in ${languageSelect.value}. Say: ${suggestion}`;
+
+  activeSpeechCorrection = {
+    transcript,
+    parts,
+    suggestion,
+    prepared: pendingBackgroundBot
+  };
+
+  addSpeechReviewCard({
+    transcript,
+    suggestion,
+    parts,
+    onRetry: () => {
+      setSpeechStatus("Tap to re-record");
+    },
+    onContinue: async () => {
+      const prepared = activeSpeechCorrection?.prepared || pendingBackgroundBot;
+
+      activeSpeechCorrection = null;
+      pendingBackgroundBot = null;
+
+      if (prepared) {
+        await revealPreparedBotResponse(prepared);
+      }
+    }
+  });
+
+  speakInstruction(instructionText).catch(() => {});
+}
 
   async function analyzeUserMessageLanguageParts(text) {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
@@ -1827,46 +2104,46 @@ async function startRecording() {
   });
 
   mediaRecorder.addEventListener("stop", async () => {
-    speechRecordButton.disabled = true;
-    speechRecordButton.classList.remove("recording");
-    speechRecordButton.classList.add("processing");
-    speechRecordButton.innerHTML = `<span class="mic-symbol">…</span>`;
-    setSpeechStatus("Transcribing");
+  speechRecordButton.disabled = true;
+  speechRecordButton.classList.remove("recording");
+  speechRecordButton.classList.add("processing");
+  speechRecordButton.innerHTML = `<span class="mic-symbol">…</span>`;
+  setSpeechStatus("Transcribing");
 
-    try {
-      const actualMimeType =
-        mediaRecorder.mimeType ||
-        mimeType ||
-        recordedChunks[0]?.type ||
-        "audio/webm";
+  try {
+    const actualMimeType =
+      mediaRecorder.mimeType ||
+      mimeType ||
+      recordedChunks[0]?.type ||
+      "audio/webm";
 
-      const audioBlob = new Blob(recordedChunks, {
-        type: actualMimeType
-      });
+    const audioBlob = new Blob(recordedChunks, {
+      type: actualMimeType
+    });
 
-      const transcript = await transcribeAudioBlob(audioBlob, actualMimeType);
+    const transcript = await transcribeAudioBlob(audioBlob, actualMimeType);
 
-      if (inputMode === "speech") {
-        setSpeechStatus("Sending");
+    if (inputMode === "speech") {
+      setSpeechStatus("Checking language");
 
-        await sendToBot(transcript);
+      await handleSpeechTranscript(transcript);
 
-        setSpeechStatus("Tap to speak");
-      } else {
-        input.value = transcript;
-        input.focus();
-        setSpeechStatus("Tap to speak");
-      }
-    } catch (error) {
-      showSystemMessage(getReadableError(error));
       setSpeechStatus("Tap to speak");
-    } finally {
-      stream.getTracks().forEach(track => track.stop());
-
-      isRecording = false;
-      resetSpeechButton();
+    } else {
+      input.value = transcript;
+      input.focus();
+      setSpeechStatus("Tap to speak");
     }
-  });
+  } catch (error) {
+    showSystemMessage(getReadableError(error));
+    setSpeechStatus("Tap to speak");
+  } finally {
+    stream.getTracks().forEach(track => track.stop());
+
+    isRecording = false;
+    resetSpeechButton();
+  }
+});
 
   mediaRecorder.start();
 }
