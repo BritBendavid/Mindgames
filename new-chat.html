@@ -922,6 +922,30 @@ function resetSpeechButton() {
     return data;
   }
 
+  function chatFunctionUrl() {
+  return `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/chat`;
+}
+
+async function callChatFunction(payload, label = "Chat") {
+  let response;
+
+  try {
+    response = await fetch(chatFunctionUrl(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    throw new Error(`${label} request failed: ${getReadableError(error)}`);
+  }
+
+  return await parseJsonResponse(response, label);
+}
+
   function scrollMessagesToBottom() {
     if (messageHistory) {
       messageHistory.scrollTop = messageHistory.scrollHeight;
