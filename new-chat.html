@@ -1647,8 +1647,6 @@
           type: actualMimeType
         });
 
-        showSystemMessage(`Transcribing ${getAudioFileName(actualMimeType)}...`);
-
         const transcript = await transcribeAudioBlob(audioBlob, actualMimeType);
 
         input.value = transcript;
