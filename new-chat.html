@@ -627,7 +627,7 @@
 
 .correction-word-unit.native-word .main-word,
 .correction-word-unit.native-word .translation {
-  color: #34d399;
+  color: #bbf7d0;
 }
 
 .correction-word-unit.corrected-word .main-word,
@@ -1188,63 +1188,6 @@ function assignCorrectionScheduleToWords(state) {
   });
 }
 
-function playCorrectionWordSchedule(state) {
-  const context = getAudioContext();
-  const playbackToken = currentPlaybackToken;
-  const startAt = context.currentTime + 0.08;
-
-  scheduledSources = [];
-
-  const unitsByTokenId = new Map(
-    [...state.lineEl.querySelectorAll(".correction-word-unit")]
-      .filter(unit => unit.dataset.tokenId)
-      .map(unit => [unit.dataset.tokenId, unit])
-  );
-
-  const activeTimers = [];
-
-  state.wordSchedule.forEach(item => {
-    const source = context.createBufferSource();
-    source.buffer = item.audioBuffer;
-    source.connect(context.destination);
-
-    source.start(startAt + item.playStart);
-    scheduledSources.push(source);
-
-    const unit = unitsByTokenId.get(item.tokenId);
-
-    if (unit) {
-      const onTimer = setTimeout(() => {
-        if (playbackToken === currentPlaybackToken) {
-          unit.classList.add("active-word");
-        }
-      }, Math.max(0, item.playStart * 1000));
-
-      const offTimer = setTimeout(() => {
-        if (playbackToken === currentPlaybackToken) {
-          unit.classList.remove("active-word");
-        }
-      }, Math.max(0, item.playEnd * 1000 + 160));
-
-      activeTimers.push(onTimer, offTimer);
-    }
-  });
-
-  const totalDuration =
-    state.wordSchedule.length > 0
-      ? state.wordSchedule[state.wordSchedule.length - 1].playEnd
-      : 0;
-
-  setTimeout(() => {
-    if (playbackToken === currentPlaybackToken) {
-      scheduledSources = [];
-
-      [...state.lineEl.querySelectorAll(".correction-word-unit")]
-        .forEach(unit => unit.classList.remove("active-word"));
-    }
-  }, totalDuration * 1000 + 1000);
-}
-
 function addSpeechReviewCard({
   transcript,
   suggestion,
@@ -1605,17 +1548,49 @@ async function playCorrection(correctionId) {
 
 function playCorrectionWordSchedule(state) {
   const context = getAudioContext();
-  const token = currentPlaybackToken;
+  const playbackToken = currentPlaybackToken;
   const startAt = context.currentTime + 0.08;
 
   scheduledSources = [];
+
+  const card = document.querySelector(`[data-correction-id="${state.id}"]`);
+  const root = card || state.lineEl || document;
+
+  const units = [...root.querySelectorAll(".correction-word-unit")];
+
+  const unitsByTokenId = new Map(
+    units
+      .filter(unit => unit.dataset.tokenId)
+      .map(unit => [unit.dataset.tokenId, unit])
+  );
+
+  units.forEach(unit => unit.classList.remove("active-word"));
 
   state.wordSchedule.forEach(item => {
     const source = context.createBufferSource();
     source.buffer = item.audioBuffer;
     source.connect(context.destination);
+
     source.start(startAt + item.playStart);
     scheduledSources.push(source);
+
+    const unit = unitsByTokenId.get(item.tokenId);
+
+    if (!unit) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      if (playbackToken === currentPlaybackToken) {
+        unit.classList.add("active-word");
+      }
+    }, Math.max(0, item.playStart * 1000 + 80));
+
+    window.setTimeout(() => {
+      if (playbackToken === currentPlaybackToken) {
+        unit.classList.remove("active-word");
+      }
+    }, Math.max(0, item.playEnd * 1000 + 180));
   });
 
   const totalDuration =
@@ -1623,11 +1598,15 @@ function playCorrectionWordSchedule(state) {
       ? state.wordSchedule[state.wordSchedule.length - 1].playEnd
       : 0;
 
-  setTimeout(() => {
-    if (token === currentPlaybackToken) {
+  window.setTimeout(() => {
+    if (playbackToken === currentPlaybackToken) {
       scheduledSources = [];
+
+      units.forEach(unit => {
+        unit.classList.remove("active-word");
+      });
     }
-  }, totalDuration * 1000 + 1000);
+  }, totalDuration * 1000 + 1200);
 }
 
   async function parseJsonResponse(response, label) {
