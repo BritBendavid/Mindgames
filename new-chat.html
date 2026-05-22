@@ -234,53 +234,6 @@
   display: block;
 }
 
-    .message-audio-controls {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 999px;
-      padding: 8px;
-      backdrop-filter: blur(14px);
-    }
-
-    .mode-toggle {
-      display: inline-flex;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 999px;
-      padding: 3px;
-    }
-
-    .mode-option {
-      border: none;
-      border-radius: 999px;
-      padding: 8px 13px;
-      background: transparent;
-      color: #9ca3af;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .mode-option.active {
-      background: white;
-      color: black;
-    }
-
-    .message-play-button {
-      border: none;
-      border-radius: 999px;
-      padding: 8px 14px;
-      background: rgba(255, 255, 255, 0.14);
-      color: white;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .message-play-button:hover {
-      background: rgba(255, 255, 255, 0.22);
-    }
-
     .thinking-card {
       color: #9ca3af;
       font-size: 1.1rem;
@@ -680,6 +633,17 @@
   white-space: nowrap;
 }
 
+.message-audio-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  backdrop-filter: none;
+}
+
+.message-play-button,
 .correction-play-button {
   width: 76px;
   height: 76px;
@@ -698,9 +662,11 @@
   transition:
     transform 160ms ease,
     background 160ms ease,
-    box-shadow 160ms ease;
+    box-shadow 160ms ease,
+    opacity 160ms ease;
 }
 
+.message-play-button:hover,
 .correction-play-button:hover {
   transform: translateY(-2px) scale(1.03);
   box-shadow:
@@ -710,11 +676,27 @@
     inset 0 0 28px rgba(255, 255, 255, 0.06);
 }
 
+.message-play-button.loading,
 .correction-play-button.loading {
   opacity: 0.65;
   cursor: wait;
 }
 
+.message-play-button.playing,
+.correction-play-button.playing {
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.22), transparent 28%),
+    linear-gradient(145deg, rgba(96, 165, 250, 0.9), rgba(30, 64, 175, 0.9));
+}
+
+.message-audio-panel {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+}
+
+.message-slow-toggle,
 .correction-slow-toggle {
   border: none;
   border-radius: 999px;
@@ -727,6 +709,7 @@
   text-transform: uppercase;
 }
 
+.message-slow-toggle.active,
 .correction-slow-toggle.active {
   background: white;
   color: black;
@@ -777,11 +760,6 @@
 
       .bot-words {
         font-size: clamp(2rem, 11vw, 4rem);
-      }
-
-      .message-audio-controls {
-        flex-wrap: wrap;
-        border-radius: 20px;
       }
     }
   </style>
@@ -922,6 +900,8 @@ let pendingBackgroundBot = null;
 const correctionState = new Map();
 
     let correctionRetryMode = false;
+
+    let activePlayback = null;
 
     function normalizeCorrectionCompare(text) {
   return String(text || "")
@@ -1143,7 +1123,7 @@ async function showPerfectCorrectionThenRevealBot({
 }) {
   const finalText = correctedText || transcript;
 
-  const perfectCard = addSpeechReviewCard({
+  addSpeechReviewCard({
     transcript,
     suggestion: finalText,
     parts,
@@ -1151,14 +1131,10 @@ async function showPerfectCorrectionThenRevealBot({
     isPerfect: true
   });
 
-  const correctionId = perfectCard.dataset.correctionId;
-
-  if (correctionId) {
-    playCorrection(correctionId).catch(() => {});
-  }
-
   if (prepared) {
-    await revealPreparedBotResponse(prepared);
+    await revealPreparedBotResponse(prepared, {
+      autoplay: false
+    });
   }
 }
 
@@ -1586,48 +1562,49 @@ async function playCorrection(correctionId) {
 
   const playButton = document.querySelector(`[data-correction-play="${correctionId}"]`);
 
+  if (isSamePlayback(playButton, "correction", correctionId)) {
+    stopAllSpeech();
+    return;
+  }
+
   try {
     stopAllSpeech();
+    setPlaybackButtonLoading(playButton);
     await unlockAudioContext();
 
-    if (playButton) {
-      playButton.classList.add("loading");
-      playButton.textContent = "…";
-    }
-
     if (state.slow) {
-  if (!state.wordSchedule) {
-    state.wordSchedule = await buildCorrectionWordSchedule(state);
-  }
+      if (!state.wordSchedule) {
+        state.wordSchedule = await buildCorrectionWordSchedule(state);
+      }
 
-  playCorrectionWordSchedule(state);
-} else {
-  const speech = await getCorrectionFullSpeech(state);
+      playCorrectionWordSchedule(state, playButton);
+    } else {
+      const speech = await getCorrectionFullSpeech(state);
 
-  if (!speech.audioBuffer) {
-    const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
-    const context = getAudioContext();
-    speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
-  }
+      if (!speech.audioBuffer) {
+        const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
+        const context = getAudioContext();
+        speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
+      }
 
-  playFullAudioBuffer(speech.audioBuffer);
-}
-  } catch (error) {
-    showSystemMessage(getReadableError(error));
-  } finally {
-    if (playButton) {
-      playButton.classList.remove("loading");
-      playButton.textContent = "▶";
+      playFullAudioBuffer(speech.audioBuffer, playButton, "correction", correctionId);
     }
+  } catch (error) {
+    setPlaybackButtonStopped(playButton);
+    showSystemMessage(getReadableError(error));
   }
 }
 
-function playCorrectionWordSchedule(state) {
+function playCorrectionWordSchedule(state, button = null) {
   const context = getAudioContext();
   const playbackToken = currentPlaybackToken;
   const startAt = context.currentTime + 0.08;
 
   scheduledSources = [];
+
+  if (button) {
+    setPlaybackButtonPlaying(button, "correction", state.id);
+  }
 
   const card = document.querySelector(`[data-correction-id="${state.id}"]`);
   const root = card || state.lineEl || document;
@@ -1652,9 +1629,7 @@ function playCorrectionWordSchedule(state) {
 
     const unit = unitsByTokenId.get(item.tokenId);
 
-    if (!unit) {
-      return;
-    }
+    if (!unit) return;
 
     window.setTimeout(() => {
       if (playbackToken === currentPlaybackToken) {
@@ -1681,6 +1656,10 @@ function playCorrectionWordSchedule(state) {
       units.forEach(unit => {
         unit.classList.remove("active-word");
       });
+
+      if (button) {
+        setPlaybackButtonStopped(button);
+      }
     }
   }, totalDuration * 1000 + 1200);
 }
@@ -1766,21 +1745,74 @@ async function callChatFunction(payload, label = "Chat") {
   }
 
   function stopAllSpeech() {
-    if (currentFullAudio) {
-      currentFullAudio.pause();
-      currentFullAudio.currentTime = 0;
-      currentFullAudio = null;
-    }
-
-    scheduledSources.forEach(source => {
-      try {
-        source.stop();
-      } catch {}
-    });
-
-    scheduledSources = [];
-    currentPlaybackToken++;
+  if (currentFullAudio) {
+    currentFullAudio.pause();
+    currentFullAudio.currentTime = 0;
+    currentFullAudio = null;
   }
+
+  scheduledSources.forEach(source => {
+    try {
+      source.stop();
+    } catch {}
+  });
+
+  scheduledSources = [];
+  currentPlaybackToken++;
+
+  clearActivePlaybackButton();
+}
+
+  function clearActivePlaybackButton() {
+  if (activePlayback?.button) {
+    activePlayback.button.classList.remove("playing", "loading");
+    activePlayback.button.textContent = "▶";
+  }
+
+  activePlayback = null;
+}
+
+function setPlaybackButtonLoading(button) {
+  if (!button) return;
+
+  button.classList.add("loading");
+  button.classList.remove("playing");
+  button.textContent = "…";
+}
+
+function setPlaybackButtonPlaying(button, type, id) {
+  if (!button) return;
+
+  activePlayback = {
+    button,
+    type,
+    id
+  };
+
+  button.classList.remove("loading");
+  button.classList.add("playing");
+  button.textContent = "⏸";
+}
+
+function setPlaybackButtonStopped(button) {
+  if (!button) return;
+
+  if (activePlayback?.button === button) {
+    activePlayback = null;
+  }
+
+  button.classList.remove("loading", "playing");
+  button.textContent = "▶";
+}
+
+function isSamePlayback(button, type, id) {
+  return (
+    activePlayback &&
+    activePlayback.button === button &&
+    activePlayback.type === type &&
+    activePlayback.id === id
+  );
+}
 
   function splitTextIntoParts(text) {
     return text.match(/[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)?|[\p{N}]+|[^\s\p{L}\p{M}\p{N}]|\s+/gu) || [];
@@ -1889,7 +1921,9 @@ async function callChatFunction(payload, label = "Chat") {
   );
 }
     
-    async function revealPreparedBotResponse(prepared) {
+  async function revealPreparedBotResponse(prepared, options = {}) {
+  const autoplay = options.autoplay !== false;
+
   const thinkingCard = addThinkingMessage();
 
   try {
@@ -1926,7 +1960,15 @@ async function callChatFunction(payload, label = "Chat") {
         })
         .catch(() => null);
 
-      await playConversationalMessage(state);
+      if (autoplay) {
+        const button = document.querySelector(`[data-message-play="${botMessageId}"]`);
+
+        if (button) {
+          await handleMessagePlayButton(botMessageId, button);
+        } else {
+          await playConversationalMessage(state);
+        }
+      }
     }
   } catch (error) {
     thinkingCard.remove();
@@ -2187,43 +2229,74 @@ async function callChatFunction(payload, label = "Chat") {
   }
 
   function createMessageAudioControls(messageId) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "message-audio-controls";
+  const wrapper = document.createElement("div");
+  wrapper.className = "message-audio-controls";
 
-    const toggle = document.createElement("div");
-    toggle.className = "mode-toggle";
+  const panel = document.createElement("div");
+  panel.className = "message-audio-panel";
 
-    const slowButton = document.createElement("button");
-    slowButton.type = "button";
-    slowButton.className = "mode-option";
-    slowButton.textContent = "Slow";
+  const playButton = document.createElement("button");
+  playButton.type = "button";
+  playButton.className = "message-play-button";
+  playButton.textContent = "▶";
+  playButton.dataset.messagePlay = messageId;
 
-    const conversationalButton = document.createElement("button");
-    conversationalButton.type = "button";
-    conversationalButton.className = "mode-option active";
-    conversationalButton.textContent = "Conversational";
+  const slowButton = document.createElement("button");
+  slowButton.type = "button";
+  slowButton.className = "message-slow-toggle";
+  slowButton.textContent = "Slow";
 
-    const playButton = document.createElement("button");
-    playButton.type = "button";
-    playButton.className = "message-play-button";
-    playButton.textContent = "Play";
+  slowButton.addEventListener("click", () => {
+    const state = messageState.get(messageId);
+    if (!state) return;
 
-    slowButton.addEventListener("click", () => setMessageMode(messageId, "slow"));
-    conversationalButton.addEventListener("click", () => setMessageMode(messageId, "conversational"));
+    state.mode = state.mode === "slow" ? "conversational" : "slow";
+    slowButton.classList.toggle("active", state.mode === "slow");
 
-    playButton.addEventListener("click", async () => {
-      await unlockAudio();
-      await playMessage(messageId);
-    });
+    if (state.mode === "slow") {
+      preloadSlowSpeech(state).catch(error => {
+        showSystemMessage(getReadableError(error));
+      });
+    }
+  });
 
-    toggle.appendChild(slowButton);
-    toggle.appendChild(conversationalButton);
+  playButton.addEventListener("click", async () => {
+    await handleMessagePlayButton(messageId, playButton);
+  });
 
-    wrapper.appendChild(toggle);
-    wrapper.appendChild(playButton);
+  panel.appendChild(playButton);
+  panel.appendChild(slowButton);
 
-    return wrapper;
+  wrapper.appendChild(panel);
+
+  return wrapper;
+}
+
+async function handleMessagePlayButton(messageId, button) {
+  if (isSamePlayback(button, "message", messageId)) {
+    stopAllSpeech();
+    return;
   }
+
+  try {
+    stopAllSpeech();
+    setPlaybackButtonLoading(button);
+
+    const state = messageState.get(messageId);
+    if (!state) return;
+
+    if (state.mode === "slow") {
+      await playSlowMessage(state, button);
+    } else {
+      await playConversationalMessage(state, button);
+    }
+
+    setPlaybackButtonPlaying(button, "message", messageId);
+  } catch (error) {
+    setPlaybackButtonStopped(button);
+    showSystemMessage(getReadableError(error));
+  }
+}
 
   function setMessageMode(messageId, mode) {
     const state = messageState.get(messageId);
@@ -2354,41 +2427,47 @@ async function callChatFunction(payload, label = "Chat") {
     return state.wordClips;
   }
 
-  function playFullAudioBuffer(audioBuffer) {
-    const context = getAudioContext();
-    const token = currentPlaybackToken;
-    const source = context.createBufferSource();
+  function playFullAudioBuffer(audioBuffer, button = null, type = null, id = null) {
+  const context = getAudioContext();
+  const playbackToken = currentPlaybackToken;
+  const source = context.createBufferSource();
 
-    source.buffer = audioBuffer;
-    source.connect(context.destination);
+  source.buffer = audioBuffer;
+  source.connect(context.destination);
 
-    scheduledSources = [source];
+  scheduledSources = [source];
 
-    source.start(context.currentTime + 0.04);
+  source.start(context.currentTime + 0.04);
 
-    source.addEventListener("ended", () => {
-      if (token === currentPlaybackToken) {
-        scheduledSources = [];
+  if (button && type && id) {
+    setPlaybackButtonPlaying(button, type, id);
+  }
+
+  source.addEventListener("ended", () => {
+    if (playbackToken === currentPlaybackToken) {
+      scheduledSources = [];
+      if (button) {
+        setPlaybackButtonStopped(button);
       }
-    });
-  }
-
-  async function playConversationalMessage(state) {
-    stopAllSpeech();
-    await unlockAudioContext();
-
-    clearActiveWords(state.wordsEl);
-
-    const speech = await getFullSpeechForMessage(state);
-
-    if (!speech.audioBuffer) {
-      const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
-      const context = getAudioContext();
-      speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
     }
+  });
+}
 
-    playFullAudioBuffer(speech.audioBuffer);
+  async function playConversationalMessage(state, button = null) {
+  await unlockAudioContext();
+
+  clearActiveWords(state.wordsEl);
+
+  const speech = await getFullSpeechForMessage(state);
+
+  if (!speech.audioBuffer) {
+    const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
+    const context = getAudioContext();
+    speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
   }
+
+  playFullAudioBuffer(speech.audioBuffer, button, "message", state.id);
+}
 
   function trimAudioBufferSilence(audioBuffer, threshold = 0.012, paddingSeconds = 0.015) {
     const sampleRate = audioBuffer.sampleRate;
@@ -2478,17 +2557,16 @@ async function callChatFunction(payload, label = "Chat") {
     return schedule;
   }
 
-  async function playSlowMessage(state) {
-    stopAllSpeech();
-    await unlockAudioContext();
+  async function playSlowMessage(state, button = null) {
+  await unlockAudioContext();
 
-    if (!state.wordSchedule) {
-      state.wordSchedule = await buildIndividualWordScheduleForMessage(state);
-    }
-
-    assignScheduleToVisibleWords(state.wordsEl, state.wordSchedule);
-    playIndividualWordAudio(state.wordSchedule, state.wordsEl);
+  if (!state.wordSchedule) {
+    state.wordSchedule = await buildIndividualWordScheduleForMessage(state);
   }
+
+  assignScheduleToVisibleWords(state.wordsEl, state.wordSchedule);
+  playIndividualWordAudio(state.wordSchedule, state.wordsEl, button, "message", state.id);
+}
 
   function clearActiveWords(container) {
     container.querySelectorAll(".word-unit").forEach(unit => {
@@ -2519,88 +2597,108 @@ async function callChatFunction(payload, label = "Chat") {
     });
   }
 
-  function playIndividualWordAudio(wordSchedule, wordsEl) {
-    const context = getAudioContext();
-    const token = currentPlaybackToken;
-    const startAt = context.currentTime + 0.08;
+  function playIndividualWordAudio(wordSchedule, wordsEl, button = null, type = null, id = null) {
+  const context = getAudioContext();
+  const playbackToken = currentPlaybackToken;
+  const startAt = context.currentTime + 0.08;
 
-    scheduledSources = [];
+  scheduledSources = [];
 
-    wordSchedule.forEach(item => {
-      const source = context.createBufferSource();
-      source.buffer = item.audioBuffer;
-      source.connect(context.destination);
+  if (button && type && id) {
+    setPlaybackButtonPlaying(button, type, id);
+  }
 
-      source.start(startAt + item.playStart);
+  wordSchedule.forEach(item => {
+    const source = context.createBufferSource();
+    source.buffer = item.audioBuffer;
+    source.connect(context.destination);
 
-      scheduledSources.push(source);
-    });
+    source.start(startAt + item.playStart);
 
-    const visualStart = performance.now() + 80;
+    scheduledSources.push(source);
+  });
 
-    function syncFrame() {
-      if (token !== currentPlaybackToken) return;
+  const visualStart = performance.now() + 80;
 
-      const elapsed = (performance.now() - visualStart) / 1000;
-      const units = [...wordsEl.querySelectorAll(".word-unit")];
+  function syncFrame() {
+    if (playbackToken !== currentPlaybackToken) return;
 
-      for (const unit of units) {
-        const start = Number(unit.dataset.playStart);
-        const end = Number(unit.dataset.playEnd);
+    const elapsed = (performance.now() - visualStart) / 1000;
+    const units = [...wordsEl.querySelectorAll(".word-unit")];
 
-        if (!Number.isFinite(start) || !Number.isFinite(end)) {
-          unit.classList.remove("active-word");
-          continue;
-        }
+    for (const unit of units) {
+      const start = Number(unit.dataset.playStart);
+      const end = Number(unit.dataset.playEnd);
 
-        if (elapsed >= start && elapsed <= end + 0.04) {
-          unit.classList.add("active-word");
-        } else {
-          unit.classList.remove("active-word");
-        }
+      if (!Number.isFinite(start) || !Number.isFinite(end)) {
+        unit.classList.remove("active-word");
+        continue;
       }
 
-      const lastEnd =
-        wordSchedule.length > 0
-          ? wordSchedule[wordSchedule.length - 1].playEnd
-          : 0;
-
-      if (elapsed <= lastEnd + 0.5) {
-        requestAnimationFrame(syncFrame);
+      if (elapsed >= start && elapsed <= end + 0.04) {
+        unit.classList.add("active-word");
       } else {
-        clearActiveWords(wordsEl);
+        unit.classList.remove("active-word");
       }
     }
 
-    requestAnimationFrame(syncFrame);
-
-    const totalDuration =
+    const lastEnd =
       wordSchedule.length > 0
         ? wordSchedule[wordSchedule.length - 1].playEnd
         : 0;
 
-    setTimeout(() => {
-      if (token === currentPlaybackToken) {
-        scheduledSources = [];
-        clearActiveWords(wordsEl);
+    if (elapsed <= lastEnd + 0.5) {
+      requestAnimationFrame(syncFrame);
+    } else {
+      clearActiveWords(wordsEl);
+      if (button) {
+        setPlaybackButtonStopped(button);
       }
-    }, totalDuration * 1000 + 1000);
-  }
-
-  async function playMessage(messageId) {
-    const state = messageState.get(messageId);
-    if (!state) return;
-
-    try {
-      if (state.mode === "slow") {
-        await playSlowMessage(state);
-      } else {
-        await playConversationalMessage(state);
-      }
-    } catch (error) {
-      showSystemMessage(getReadableError(error));
     }
   }
+
+  requestAnimationFrame(syncFrame);
+
+  const totalDuration =
+    wordSchedule.length > 0
+      ? wordSchedule[wordSchedule.length - 1].playEnd
+      : 0;
+
+  setTimeout(() => {
+    if (playbackToken === currentPlaybackToken) {
+      scheduledSources = [];
+      clearActiveWords(wordsEl);
+
+      if (button) {
+        setPlaybackButtonStopped(button);
+      }
+    }
+  }, totalDuration * 1000 + 1000);
+}
+
+  async function playMessage(messageId) {
+  const state = messageState.get(messageId);
+  if (!state) return;
+
+  const button = document.querySelector(`[data-message-play="${messageId}"]`);
+
+  if (button) {
+    await handleMessagePlayButton(messageId, button);
+    return;
+  }
+
+  try {
+    stopAllSpeech();
+
+    if (state.mode === "slow") {
+      await playSlowMessage(state);
+    } else {
+      await playConversationalMessage(state);
+    }
+  } catch (error) {
+    showSystemMessage(getReadableError(error));
+  }
+}
 
   function handleBotWordClick(unit, word, messageId, fallbackSentence) {
     const existingTimer = wordClickTimers.get(unit);
