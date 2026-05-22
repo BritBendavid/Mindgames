@@ -1201,6 +1201,10 @@ async function showPerfectCorrectionThenRevealBot({
 }) {
   const finalText = correctedText || transcript;
 
+  /*
+    Perfect card appears silently.
+    Do not call playCorrection(...) here.
+  */
   addSpeechReviewCard({
     transcript,
     suggestion: finalText,
@@ -1209,9 +1213,12 @@ async function showPerfectCorrectionThenRevealBot({
     isPerfect: true
   });
 
+  /*
+    Bot reply should still autoplay when it appears.
+  */
   if (prepared) {
     await revealPreparedBotResponse(prepared, {
-      autoplay: false
+      autoplay: true
     });
   }
 }
