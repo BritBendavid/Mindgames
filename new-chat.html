@@ -907,6 +907,8 @@ let pendingBackgroundBot = null;
     let correctionCounter = 0;
 const correctionState = new Map();
 
+    let correctionRetryMode = false;
+
     function normalizeCorrectionCompare(text) {
   return String(text || "")
     .toLowerCase()
@@ -1259,10 +1261,25 @@ const pairs = buildCorrectionPairsFromCorrectedTextAndParts(correctionText, part
   continueButton.className = "speech-review-button secondary";
   continueButton.textContent = "Continue anyway";
 
-  retryButton.addEventListener("click", () => {
-    removeSpeechReviewCard();
+  retryButton.addEventListener("click", async () => {
+  removeSpeechReviewCard();
+
+  correctionRetryMode = true;
+
+  if (typeof onRetry === "function") {
     onRetry();
-  });
+  }
+
+  try {
+    await unlockAudio();
+    await startRecording();
+  } catch (error) {
+    correctionRetryMode = false;
+    showSystemMessage(getReadableError(error));
+    resetSpeechButton();
+    setSpeechStatus("Tap to speak");
+  }
+});
 
   continueButton.addEventListener("click", () => {
     removeSpeechReviewCard();
@@ -1858,71 +1875,76 @@ async function callChatFunction(payload, label = "Chat") {
   }
 }
 
-    async function handleSpeechTranscript(transcript) {
+  async function handleSpeechTranscript(transcript) {
   if (!transcript.trim()) return;
 
-  addUserMessage(transcript);
+  const isCorrectionRetry = correctionRetryMode;
+  correctionRetryMode = false;
 
-  /*
-    Start the chatbot immediately.
-    Do not wait for the language check.
-  */
-  pendingBackgroundBot = await prepareBotResponseInBackground(transcript);
+  if (!isCorrectionRetry) {
+    addUserMessage(transcript);
+
+    /*
+      Start the chatbot immediately.
+      Do not wait for the language check.
+    */
+    pendingBackgroundBot = await prepareBotResponseInBackground(transcript);
+  }
 
   let analysis;
 
-try {
-  analysis = await analyzeUserMessageLanguageParts(transcript);
-} catch {
-  await revealPreparedBotResponse(pendingBackgroundBot);
-  pendingBackgroundBot = null;
-  return;
-}
-
-const parts = analysis.parts || [];
-const correctedText = analysis.correctedText || "";
-
-if (!hasForeignLanguageParts(parts)) {
-  await revealPreparedBotResponse(pendingBackgroundBot);
-  pendingBackgroundBot = null;
-  return;
-}
-
-const suggestion = correctedText;
-
-activeSpeechCorrection = {
-  transcript,
-  parts,
-  suggestion,
-  correctedText,
-  prepared: pendingBackgroundBot
-};
-
-const correctionCard = addSpeechReviewCard({
-  transcript,
-  suggestion,
-  parts,
-  correctedText,
-  onRetry: () => {
-    setSpeechStatus("Tap to re-record");
-  },
-  onContinue: async () => {
-    const prepared = activeSpeechCorrection?.prepared || pendingBackgroundBot;
-
-    activeSpeechCorrection = null;
+  try {
+    analysis = await analyzeUserMessageLanguageParts(transcript);
+  } catch {
+    await revealPreparedBotResponse(pendingBackgroundBot);
     pendingBackgroundBot = null;
-
-    if (prepared) {
-      await revealPreparedBotResponse(prepared);
-    }
+    return;
   }
-});
 
-const correctionId = correctionCard.dataset.correctionId;
+  const parts = analysis.parts || [];
+  const correctedText = analysis.correctedText || "";
 
-if (correctionId) {
-  playCorrection(correctionId).catch(() => {});
-}
+  if (!hasForeignLanguageParts(parts)) {
+    await revealPreparedBotResponse(pendingBackgroundBot);
+    pendingBackgroundBot = null;
+    return;
+  }
+
+  const suggestion = correctedText;
+
+  activeSpeechCorrection = {
+    transcript,
+    parts,
+    suggestion,
+    correctedText,
+    prepared: pendingBackgroundBot
+  };
+
+  const correctionCard = addSpeechReviewCard({
+    transcript,
+    suggestion,
+    parts,
+    correctedText,
+    onRetry: () => {
+      setSpeechStatus("Recording");
+    },
+    onContinue: async () => {
+      const prepared = activeSpeechCorrection?.prepared || pendingBackgroundBot;
+
+      activeSpeechCorrection = null;
+      pendingBackgroundBot = null;
+
+      if (prepared) {
+        await revealPreparedBotResponse(prepared);
+      }
+    }
+  });
+
+  const correctionId = correctionCard.dataset.correctionId;
+
+  if (correctionId) {
+    playCorrection(correctionId).catch(() => {});
+  }
 }
 
   async function analyzeUserMessageLanguageParts(text) {
