@@ -653,7 +653,6 @@
     radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.22), transparent 28%),
     linear-gradient(145deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.06));
   color: white;
-  font-size: 2rem;
   cursor: pointer;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.08),
@@ -661,9 +660,12 @@
     inset 0 0 28px rgba(255, 255, 255, 0.05);
   transition:
     transform 160ms ease,
-    background 160ms ease,
     box-shadow 160ms ease,
     opacity 160ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .message-play-button:hover,
@@ -684,11 +686,52 @@
 
 .message-play-button.playing,
 .correction-play-button.playing {
-  background:
-    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.22), transparent 28%),
-    linear-gradient(145deg, rgba(96, 165, 250, 0.9), rgba(30, 64, 175, 0.9));
+  /* Intentionally no color change while playing. */
 }
 
+.playback-icon {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+  display: block;
+}
+
+.bot-message-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 24px;
+}
+
+.bot-message-row .bot-words {
+  min-width: 0;
+}
+
+.bot-message-row .message-audio-controls {
+  justify-self: end;
+  align-self: start;
+  padding-top: 0.35rem;
+}
+
+.message-audio-panel {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+}
+
+@media (max-width: 760px) {
+  .bot-message-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .bot-message-row .message-audio-controls {
+    justify-self: start;
+  }
+}
+    
 .message-audio-panel {
   display: inline-flex;
   flex-direction: column;
@@ -928,6 +971,41 @@ function getNativeChatLanguageWordsFromParts(parts) {
   return nativeWords.filter(Boolean);
 }
 
+function playIconSvg() {
+  return `
+    <svg class="playback-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 5.8c0-.8.9-1.3 1.6-.9l8.2 5.2c.7.4.7 1.4 0 1.8l-8.2 5.2c-.7.4-1.6-.1-1.6-.9V5.8z"></path>
+    </svg>
+  `;
+}
+
+function pauseIconSvg() {
+  return `
+    <svg class="playback-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="7" y="5" width="3.8" height="14" rx="1.2"></rect>
+      <rect x="13.2" y="5" width="3.8" height="14" rx="1.2"></rect>
+    </svg>
+  `;
+}
+
+function setPlayIcon(button) {
+  if (button) {
+    button.innerHTML = playIconSvg();
+  }
+}
+
+function setPauseIcon(button) {
+  if (button) {
+    button.innerHTML = pauseIconSvg();
+  }
+}
+
+function setLoadingIcon(button) {
+  if (button) {
+    button.textContent = "…";
+  }
+}
+    
 function buildCorrectionPairsFromCorrectedTextAndParts(correctedText, parts) {
   const correctedWords = splitCorrectionTranslationWords(correctedText);
   const nativeWords = getNativeChatLanguageWordsFromParts(parts);
@@ -1253,7 +1331,7 @@ function addSpeechReviewCard({
   const playButton = document.createElement("button");
   playButton.type = "button";
   playButton.className = "correction-play-button";
-  playButton.textContent = "▶";
+  setPlayIcon(playButton);
   playButton.dataset.correctionPlay = correctionId;
 
   const slowToggle = document.createElement("button");
@@ -1563,9 +1641,9 @@ async function playCorrection(correctionId) {
   const playButton = document.querySelector(`[data-correction-play="${correctionId}"]`);
 
   if (isSamePlayback(playButton, "correction", correctionId)) {
-    stopAllSpeech();
-    return;
-  }
+  stopAllSpeech();
+  return;
+}
 
   try {
     stopAllSpeech();
@@ -1763,10 +1841,10 @@ async function callChatFunction(payload, label = "Chat") {
   clearActivePlaybackButton();
 }
 
-  function clearActivePlaybackButton() {
+ function clearActivePlaybackButton() {
   if (activePlayback?.button) {
     activePlayback.button.classList.remove("playing", "loading");
-    activePlayback.button.textContent = "▶";
+    setPlayIcon(activePlayback.button);
   }
 
   activePlayback = null;
@@ -1777,7 +1855,7 @@ function setPlaybackButtonLoading(button) {
 
   button.classList.add("loading");
   button.classList.remove("playing");
-  button.textContent = "…";
+  setLoadingIcon(button);
 }
 
 function setPlaybackButtonPlaying(button, type, id) {
@@ -1791,7 +1869,7 @@ function setPlaybackButtonPlaying(button, type, id) {
 
   button.classList.remove("loading");
   button.classList.add("playing");
-  button.textContent = "⏸";
+  setPauseIcon(button);
 }
 
 function setPlaybackButtonStopped(button) {
@@ -1802,7 +1880,16 @@ function setPlaybackButtonStopped(button) {
   }
 
   button.classList.remove("loading", "playing");
-  button.textContent = "▶";
+  setPlayIcon(button);
+}
+
+function isSamePlayback(button, type, id) {
+  return (
+    activePlayback &&
+    activePlayback.button === button &&
+    activePlayback.type === type &&
+    activePlayback.id === id
+  );
 }
 
 function isSamePlayback(button, type, id) {
@@ -2165,9 +2252,15 @@ function isSamePlayback(button, type, id) {
 
     const controls = createMessageAudioControls(id);
 
-    card.appendChild(wordsEl);
-    card.appendChild(controls);
-    messageHistory.appendChild(card);
+    const row = document.createElement("div");
+row.className = "bot-message-row";
+
+row.appendChild(wordsEl);
+row.appendChild(controls);
+
+card.appendChild(row);
+
+messageHistory.appendChild(card);
 
     scrollMessagesToBottom();
     return id;
@@ -2238,8 +2331,8 @@ function isSamePlayback(button, type, id) {
   const playButton = document.createElement("button");
   playButton.type = "button";
   playButton.className = "message-play-button";
-  playButton.textContent = "▶";
   playButton.dataset.messagePlay = messageId;
+  setPlayIcon(playButton);
 
   const slowButton = document.createElement("button");
   slowButton.type = "button";
@@ -2266,7 +2359,6 @@ function isSamePlayback(button, type, id) {
 
   panel.appendChild(playButton);
   panel.appendChild(slowButton);
-
   wrapper.appendChild(panel);
 
   return wrapper;
@@ -2274,9 +2366,9 @@ function isSamePlayback(button, type, id) {
 
 async function handleMessagePlayButton(messageId, button) {
   if (isSamePlayback(button, "message", messageId)) {
-    stopAllSpeech();
-    return;
-  }
+  stopAllSpeech();
+  return;
+}
 
   try {
     stopAllSpeech();
