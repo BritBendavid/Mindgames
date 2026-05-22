@@ -626,13 +626,14 @@
 }
 
 .correction-word-unit.native-word .main-word {
-  color: #4ade80;
+  color: #86efac;
 }
 
 .correction-word-unit.corrected-word .main-word {
   color: #f87171;
 }
 
+/* This must come AFTER native-word and corrected-word so blue wins during playback */
 .correction-word-unit.active-word .main-word {
   color: var(--accent);
 }
@@ -651,6 +652,10 @@
   margin-top: 0.25em;
   max-width: 220px;
   word-break: break-word;
+}
+
+.correction-word-unit.multi-word-token .main-word {
+  white-space: nowrap;
 }
 
 .correction-play-button {
@@ -941,37 +946,35 @@ function buildCorrectionWordPairs(parts) {
 
           if (!translation) continue;
 
-          const translatedWords = splitCorrectionTranslationWords(translation);
-
-          if (translatedWords.length <= 1) {
-            pairs.push({
-              correctedWord: translation,
-              originalWord: original,
-              wasTranslated: true
-            });
-          } else {
-            translatedWords.forEach((translatedWord, index) => {
-              pairs.push({
-                correctedWord: translatedWord,
-                originalWord: index === 0 ? original : "",
-                wasTranslated: true
-              });
-            });
-          }
-        }
-      } else if (part.translation) {
-        const originalWords = splitCorrectionTranslationWords(part.text);
-        const translatedWords = splitCorrectionTranslationWords(part.translation);
-
-        translatedWords.forEach((translatedWord, index) => {
+          /*
+            Important:
+            Do NOT split multi-word translations here.
+            If one fluent-language word maps to multiple chat-language words,
+            that whole translation should remain one token and be read together.
+          */
           pairs.push({
-            correctedWord: translatedWord,
-            originalWord: originalWords[index] || originalWords[0] || "",
+            correctedWord: translation,
+            originalWord: original,
             wasTranslated: true
           });
+        }
+      } else if (part.translation) {
+        /*
+          Fallback:
+          If the backend did not provide wordTranslations,
+          keep the full translated segment grouped.
+        */
+        pairs.push({
+          correctedWord: String(part.translation || "").trim(),
+          originalWord: String(part.text || "").trim(),
+          wasTranslated: true
         });
       }
     } else {
+      /*
+        Native chat-language text can still be split into words,
+        because those words were already spoken correctly.
+      */
       const chatWords = splitCorrectionTranslationWords(part.text);
 
       for (const word of chatWords) {
@@ -989,7 +992,7 @@ function buildCorrectionWordPairs(parts) {
 
 function correctionPairsToText(pairs) {
   return pairs
-    .map(pair => pair.correctedWord)
+    .map(pair => String(pair.correctedWord || "").trim())
     .filter(Boolean)
     .join(" ");
 }
@@ -1015,6 +1018,10 @@ function renderCorrectionLine(container, correctionId, pairs) {
     const unit = document.createElement("span");
     unit.className = "correction-word-unit";
     unit.classList.add(pair.wasTranslated ? "corrected-word" : "native-word");
+
+    if (String(pair.correctedWord).trim().includes(" ")) {
+      unit.classList.add("multi-word-token");
+    }
 
     unit.dataset.tokenId = tokenId;
     unit.dataset.word = pair.correctedWord;
@@ -1144,7 +1151,7 @@ function playCorrectionWordSchedule(state) {
         continue;
       }
 
-      if (elapsed >= start && elapsed <= end + 0.04) {
+      if (elapsed >= start && elapsed <= end + 0.08) {
         unit.classList.add("active-word");
       } else {
         unit.classList.remove("active-word");
