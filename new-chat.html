@@ -511,6 +511,20 @@
   color: white;
 }
 
+.speech-review-card.perfect-card {
+  background: rgba(34, 197, 94, 0.10);
+  border: 1px solid rgba(187, 247, 208, 0.34);
+}
+
+.speech-review-card.perfect-card .speech-review-title {
+  color: #bbf7d0;
+}
+
+.speech-review-card.perfect-card .correction-word-unit .main-word,
+.speech-review-card.perfect-card .correction-word-unit .translation {
+  color: #bbf7d0;
+}
+
 @keyframes recordPulse {
   0% {
     box-shadow:
@@ -1121,6 +1135,33 @@ function renderCorrectionLine(container, correctionId, pairs) {
   });
 }
 
+async function showPerfectCorrectionThenRevealBot({
+  transcript,
+  parts,
+  correctedText,
+  prepared
+}) {
+  const finalText = correctedText || transcript;
+
+  const perfectCard = addSpeechReviewCard({
+    transcript,
+    suggestion: finalText,
+    parts,
+    correctedText: finalText,
+    isPerfect: true
+  });
+
+  const correctionId = perfectCard.dataset.correctionId;
+
+  if (correctionId) {
+    playCorrection(correctionId).catch(() => {});
+  }
+
+  if (prepared) {
+    await revealPreparedBotResponse(prepared);
+  }
+}
+
 async function playCorrectionWord(correctionId, tokenId, unit) {
   const state = correctionState.get(correctionId);
   if (!state) return;
@@ -1195,6 +1236,7 @@ function addSpeechReviewCard({
   suggestion,
   parts,
   correctedText,
+  isPerfect = false,
   onRetry,
   onContinue
 }) {
@@ -1202,17 +1244,29 @@ function addSpeechReviewCard({
 
   const correctionId = `correction-${++correctionCounter}`;
 
-  const correctionText = correctedText || suggestion;
-const pairs = buildCorrectionPairsFromCorrectedTextAndParts(correctionText, parts);
+  const correctionText = correctedText || suggestion || transcript;
+  const pairs = isPerfect
+    ? buildCorrectionPairsFromCorrectedText(correctionText).map(pair => ({
+        ...pair,
+        wasTranslated: false
+      }))
+    : buildCorrectionPairsFromCorrectedTextAndParts(correctionText, parts);
+
   const tokens = createCorrectionTokensFromPairs(pairs, correctionId, correctionText);
 
   const card = document.createElement("div");
   card.className = "speech-review-card";
   card.dataset.correctionId = correctionId;
 
+  if (isPerfect) {
+    card.classList.add("perfect-card");
+  }
+
   const title = document.createElement("div");
   title.className = "speech-review-title";
-  title.textContent = `Try again in ${languageSelect.value}`;
+  title.textContent = isPerfect
+    ? "Perfect!"
+    : `Try again in ${languageSelect.value}`;
 
   const layout = document.createElement("div");
   layout.className = "correction-layout";
@@ -1248,50 +1302,55 @@ const pairs = buildCorrectionPairsFromCorrectedTextAndParts(correctionText, part
   layout.appendChild(sideControls);
   layout.appendChild(textZone);
 
-  const actions = document.createElement("div");
-  actions.className = "speech-review-actions correction-actions-row";
-
-  const retryButton = document.createElement("button");
-  retryButton.type = "button";
-  retryButton.className = "speech-review-button primary";
-  retryButton.textContent = "Re-record";
-
-  const continueButton = document.createElement("button");
-  continueButton.type = "button";
-  continueButton.className = "speech-review-button secondary";
-  continueButton.textContent = "Continue anyway";
-
-  retryButton.addEventListener("click", async () => {
-  removeSpeechReviewCard();
-
-  correctionRetryMode = true;
-
-  if (typeof onRetry === "function") {
-    onRetry();
-  }
-
-  try {
-    await unlockAudio();
-    await startRecording();
-  } catch (error) {
-    correctionRetryMode = false;
-    showSystemMessage(getReadableError(error));
-    resetSpeechButton();
-    setSpeechStatus("Tap to speak");
-  }
-});
-
-  continueButton.addEventListener("click", () => {
-    removeSpeechReviewCard();
-    onContinue();
-  });
-
-  actions.appendChild(retryButton);
-  actions.appendChild(continueButton);
-
   card.appendChild(title);
   card.appendChild(layout);
-  card.appendChild(actions);
+
+  if (!isPerfect) {
+    const actions = document.createElement("div");
+    actions.className = "speech-review-actions correction-actions-row";
+
+    const retryButton = document.createElement("button");
+    retryButton.type = "button";
+    retryButton.className = "speech-review-button primary";
+    retryButton.textContent = "Re-record";
+
+    const continueButton = document.createElement("button");
+    continueButton.type = "button";
+    continueButton.className = "speech-review-button secondary";
+    continueButton.textContent = "Continue anyway";
+
+    retryButton.addEventListener("click", async () => {
+      removeSpeechReviewCard();
+
+      correctionRetryMode = true;
+
+      if (typeof onRetry === "function") {
+        onRetry();
+      }
+
+      try {
+        await unlockAudio();
+        await startRecording();
+      } catch (error) {
+        correctionRetryMode = false;
+        showSystemMessage(getReadableError(error));
+        resetSpeechButton();
+        setSpeechStatus("Tap to speak");
+      }
+    });
+
+    continueButton.addEventListener("click", () => {
+      removeSpeechReviewCard();
+
+      if (typeof onContinue === "function") {
+        onContinue();
+      }
+    });
+
+    actions.appendChild(retryButton);
+    actions.appendChild(continueButton);
+    card.appendChild(actions);
+  }
 
   messageHistory.appendChild(card);
 
@@ -1885,8 +1944,8 @@ async function callChatFunction(payload, label = "Chat") {
     addUserMessage(transcript);
 
     /*
-      Start the chatbot immediately.
-      Do not wait for the language check.
+      The bot receives the original message immediately.
+      Re-recording is only for practice.
     */
     pendingBackgroundBot = await prepareBotResponseInBackground(transcript);
   }
@@ -1902,11 +1961,21 @@ async function callChatFunction(payload, label = "Chat") {
   }
 
   const parts = analysis.parts || [];
-  const correctedText = analysis.correctedText || "";
+  const correctedText = analysis.correctedText || transcript;
 
   if (!hasForeignLanguageParts(parts)) {
-    await revealPreparedBotResponse(pendingBackgroundBot);
+    const prepared = pendingBackgroundBot;
+
+    activeSpeechCorrection = null;
     pendingBackgroundBot = null;
+
+    await showPerfectCorrectionThenRevealBot({
+      transcript,
+      parts,
+      correctedText,
+      prepared
+    });
+
     return;
   }
 
@@ -1925,6 +1994,7 @@ async function callChatFunction(payload, label = "Chat") {
     suggestion,
     parts,
     correctedText,
+    isPerfect: false,
     onRetry: () => {
       setSpeechStatus("Recording");
     },
