@@ -1401,12 +1401,16 @@ function addSpeechReviewCard({
     });
 
     continueButton.addEventListener("click", () => {
-      removeSpeechReviewCard();
+  const actions = continueButton.closest(".speech-review-actions");
 
-      if (typeof onContinue === "function") {
-        onContinue();
-      }
-    });
+  if (actions) {
+    actions.remove();
+  }
+
+  if (typeof onContinue === "function") {
+    onContinue();
+  }
+});
 
     actions.appendChild(retryButton);
     actions.appendChild(continueButton);
