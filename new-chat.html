@@ -1763,24 +1763,13 @@ async function callChatFunction(payload, label = "Chat") {
   clearActivePlaybackButton();
 }
 
- function clearActivePlaybackButton() {
+  function clearActivePlaybackButton() {
   if (activePlayback?.button) {
     activePlayback.button.classList.remove("playing", "loading");
-    activePlayback.button.innerHTML = `<span class="play-icon">▶</span>`;
+    activePlayback.button.textContent = "▶";
   }
 
   activePlayback = null;
-}
-
-function setPlaybackButtonStopped(button) {
-  if (!button) return;
-
-  if (activePlayback?.button === button) {
-    activePlayback = null;
-  }
-
-  button.classList.remove("loading", "playing");
-  button.innerHTML = `<span class="play-icon">▶</span>`;
 }
 
 function setPlaybackButtonLoading(button) {
@@ -1788,7 +1777,7 @@ function setPlaybackButtonLoading(button) {
 
   button.classList.add("loading");
   button.classList.remove("playing");
-  button.innerHTML = `<span class="play-icon">…</span>`;
+  button.textContent = "…";
 }
 
 function setPlaybackButtonPlaying(button, type, id) {
@@ -1802,7 +1791,18 @@ function setPlaybackButtonPlaying(button, type, id) {
 
   button.classList.remove("loading");
   button.classList.add("playing");
-  button.innerHTML = `<span class="play-icon pause-icon">Ⅱ</span>`;
+  button.textContent = "⏸";
+}
+
+function setPlaybackButtonStopped(button) {
+  if (!button) return;
+
+  if (activePlayback?.button === button) {
+    activePlayback = null;
+  }
+
+  button.classList.remove("loading", "playing");
+  button.textContent = "▶";
 }
 
 function isSamePlayback(button, type, id) {
