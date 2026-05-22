@@ -929,6 +929,14 @@ function splitCorrectionTranslationWords(text) {
   return text.match(/[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)?|[\p{N}]+/gu) || [];
 }
 
+function buildCorrectionPairsFromCorrectedText(correctedText) {
+  return splitCorrectionTranslationWords(correctedText).map(word => ({
+    correctedWord: word,
+    originalWord: "",
+    wasTranslated: false
+  }));
+}
+    
 function buildCorrectionWordPairs(parts) {
   const pairs = [];
 
@@ -1017,12 +1025,7 @@ function renderCorrectionLine(container, correctionId, pairs) {
     const tokenId = `${correctionId}-tok-${index}`;
 
     const unit = document.createElement("span");
-    unit.className = "correction-word-unit";
-    unit.classList.add(pair.wasTranslated ? "corrected-word" : "native-word");
-
-    if (String(pair.correctedWord).trim().includes(" ")) {
-      unit.classList.add("multi-word-token");
-    }
+    unit.className = "correction-word-unit native-word";
 
     unit.dataset.tokenId = tokenId;
     unit.dataset.word = pair.correctedWord;
@@ -1031,14 +1034,12 @@ function renderCorrectionLine(container, correctionId, pairs) {
     mainWord.className = "main-word";
     mainWord.textContent = pair.correctedWord;
 
-    unit.appendChild(mainWord);
+    const translation = document.createElement("span");
+    translation.className = "translation";
+    translation.textContent = "";
 
-    if (pair.wasTranslated && pair.originalWord) {
-      const translation = document.createElement("span");
-      translation.className = "translation";
-      translation.textContent = pair.originalWord;
-      unit.appendChild(translation);
-    }
+    unit.appendChild(mainWord);
+    unit.appendChild(translation);
 
     unit.addEventListener("click", () => {
       playCorrectionWord(correctionId, tokenId, unit).catch(error => {
@@ -1187,13 +1188,20 @@ function playCorrectionWordSchedule(state) {
   }, totalDuration * 1000 + 1000);
 }
 
-function addSpeechReviewCard({ transcript, suggestion, parts, onRetry, onContinue }) {
+function addSpeechReviewCard({
+  transcript,
+  suggestion,
+  parts,
+  correctedText,
+  onRetry,
+  onContinue
+}) {
   removeSpeechReviewCard();
 
   const correctionId = `correction-${++correctionCounter}`;
 
-  const pairs = buildCorrectionWordPairs(parts);
-  const correctionText = correctionPairsToText(pairs);
+  const correctionText = correctedText || suggestion;
+  const pairs = buildCorrectionPairsFromCorrectedText(correctionText);
   const tokens = createCorrectionTokensFromPairs(pairs, correctionId, correctionText);
 
   const card = document.createElement("div");
@@ -1275,7 +1283,6 @@ function addSpeechReviewCard({ transcript, suggestion, parts, onRetry, onContinu
     transcript,
     suggestion,
     parts,
-    pairs,
     correctionText,
     tokens,
     lineEl: correctionLine,
@@ -1299,7 +1306,7 @@ function addSpeechReviewCard({ transcript, suggestion, parts, onRetry, onContinu
 
         return clips;
       })
-      .catch(error => {
+      .catch(() => {
         const state = correctionState.get(correctionId);
 
         if (state) {
@@ -1322,6 +1329,8 @@ function addSpeechReviewCard({ transcript, suggestion, parts, onRetry, onContinu
     state.slow = !state.slow;
     slowToggle.classList.toggle("active", state.slow);
   });
+
+  translateCorrectionTokens(correctionId).catch(() => {});
 
   scrollMessagesToBottom();
 
@@ -1724,6 +1733,51 @@ async function callChatFunction(payload, label = "Chat") {
   };
 }
 
+  async function translateCorrectionTokens(correctionId) {
+  const state = correctionState.get(correctionId);
+  if (!state) return;
+
+  const units = [...state.lineEl.querySelectorAll(".correction-word-unit")];
+
+  await Promise.allSettled(
+    units.map(async unit => {
+      const word = unit.dataset.word || "";
+      const translationEl = unit.querySelector(".translation");
+
+      if (!word || !translationEl) return;
+
+      const cacheKey = `correction|${word}|${languageSelect.value}|${fluentLanguageSelect.value}|${state.correctionText}`;
+
+      if (translationCache.has(cacheKey)) {
+        translationEl.textContent = translationCache.get(cacheKey);
+        return;
+      }
+
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          action: "translate-word",
+          word,
+          sentence: state.correctionText,
+          chatLanguage: languageSelect.value,
+          fluentLanguage: fluentLanguageSelect.value
+        })
+      });
+
+      const data = await parseJsonResponse(response, "Correction word translation");
+      const translated = data.translation || "";
+
+      translationCache.set(cacheKey, translated);
+      translationEl.textContent = translated;
+    })
+  );
+}
+    
     async function revealPreparedBotResponse(prepared) {
   const thinkingCard = addThinkingMessage();
 
@@ -1780,32 +1834,32 @@ async function callChatFunction(payload, label = "Chat") {
   */
   pendingBackgroundBot = await prepareBotResponseInBackground(transcript);
 
-  let parts = [];
+  let analysis;
 
-  try {
-    parts = await analyzeUserMessageLanguageParts(transcript);
-  } catch {
-    /*
-      If language analysis fails, do not block the conversation.
-    */
-    await revealPreparedBotResponse(pendingBackgroundBot);
-    pendingBackgroundBot = null;
-    return;
-  }
+try {
+  analysis = await analyzeUserMessageLanguageParts(transcript);
+} catch {
+  await revealPreparedBotResponse(pendingBackgroundBot);
+  pendingBackgroundBot = null;
+  return;
+}
 
-  if (!hasForeignLanguageParts(parts)) {
-    await revealPreparedBotResponse(pendingBackgroundBot);
-    pendingBackgroundBot = null;
-    return;
-  }
+const parts = analysis.parts || [];
+const correctedText = analysis.correctedText || "";
 
-  const pairs = buildCorrectionWordPairs(parts);
-const suggestion = correctionPairsToText(pairs);
+if (!hasForeignLanguageParts(parts)) {
+  await revealPreparedBotResponse(pendingBackgroundBot);
+  pendingBackgroundBot = null;
+  return;
+}
+
+const suggestion = correctedText;
 
 activeSpeechCorrection = {
   transcript,
   parts,
   suggestion,
+  correctedText,
   prepared: pendingBackgroundBot
 };
 
@@ -1813,6 +1867,7 @@ const correctionCard = addSpeechReviewCard({
   transcript,
   suggestion,
   parts,
+  correctedText,
   onRetry: () => {
     setSpeechStatus("Tap to re-record");
   },
@@ -1836,23 +1891,27 @@ if (correctionId) {
 }
 
   async function analyzeUserMessageLanguageParts(text) {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-      },
-      body: JSON.stringify({
-        action: "translate-message-parts",
-        text,
-        chatLanguage: languageSelect.value
-      })
-    });
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      action: "translate-message-parts",
+      text,
+      chatLanguage: languageSelect.value
+    })
+  });
 
-    const data = await parseJsonResponse(response, "User language analysis");
-    return Array.isArray(data.parts) ? data.parts : [];
-  }
+  const data = await parseJsonResponse(response, "User language analysis");
+
+  return {
+    parts: Array.isArray(data.parts) ? data.parts : [],
+    correctedText: data.correctedText || ""
+  };
+}
 
   async function analyzeAndRenderUserMessageLanguage(userMessageId) {
     const state = userMessageState.get(userMessageId);
