@@ -625,21 +625,28 @@
   display: inline-block;
 }
 
-.correction-word-unit.native-word .main-word {
-  color: #86efac;
+.correction-word-unit.native-word .main-word,
+.correction-word-unit.native-word .translation {
+  color: #34d399;
 }
 
-.correction-word-unit.corrected-word .main-word {
+.correction-word-unit.corrected-word .main-word,
+.correction-word-unit.corrected-word .translation {
   color: #f87171;
 }
 
+/* Blue must override both green and red during click/slow playback */
 .correction-word-unit.active-word .main-word,
+.correction-word-unit.active-word .translation,
 .correction-word-unit.native-word.active-word .main-word,
-.correction-word-unit.corrected-word.active-word .main-word {
+.correction-word-unit.native-word.active-word .translation,
+.correction-word-unit.corrected-word.active-word .main-word,
+.correction-word-unit.corrected-word.active-word .translation {
   color: var(--accent) !important;
 }
 
-.correction-word-unit:hover .main-word {
+.correction-word-unit:hover .main-word,
+.correction-word-unit:hover .translation {
   color: var(--accent);
 }
 
@@ -900,6 +907,61 @@ let pendingBackgroundBot = null;
     let correctionCounter = 0;
 const correctionState = new Map();
 
+    function normalizeCorrectionCompare(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getNativeChatLanguageWordsFromParts(parts) {
+  const nativeWords = [];
+
+  for (const part of parts || []) {
+    if (part && part.isChatLanguage === true) {
+      const words = splitCorrectionTranslationWords(part.text);
+
+      for (const word of words) {
+        nativeWords.push(normalizeCorrectionCompare(word));
+      }
+    }
+  }
+
+  return nativeWords.filter(Boolean);
+}
+
+function buildCorrectionPairsFromCorrectedTextAndParts(correctedText, parts) {
+  const correctedWords = splitCorrectionTranslationWords(correctedText);
+  const nativeWords = getNativeChatLanguageWordsFromParts(parts);
+
+  /*
+    We consume native words in order. This avoids making every repeated word green
+    merely because it appeared once in the user's chat-language speech.
+  */
+  let nativeIndex = 0;
+
+  return correctedWords.map(word => {
+    const normalizedWord = normalizeCorrectionCompare(word);
+    const expectedNativeWord = nativeWords[nativeIndex];
+
+    const wasNative =
+      expectedNativeWord &&
+      normalizedWord === expectedNativeWord;
+
+    if (wasNative) {
+      nativeIndex++;
+    }
+
+    return {
+      correctedWord: word,
+      originalWord: "",
+      wasTranslated: !wasNative
+    };
+  });
+}
+
     function buildChatLanguageSuggestion(parts) {
   return parts
     .map(part => {
@@ -1025,7 +1087,12 @@ function renderCorrectionLine(container, correctionId, pairs) {
     const tokenId = `${correctionId}-tok-${index}`;
 
     const unit = document.createElement("span");
-    unit.className = "correction-word-unit native-word";
+    unit.className = "correction-word-unit";
+    unit.classList.add(pair.wasTranslated ? "corrected-word" : "native-word");
+
+    if (String(pair.correctedWord).trim().includes(" ")) {
+      unit.classList.add("multi-word-token");
+    }
 
     unit.dataset.tokenId = tokenId;
     unit.dataset.word = pair.correctedWord;
@@ -1123,56 +1190,45 @@ function assignCorrectionScheduleToWords(state) {
 
 function playCorrectionWordSchedule(state) {
   const context = getAudioContext();
-  const token = currentPlaybackToken;
+  const playbackToken = currentPlaybackToken;
   const startAt = context.currentTime + 0.08;
 
   scheduledSources = [];
+
+  const unitsByTokenId = new Map(
+    [...state.lineEl.querySelectorAll(".correction-word-unit")]
+      .filter(unit => unit.dataset.tokenId)
+      .map(unit => [unit.dataset.tokenId, unit])
+  );
+
+  const activeTimers = [];
 
   state.wordSchedule.forEach(item => {
     const source = context.createBufferSource();
     source.buffer = item.audioBuffer;
     source.connect(context.destination);
+
     source.start(startAt + item.playStart);
     scheduledSources.push(source);
+
+    const unit = unitsByTokenId.get(item.tokenId);
+
+    if (unit) {
+      const onTimer = setTimeout(() => {
+        if (playbackToken === currentPlaybackToken) {
+          unit.classList.add("active-word");
+        }
+      }, Math.max(0, item.playStart * 1000));
+
+      const offTimer = setTimeout(() => {
+        if (playbackToken === currentPlaybackToken) {
+          unit.classList.remove("active-word");
+        }
+      }, Math.max(0, item.playEnd * 1000 + 160));
+
+      activeTimers.push(onTimer, offTimer);
+    }
   });
-
-  const visualStart = performance.now() + 80;
-
-  function syncFrame() {
-    if (token !== currentPlaybackToken) return;
-
-    const elapsed = (performance.now() - visualStart) / 1000;
-    const units = [...state.lineEl.querySelectorAll(".correction-word-unit")];
-
-    for (const unit of units) {
-      const start = Number(unit.dataset.playStart);
-      const end = Number(unit.dataset.playEnd);
-
-      if (!Number.isFinite(start) || !Number.isFinite(end)) {
-        unit.classList.remove("active-word");
-        continue;
-      }
-
-      if (elapsed >= start && elapsed <= end + 0.08) {
-        unit.classList.add("active-word");
-      } else {
-        unit.classList.remove("active-word");
-      }
-    }
-
-    const lastEnd =
-      state.wordSchedule.length > 0
-        ? state.wordSchedule[state.wordSchedule.length - 1].playEnd
-        : 0;
-
-    if (elapsed <= lastEnd + 0.5) {
-      requestAnimationFrame(syncFrame);
-    } else {
-      units.forEach(unit => unit.classList.remove("active-word"));
-    }
-  }
-
-  requestAnimationFrame(syncFrame);
 
   const totalDuration =
     state.wordSchedule.length > 0
@@ -1180,8 +1236,9 @@ function playCorrectionWordSchedule(state) {
       : 0;
 
   setTimeout(() => {
-    if (token === currentPlaybackToken) {
+    if (playbackToken === currentPlaybackToken) {
       scheduledSources = [];
+
       [...state.lineEl.querySelectorAll(".correction-word-unit")]
         .forEach(unit => unit.classList.remove("active-word"));
     }
@@ -1201,7 +1258,7 @@ function addSpeechReviewCard({
   const correctionId = `correction-${++correctionCounter}`;
 
   const correctionText = correctedText || suggestion;
-  const pairs = buildCorrectionPairsFromCorrectedText(correctionText);
+const pairs = buildCorrectionPairsFromCorrectedTextAndParts(correctionText, parts);
   const tokens = createCorrectionTokensFromPairs(pairs, correctionId, correctionText);
 
   const card = document.createElement("div");
@@ -1520,23 +1577,22 @@ async function playCorrection(correctionId) {
     }
 
     if (state.slow) {
-      if (!state.wordSchedule) {
-        state.wordSchedule = await buildCorrectionWordSchedule(state);
-      }
+  if (!state.wordSchedule) {
+    state.wordSchedule = await buildCorrectionWordSchedule(state);
+  }
 
-      assignCorrectionScheduleToWords(state);
-      playCorrectionWordSchedule(state);
-    } else {
-      const speech = await getCorrectionFullSpeech(state);
+  playCorrectionWordSchedule(state);
+} else {
+  const speech = await getCorrectionFullSpeech(state);
 
-      if (!speech.audioBuffer) {
-        const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
-        const context = getAudioContext();
-        speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
-      }
+  if (!speech.audioBuffer) {
+    const arrayBuffer = base64ToArrayBuffer(speech.audioBase64);
+    const context = getAudioContext();
+    speech.audioBuffer = await context.decodeAudioData(arrayBuffer);
+  }
 
-      playFullAudioBuffer(speech.audioBuffer);
-    }
+  playFullAudioBuffer(speech.audioBuffer);
+}
   } catch (error) {
     showSystemMessage(getReadableError(error));
   } finally {
