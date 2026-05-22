@@ -1400,15 +1400,28 @@ function addSpeechReviewCard({
       }
     });
 
-    continueButton.addEventListener("click", () => {
+   continueButton.addEventListener("click", async () => {
   const actions = continueButton.closest(".speech-review-actions");
 
-  if (actions) {
-    actions.remove();
-  }
+  continueButton.disabled = true;
+  continueButton.textContent = "Continuing...";
 
-  if (typeof onContinue === "function") {
-    onContinue();
+  try {
+    if (typeof onContinue === "function") {
+      await onContinue();
+    }
+
+    /*
+      Only remove the buttons after the chatbot reply successfully starts revealing.
+      The correction box itself stays.
+    */
+    if (actions) {
+      actions.remove();
+    }
+  } catch (error) {
+    continueButton.disabled = false;
+    continueButton.textContent = "Continue anyway";
+    showSystemMessage(getReadableError(error));
   }
 });
 
