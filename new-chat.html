@@ -176,11 +176,31 @@
     }
 
     .bot-card {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 14px;
-    }
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 18px;
+}
+
+    .bot-card .bot-words {
+  min-width: 0;
+}
+
+.bot-card .message-audio-controls {
+  justify-self: end;
+  align-self: start;
+  padding-top: 0.25rem;
+}
+
+    @media (max-width: 760px) {
+  .bot-card {
+    grid-template-columns: 1fr;
+  }
+
+  .bot-card .message-audio-controls {
+    justify-self: start;
+  }
+}
 
     .bot-words {
       color: white;
@@ -713,6 +733,21 @@
 .correction-slow-toggle.active {
   background: white;
   color: black;
+}
+
+.play-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(2px);
+  line-height: 1;
+}
+
+.pause-icon {
+  transform: translateX(0);
+  font-size: 1.55rem;
+  letter-spacing: -0.18em;
+  font-weight: 900;
 }
 
 @media (max-width: 760px) {
@@ -1253,7 +1288,7 @@ function addSpeechReviewCard({
   const playButton = document.createElement("button");
   playButton.type = "button";
   playButton.className = "correction-play-button";
-  playButton.textContent = "▶";
+  playButton.innerHTML = `<span class="play-icon">▶</span>`;
   playButton.dataset.correctionPlay = correctionId;
 
   const slowToggle = document.createElement("button");
@@ -1766,8 +1801,22 @@ async function callChatFunction(payload, label = "Chat") {
   function clearActivePlaybackButton() {
   if (activePlayback?.button) {
     activePlayback.button.classList.remove("playing", "loading");
-    activePlayback.button.textContent = "▶";
+    activePlayback.button.innerHTML = `<span class="play-icon">▶</span>`;
   }
+
+  activePlayback = null;
+}
+
+function setPlaybackButtonStopped(button) {
+  if (!button) return;
+
+  if (activePlayback?.button === button) {
+    activePlayback = null;
+  }
+
+  button.classList.remove("loading", "playing");
+  button.innerHTML = `<span class="play-icon">▶</span>`;
+}
 
   activePlayback = null;
 }
@@ -1777,7 +1826,7 @@ function setPlaybackButtonLoading(button) {
 
   button.classList.add("loading");
   button.classList.remove("playing");
-  button.textContent = "…";
+  button.innerHTML = `<span class="play-icon">…</span>`;
 }
 
 function setPlaybackButtonPlaying(button, type, id) {
@@ -1791,18 +1840,7 @@ function setPlaybackButtonPlaying(button, type, id) {
 
   button.classList.remove("loading");
   button.classList.add("playing");
-  button.textContent = "⏸";
-}
-
-function setPlaybackButtonStopped(button) {
-  if (!button) return;
-
-  if (activePlayback?.button === button) {
-    activePlayback = null;
-  }
-
-  button.classList.remove("loading", "playing");
-  button.textContent = "▶";
+  button.innerHTML = `<span class="play-icon pause-icon">Ⅱ</span>`;
 }
 
 function isSamePlayback(button, type, id) {
@@ -2238,7 +2276,7 @@ function isSamePlayback(button, type, id) {
   const playButton = document.createElement("button");
   playButton.type = "button";
   playButton.className = "message-play-button";
-  playButton.textContent = "▶";
+  playButton.innerHTML = `<span class="play-icon">▶</span>`;
   playButton.dataset.messagePlay = messageId;
 
   const slowButton = document.createElement("button");
