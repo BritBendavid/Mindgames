@@ -633,9 +633,10 @@
   color: #f87171;
 }
 
-/* This must come AFTER native-word and corrected-word so blue wins during playback */
-.correction-word-unit.active-word .main-word {
-  color: var(--accent);
+.correction-word-unit.active-word .main-word,
+.correction-word-unit.native-word.active-word .main-word,
+.correction-word-unit.corrected-word.active-word .main-word {
+  color: var(--accent) !important;
 }
 
 .correction-word-unit:hover .main-word {
@@ -1201,7 +1202,7 @@ function addSpeechReviewCard({ transcript, suggestion, parts, onRetry, onContinu
 
   const title = document.createElement("div");
   title.className = "speech-review-title";
-  title.textContent = "Try again in the chat language";
+  title.textContent = `Try again in ${languageSelect.value}`;
 
   const layout = document.createElement("div");
   layout.className = "correction-layout";
