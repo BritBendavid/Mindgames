@@ -621,16 +621,24 @@
   transition: color 160ms ease;
 }
 
-.correction-word-unit:hover .main-word {
-  color: var(--accent);
+.correction-word-unit .main-word {
+  display: inline-block;
+}
+
+.correction-word-unit.native-word .main-word {
+  color: #4ade80;
+}
+
+.correction-word-unit.corrected-word .main-word {
+  color: #f87171;
 }
 
 .correction-word-unit.active-word .main-word {
   color: var(--accent);
 }
 
-.correction-word-unit.translated .main-word {
-  color: var(--translated);
+.correction-word-unit:hover .main-word {
+  color: var(--accent);
 }
 
 .correction-word-unit .translation {
@@ -638,10 +646,10 @@
   font-size: clamp(0.8rem, 1.3vw, 1.05rem);
   letter-spacing: normal;
   line-height: 1.1;
-  font-weight: 600;
-  color: var(--translated);
+  font-weight: 700;
+  color: #fca5a5;
   margin-top: 0.25em;
-  max-width: 180px;
+  max-width: 220px;
   word-break: break-word;
 }
 
@@ -938,13 +946,15 @@ function buildCorrectionWordPairs(parts) {
           if (translatedWords.length <= 1) {
             pairs.push({
               correctedWord: translation,
-              originalWord: original
+              originalWord: original,
+              wasTranslated: true
             });
           } else {
             translatedWords.forEach((translatedWord, index) => {
               pairs.push({
                 correctedWord: translatedWord,
-                originalWord: index === 0 ? original : ""
+                originalWord: index === 0 ? original : "",
+                wasTranslated: true
               });
             });
           }
@@ -956,7 +966,8 @@ function buildCorrectionWordPairs(parts) {
         translatedWords.forEach((translatedWord, index) => {
           pairs.push({
             correctedWord: translatedWord,
-            originalWord: originalWords[index] || originalWords[0] || ""
+            originalWord: originalWords[index] || originalWords[0] || "",
+            wasTranslated: true
           });
         });
       }
@@ -966,7 +977,8 @@ function buildCorrectionWordPairs(parts) {
       for (const word of chatWords) {
         pairs.push({
           correctedWord: word,
-          originalWord: ""
+          originalWord: "",
+          wasTranslated: false
         });
       }
     }
@@ -1001,7 +1013,9 @@ function renderCorrectionLine(container, correctionId, pairs) {
     const tokenId = `${correctionId}-tok-${index}`;
 
     const unit = document.createElement("span");
-    unit.className = "correction-word-unit translated";
+    unit.className = "correction-word-unit";
+    unit.classList.add(pair.wasTranslated ? "corrected-word" : "native-word");
+
     unit.dataset.tokenId = tokenId;
     unit.dataset.word = pair.correctedWord;
 
@@ -1009,13 +1023,12 @@ function renderCorrectionLine(container, correctionId, pairs) {
     mainWord.className = "main-word";
     mainWord.textContent = pair.correctedWord;
 
-    const translation = document.createElement("span");
-    translation.className = "translation";
-    translation.textContent = pair.originalWord || "";
-
     unit.appendChild(mainWord);
 
-    if (pair.originalWord) {
+    if (pair.wasTranslated && pair.originalWord) {
+      const translation = document.createElement("span");
+      translation.className = "translation";
+      translation.textContent = pair.originalWord;
       unit.appendChild(translation);
     }
 
@@ -1206,17 +1219,12 @@ function addSpeechReviewCard({ transcript, suggestion, parts, onRetry, onContinu
   const textZone = document.createElement("div");
   textZone.className = "correction-text-zone";
 
-  const analyzedText = document.createElement("div");
-  analyzedText.className = "speech-review-text";
-  renderAnalyzedUserMessage(analyzedText, parts);
-
   const correctionLine = document.createElement("div");
   correctionLine.className = "correction-line";
   correctionLine.setAttribute("dir", "auto");
 
   renderCorrectionLine(correctionLine, correctionId, pairs);
 
-  textZone.appendChild(analyzedText);
   textZone.appendChild(correctionLine);
 
   layout.appendChild(sideControls);
