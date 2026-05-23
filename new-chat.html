@@ -805,6 +805,194 @@
         font-size: clamp(2rem, 11vw, 4rem);
       }
     }
+
+    
+  .account-card {
+  min-height: 46px;
+}
+
+.auth-open-button,
+.sign-out-button {
+  border: none;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.auth-open-button {
+  background: white;
+  color: black;
+}
+
+.sign-out-button {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.account-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.account-email {
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  font-weight: 800;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+}
+
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.auth-panel {
+  position: relative;
+  width: min(430px, 100%);
+  background:
+    radial-gradient(circle at top left, rgba(96, 165, 250, 0.16), transparent 34%),
+    rgba(17, 24, 39, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 28px;
+  padding: 26px;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
+}
+
+.auth-close-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.auth-title {
+  font-size: 1.35rem;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+}
+
+.auth-subtitle {
+  color: #9ca3af;
+  margin-top: 6px;
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+.auth-tabs {
+  display: inline-flex;
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 4px;
+}
+
+.auth-tab {
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #9ca3af;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.auth-tab.active {
+  background: white;
+  color: black;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  backdrop-filter: none;
+  width: 100%;
+}
+
+.auth-label {
+  color: #d1d5db;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.auth-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  padding: 13px 14px;
+  outline: none;
+  font-size: 1rem;
+}
+
+.auth-input:focus {
+  border-color: rgba(96, 165, 250, 0.75);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.16);
+}
+
+.auth-submit-button {
+  margin-top: 8px;
+  border: none;
+  border-radius: 999px;
+  padding: 13px 18px;
+  background: white;
+  color: black;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.auth-submit-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-message {
+  min-height: 22px;
+  margin-top: 14px;
+  color: #d1d5db;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.auth-message.error {
+  color: #fca5a5;
+}
+
+.auth-message.success {
+  color: #bbf7d0;
+}
+
   </style>
 </head>
 
@@ -868,6 +1056,19 @@
       </button>
     </div>
   </div>
+
+  <div class="control-card account-card">
+  <button id="authOpenButton" class="auth-open-button" type="button">
+    Sign in
+  </button>
+
+  <div id="accountBadge" class="account-badge hidden">
+    <span id="accountEmail" class="account-email"></span>
+    <button id="signOutButton" class="sign-out-button" type="button">
+      Sign out
+    </button>
+  </div>
+</div>
 </div>
     </header>
 
@@ -894,6 +1095,46 @@
 </div>
   </div>
 
+  <div id="authModal" class="auth-modal hidden">
+  <div class="auth-backdrop" id="authBackdrop"></div>
+
+  <div class="auth-panel">
+    <button id="authCloseButton" class="auth-close-button" type="button">
+      ×
+    </button>
+
+    <div class="auth-title">Account</div>
+    <div class="auth-subtitle">
+      Sign in to keep your language practice connected to your account.
+    </div>
+
+    <div class="auth-tabs">
+      <button id="authSignInTab" class="auth-tab active" type="button">
+        Sign in
+      </button>
+      <button id="authSignUpTab" class="auth-tab" type="button">
+        Create account
+      </button>
+    </div>
+
+    <form id="authForm" class="auth-form" onsubmit="return false;">
+      <label class="auth-label" for="authEmail">Email</label>
+      <input id="authEmail" class="auth-input" type="email" autocomplete="email" />
+
+      <label class="auth-label" for="authPassword">Password</label>
+      <input id="authPassword" class="auth-input" type="password" autocomplete="current-password" />
+
+      <button id="authSubmitButton" class="auth-submit-button" type="button">
+        Sign in
+      </button>
+    </form>
+
+    <div id="authMessage" class="auth-message"></div>
+  </div>
+</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <script>
   const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
@@ -913,6 +1154,31 @@ const speechModeButton = document.getElementById("speechModeButton");
 const messageHistory = document.getElementById("messageHistory");
 const languageSelect = document.getElementById("languageSelect");
 const fluentLanguageSelect = document.getElementById("fluentLanguageSelect");
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+const authOpenButton = document.getElementById("authOpenButton");
+const accountBadge = document.getElementById("accountBadge");
+const accountEmail = document.getElementById("accountEmail");
+const signOutButton = document.getElementById("signOutButton");
+
+const authModal = document.getElementById("authModal");
+const authBackdrop = document.getElementById("authBackdrop");
+const authCloseButton = document.getElementById("authCloseButton");
+const authSignInTab = document.getElementById("authSignInTab");
+const authSignUpTab = document.getElementById("authSignUpTab");
+const authForm = document.getElementById("authForm");
+const authEmail = document.getElementById("authEmail");
+const authPassword = document.getElementById("authPassword");
+const authSubmitButton = document.getElementById("authSubmitButton");
+const authMessage = document.getElementById("authMessage");
+
+let authMode = "sign-in";
+let currentSession = null;
+let currentUser = null;
 
 let inputMode = "writing";
 
@@ -946,6 +1212,159 @@ const correctionState = new Map();
 
     let activePlayback = null;
 
+    function setAuthMessage(text, type = "") {
+  if (!authMessage) return;
+
+  authMessage.textContent = text || "";
+  authMessage.classList.remove("error", "success");
+
+  if (type) {
+    authMessage.classList.add(type);
+  }
+}
+
+function openAuthModal(mode = "sign-in") {
+  setAuthMode(mode);
+
+  if (authModal) {
+    authModal.classList.remove("hidden");
+  }
+
+  setAuthMessage("");
+
+  setTimeout(() => {
+    authEmail?.focus();
+  }, 50);
+}
+
+function closeAuthModal() {
+  if (authModal) {
+    authModal.classList.add("hidden");
+  }
+
+  if (authPassword) {
+    authPassword.value = "";
+  }
+
+  setAuthMessage("");
+}
+
+function setAuthMode(mode) {
+  authMode = mode === "sign-up" ? "sign-up" : "sign-in";
+
+  authSignInTab?.classList.toggle("active", authMode === "sign-in");
+  authSignUpTab?.classList.toggle("active", authMode === "sign-up");
+
+  if (authSubmitButton) {
+    authSubmitButton.textContent =
+      authMode === "sign-in" ? "Sign in" : "Create account";
+  }
+}
+
+function updateAuthUi(session) {
+  currentSession = session || null;
+  currentUser = session?.user || null;
+
+  if (currentUser) {
+    authOpenButton?.classList.add("hidden");
+    accountBadge?.classList.remove("hidden");
+
+    if (accountEmail) {
+      accountEmail.textContent = currentUser.email || "Signed in";
+    }
+  } else {
+    authOpenButton?.classList.remove("hidden");
+    accountBadge?.classList.add("hidden");
+
+    if (accountEmail) {
+      accountEmail.textContent = "";
+    }
+  }
+}
+
+async function handleAuthSubmit() {
+  const email = authEmail?.value.trim();
+  const password = authPassword?.value;
+
+  if (!email || !password) {
+    setAuthMessage("Enter an email and password.", "error");
+    return;
+  }
+
+  if (password.length < 6) {
+    setAuthMessage("Password should be at least 6 characters.", "error");
+    return;
+  }
+
+  authSubmitButton.disabled = true;
+  setAuthMessage(authMode === "sign-in" ? "Signing in..." : "Creating account...");
+
+  try {
+    if (authMode === "sign-in") {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      updateAuthUi(data.session);
+      closeAuthModal();
+      return;
+    }
+
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    if (data.session) {
+      updateAuthUi(data.session);
+      closeAuthModal();
+    } else {
+      setAuthMessage(
+        "Account created. Check your email to confirm your account, then sign in.",
+        "success"
+      );
+      setAuthMode("sign-in");
+    }
+  } catch (error) {
+    setAuthMessage(getReadableError(error), "error");
+  } finally {
+    authSubmitButton.disabled = false;
+  }
+}
+
+async function handleSignOut() {
+  try {
+    stopAllSpeech();
+
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) throw error;
+
+    updateAuthUi(null);
+  } catch (error) {
+    showSystemMessage(getReadableError(error));
+  }
+}
+
+async function initAuth() {
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    showSystemMessage(getReadableError(error));
+  }
+
+  updateAuthUi(data?.session || null);
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    updateAuthUi(session || null);
+  });
+}
+    
     function normalizeCorrectionCompare(text) {
   return String(text || "")
     .toLowerCase()
@@ -3308,10 +3727,74 @@ async function handleSpeechRecordButtonClick(event) {
   if (speechRecordButton) {
     speechRecordButton.addEventListener("click", handleSpeechRecordButtonClick);
   }
+
+  if (authOpenButton) {
+  authOpenButton.addEventListener("click", () => {
+    openAuthModal("sign-in");
+  });
+}
+
+if (authBackdrop) {
+  authBackdrop.addEventListener("click", closeAuthModal);
+}
+
+if (authCloseButton) {
+  authCloseButton.addEventListener("click", closeAuthModal);
+}
+
+if (authSignInTab) {
+  authSignInTab.addEventListener("click", () => {
+    setAuthMode("sign-in");
+  });
+}
+
+if (authSignUpTab) {
+  authSignUpTab.addEventListener("click", () => {
+    setAuthMode("sign-up");
+  });
+}
+
+if (authSubmitButton) {
+  authSubmitButton.addEventListener("click", () => {
+    handleAuthSubmit();
+  });
+}
+
+if (authForm) {
+  authForm.addEventListener("submit", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    handleAuthSubmit();
+    return false;
+  });
+}
+
+if (authEmail) {
+  authEmail.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleAuthSubmit();
+    }
+  });
+}
+
+if (authPassword) {
+  authPassword.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleAuthSubmit();
+    }
+  });
+}
+
+if (signOutButton) {
+  signOutButton.addEventListener("click", handleSignOut);
+}
 }
 
   attachUiHandlers();
-setInputMode("speech");
+  setInputMode("speech");
+  initAuth();
 </script>
 </body>
 </html>
