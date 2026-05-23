@@ -745,7 +745,7 @@
 .top-bar {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 16px;
   flex-wrap: nowrap;
   z-index: 5;
@@ -760,7 +760,7 @@
 }
 
 .brand h1 {
-  margin: 0;
+  margin: 0 0 4px;
   font-size: 1.05rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -769,7 +769,11 @@
 }
 
 .brand p {
-  display: none;
+  display: block;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .controls {
@@ -777,7 +781,8 @@
   align-items: center;
   gap: 10px;
   flex-wrap: nowrap;
-  justify-content: flex-start;
+  justify-content: flex-end;
+  margin-left: auto;
   min-width: 0;
 }
 
@@ -1003,19 +1008,25 @@
     display: none;
   }
 
+  .brand h1 {
+    font-size: 0.92rem;
+    letter-spacing: 0.1em;
+  }
+
+  .brand p {
+    font-size: 0.78rem;
+  }
+
   .controls {
     flex-wrap: nowrap;
+    justify-content: flex-end;
+    margin-left: auto;
     width: auto;
   }
 
   .control-card {
     width: auto;
     justify-content: flex-start;
-  }
-
-  .brand h1 {
-    font-size: 0.92rem;
-    letter-spacing: 0.1em;
   }
 
   .control-card label {
