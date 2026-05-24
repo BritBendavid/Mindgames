@@ -1567,22 +1567,56 @@ form {
       </div>
     </div>
 
-    <div id="newPasswordGroup" class="auth-field-group sign-in-hidden">
-  <label class="auth-label centered-auth-label" for="newPasswordInput">New password</label>
-  <input
-    id="newPasswordInput"
-    class="auth-input"
-    type="password"
-    autocomplete="new-password"
-  />
+  <div id="newPasswordGroup" class="auth-field-group sign-in-hidden">
+  <label class="auth-label centered-auth-label" for="newPasswordInput">
+    New password
+  </label>
 
-  <label class="auth-label centered-auth-label" for="confirmNewPasswordInput">Confirm new password</label>
-  <input
-    id="confirmNewPasswordInput"
-    class="auth-input"
-    type="password"
-    autocomplete="new-password"
-  />
+  <div class="password-field-wrap">
+    <input
+      id="newPasswordInput"
+      class="auth-input password-input"
+      type="password"
+      autocomplete="new-password"
+    />
+
+    <button
+      id="toggleNewPasswordButton"
+      class="toggle-password-button"
+      type="button"
+      aria-label="Show new password"
+      title="Show new password"
+    >
+      <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
+      </svg>
+    </button>
+  </div>
+
+  <label class="auth-label centered-auth-label" for="confirmNewPasswordInput">
+    Confirm new password
+  </label>
+
+  <div class="password-field-wrap">
+    <input
+      id="confirmNewPasswordInput"
+      class="auth-input password-input"
+      type="password"
+      autocomplete="new-password"
+    />
+
+    <button
+      id="toggleConfirmNewPasswordButton"
+      class="toggle-password-button"
+      type="button"
+      aria-label="Show confirm new password"
+      title="Show confirm new password"
+    >
+      <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
+      </svg>
+    </button>
+  </div>
 </div>
 
     <div id="authGenderGroup" class="auth-field-group">
@@ -1700,6 +1734,9 @@ const newPasswordGroup = document.getElementById("newPasswordGroup");
 const newPasswordInput = document.getElementById("newPasswordInput");
 const confirmNewPasswordInput = document.getElementById("confirmNewPasswordInput");
 
+const toggleNewPasswordButton = document.getElementById("toggleNewPasswordButton");
+const toggleConfirmNewPasswordButton = document.getElementById("toggleConfirmNewPasswordButton");
+
 let selectedGender = "";
     
 let authMode = "sign-in";
@@ -1741,6 +1778,35 @@ const correctionState = new Map();
     let passwordRecoveryLocked = false;
 let thisTabIsRecoveryTab = false;
 
+ function setPasswordFieldVisibility(inputEl, buttonEl, isVisible, labelText) {
+  if (!inputEl || !buttonEl) return;
+
+  inputEl.type = isVisible ? "text" : "password";
+  buttonEl.classList.toggle("password-visible", isVisible);
+
+  buttonEl.setAttribute(
+    "aria-label",
+    isVisible ? `Hide ${labelText}` : `Show ${labelText}`
+  );
+
+  buttonEl.setAttribute(
+    "title",
+    isVisible ? `Hide ${labelText}` : `Show ${labelText}`
+  );
+
+  buttonEl.innerHTML = isVisible
+    ? `
+      <svg class="eye-icon eye-closed-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3.3 2.3 21.7 20.7l-1.4 1.4-3.2-3.2A11.5 11.5 0 0 1 12 20.2c-5.1 0-8.7-4.2-10-6.3a1 1 0 0 1 0-1 16 16 0 0 1 4.1-4.4L1.9 3.7l1.4-1.4Zm4.3 7.6A13.3 13.3 0 0 0 4.1 13.4c1.2 2 4.1 4.8 7.9 4.8 1.2 0 2.3-.3 3.3-.7l-2-2a3.3 3.3 0 0 1-4.4-4.4L7.6 9.9Zm4.1-5.3c5.2 0 8.9 4.2 10.2 6.3.2.3.2.7 0 1a15.5 15.5 0 0 1-3 3.5l-1.4-1.4a13.6 13.6 0 0 0 2.4-2.6c-1.2-2-4.1-4.8-8.2-4.8-.9 0-1.8.2-2.6.5L7.5 5.5a11.8 11.8 0 0 1 4.2-.9Zm.3 3.4a3.3 3.3 0 0 1 3.3 3.3c0 .5-.1 1-.3 1.4L10.6 8.3c.4-.2.9-.3 1.4-.3Z"></path>
+      </svg>
+    `
+    : `
+      <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
+      </svg>
+    `;
+}
+    
   function urlLooksLikePasswordRecovery() {
   const query = new URLSearchParams(window.location.search);
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -1771,33 +1837,6 @@ let thisTabIsRecoveryTab = false;
   if (newPasswordInput) {
     setTimeout(() => newPasswordInput.focus(), 60);
   }
-}
-  
-  function setPasswordVisibility(isVisible) {
-  if (!authPassword || !togglePasswordButton) return;
-
-  authPassword.type = isVisible ? "text" : "password";
-  togglePasswordButton.classList.toggle("password-visible", isVisible);
-  togglePasswordButton.setAttribute(
-    "aria-label",
-    isVisible ? "Hide password" : "Show password"
-  );
-  togglePasswordButton.setAttribute(
-    "title",
-    isVisible ? "Hide password" : "Show password"
-  );
-
-  togglePasswordButton.innerHTML = isVisible
-    ? `
-      <svg class="eye-icon eye-closed-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3.3 2.3 21.7 20.7l-1.4 1.4-3.2-3.2A11.5 11.5 0 0 1 12 20.2c-5.1 0-8.7-4.2-10-6.3a1 1 0 0 1 0-1 16 16 0 0 1 4.1-4.4L1.9 3.7l1.4-1.4Zm4.3 7.6A13.3 13.3 0 0 0 4.1 13.4c1.2 2 4.1 4.8 7.9 4.8 1.2 0 2.3-.3 3.3-.7l-2-2a3.3 3.3 0 0 1-4.4-4.4L7.6 9.9Zm4.1-5.3c5.2 0 8.9 4.2 10.2 6.3.2.3.2.7 0 1a15.5 15.5 0 0 1-3 3.5l-1.4-1.4a13.6 13.6 0 0 0 2.4-2.6c-1.2-2-4.1-4.8-8.2-4.8-.9 0-1.8.2-2.6.5L7.5 5.5a11.8 11.8 0 0 1 4.2-.9Zm.3 3.4a3.3 3.3 0 0 1 3.3 3.3c0 .5-.1 1-.3 1.4L10.6 8.3c.4-.2.9-.3 1.4-.3Z"></path>
-      </svg>
-    `
-    : `
-      <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
-      </svg>
-    `;
 }
     
     function setAuthMessage(text, type = "") {
@@ -1857,6 +1896,22 @@ function closeAuthModal() {
     setConfirmPasswordVisibility(false);
   }
 
+  if (newPasswordInput) {
+  newPasswordInput.value = "";
+}
+
+if (confirmNewPasswordInput) {
+  confirmNewPasswordInput.value = "";
+}
+
+if (typeof setNewPasswordVisibility === "function") {
+  setNewPasswordVisibility(false);
+}
+
+if (typeof setConfirmNewPasswordVisibility === "function") {
+  setConfirmNewPasswordVisibility(false);
+}
+    
   setAuthMessage("");
 }
 
@@ -1952,7 +2007,110 @@ function updateAuthUi(session) {
   }
 }
 
+function setPasswordVisibility(isVisible) {
+  setPasswordFieldVisibility(
+    authPassword,
+    togglePasswordButton,
+    isVisible,
+    "password"
+  );
+}
+
+function setConfirmPasswordVisibility(isVisible) {
+  setPasswordFieldVisibility(
+    authConfirmPassword,
+    toggleConfirmPasswordButton,
+    isVisible,
+    "confirm password"
+  );
+}
+
+function setNewPasswordVisibility(isVisible) {
+  setPasswordFieldVisibility(
+    newPasswordInput,
+    toggleNewPasswordButton,
+    isVisible,
+    "new password"
+  );
+}
+
+function setConfirmNewPasswordVisibility(isVisible) {
+  setPasswordFieldVisibility(
+    confirmNewPasswordInput,
+    toggleConfirmNewPasswordButton,
+    isVisible,
+    "confirm new password"
+  );
+}
+
 async function handleAuthSubmit() {
+  /*
+    Recovery mode must come first.
+    Otherwise the regular sign-in validation will complain:
+    "Enter an email and password."
+  */
+  if (authMode === "recovery") {
+    const newPassword = newPasswordInput?.value || "";
+    const confirmNewPassword = confirmNewPasswordInput?.value || "";
+
+    if (newPassword.length < 6) {
+      setAuthMessage("Password should be at least 6 characters.", "error");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setAuthMessage("Passwords do not match.", "error");
+      return;
+    }
+
+    authSubmitButton.disabled = true;
+    setAuthMessage("Updating password...");
+
+    try {
+      const { error } = await supabaseClient.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      passwordRecoveryLocked = false;
+
+      authModal?.classList.remove("recovery-locked");
+      authCloseButton?.classList.remove("hidden");
+      authBackdrop?.classList.remove("recovery-backdrop-locked");
+
+      if (authSignInTab) authSignInTab.disabled = false;
+      if (authSignUpTab) authSignUpTab.disabled = false;
+
+      if (newPasswordInput) newPasswordInput.value = "";
+      if (confirmNewPasswordInput) confirmNewPasswordInput.value = "";
+
+      if (typeof setNewPasswordVisibility === "function") {
+        setNewPasswordVisibility(false);
+      }
+
+      if (typeof setConfirmNewPasswordVisibility === "function") {
+        setConfirmNewPasswordVisibility(false);
+      }
+
+      setAuthMessage("Password updated successfully.", "success");
+
+      const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      setTimeout(() => {
+        closeAuthModal();
+        setAuthMode("sign-in");
+      }, 900);
+    } catch (error) {
+      setAuthMessage(getReadableError(error), "error");
+    } finally {
+      authSubmitButton.disabled = false;
+    }
+
+    return;
+  }
+
   const email = authEmail?.value.trim();
   const password = authPassword?.value || "";
   const confirmPassword = authConfirmPassword?.value || "";
@@ -1968,53 +2126,10 @@ async function handleAuthSubmit() {
     return;
   }
 
-  if (authMode === "recovery") {
-  const newPassword = newPasswordInput?.value || "";
-  const confirmNewPassword = confirmNewPasswordInput?.value || "";
-
-  if (newPassword.length < 6) {
-    setAuthMessage("Password should be at least 6 characters.", "error");
-    return;
-  }
-
-  if (newPassword !== confirmNewPassword) {
-    setAuthMessage("Passwords do not match.", "error");
-    return;
-  }
-
-  authSubmitButton.disabled = true;
-  setAuthMessage("Updating password...");
-
-  try {
-    const { error } = await supabaseClient.auth.updateUser({
-      password: newPassword
-    });
-
-    if (error) throw error;
-
-    setAuthMessage("Password updated successfully.", "success");
-
-    setTimeout(() => {
-      closeAuthModal();
-    }, 900);
-  } catch (error) {
-    setAuthMessage(getReadableError(error), "error");
-  } finally {
-    authSubmitButton.disabled = false;
-  }
-
-  return;
-}
-  
   if (authMode === "sign-up" && password !== confirmPassword) {
     setAuthMessage("Passwords do not match.", "error");
     return;
   }
-
-  if (authMode === "sign-up" && !selectedGender) {
-  setAuthMessage("Select your gender.", "error");
-  return;
-}
 
   authSubmitButton.disabled = true;
   setAuthMessage(authMode === "sign-in" ? "Signing in..." : "Creating account...");
@@ -2108,33 +2223,6 @@ async function handleGoogleAuth() {
   } catch (error) {
     setAuthMessage(getReadableError(error), "error");
   }
-}
-
-function setConfirmPasswordVisibility(isVisible) {
-  if (!authConfirmPassword || !toggleConfirmPasswordButton) return;
-
-  authConfirmPassword.type = isVisible ? "text" : "password";
-  toggleConfirmPasswordButton.classList.toggle("password-visible", isVisible);
-  toggleConfirmPasswordButton.setAttribute(
-    "aria-label",
-    isVisible ? "Hide confirm password" : "Show confirm password"
-  );
-  toggleConfirmPasswordButton.setAttribute(
-    "title",
-    isVisible ? "Hide confirm password" : "Show confirm password"
-  );
-
-  toggleConfirmPasswordButton.innerHTML = isVisible
-    ? `
-      <svg class="eye-icon eye-closed-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3.3 2.3 21.7 20.7l-1.4 1.4-3.2-3.2A11.5 11.5 0 0 1 12 20.2c-5.1 0-8.7-4.2-10-6.3a1 1 0 0 1 0-1 16 16 0 0 1 4.1-4.4L1.9 3.7l1.4-1.4Zm4.3 7.6A13.3 13.3 0 0 0 4.1 13.4c1.2 2 4.1 4.8 7.9 4.8 1.2 0 2.3-.3 3.3-.7l-2-2a3.3 3.3 0 0 1-4.4-4.4L7.6 9.9Zm4.1-5.3c5.2 0 8.9 4.2 10.2 6.3.2.3.2.7 0 1a15.5 15.5 0 0 1-3 3.5l-1.4-1.4a13.6 13.6 0 0 0 2.4-2.6c-1.2-2-4.1-4.8-8.2-4.8-.9 0-1.8.2-2.6.5L7.5 5.5a11.8 11.8 0 0 1 4.2-.9Zm.3 3.4a3.3 3.3 0 0 1 3.3 3.3c0 .5-.1 1-.3 1.4L10.6 8.3c.4-.2.9-.3 1.4-.3Z"></path>
-      </svg>
-    `
-    : `
-      <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
-      </svg>
-    `;
 }
 
 async function handleSignOut() {
@@ -4647,6 +4735,36 @@ if (genderManButton) {
 if (genderWomanButton) {
   genderWomanButton.addEventListener("click", () => {
     setSelectedGender(selectedGender === "woman" ? "" : "woman");
+  });
+}
+
+if (toggleNewPasswordButton) {
+  toggleNewPasswordButton.addEventListener("click", () => {
+    setNewPasswordVisibility(newPasswordInput.type === "password");
+  });
+}
+
+if (toggleConfirmNewPasswordButton) {
+  toggleConfirmNewPasswordButton.addEventListener("click", () => {
+    setConfirmNewPasswordVisibility(confirmNewPasswordInput.type === "password");
+  });
+}
+
+if (newPasswordInput) {
+  newPasswordInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleAuthSubmit();
+    }
+  });
+}
+
+if (confirmNewPasswordInput) {
+  confirmNewPasswordInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleAuthSubmit();
+    }
   });
 }
   
