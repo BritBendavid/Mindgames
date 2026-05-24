@@ -1038,6 +1038,32 @@
   }
 }
 
+  .language-stack-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  padding: 10px 12px;
+}
+
+.stacked-control-row {
+  display: grid;
+  grid-template-columns: 58px minmax(120px, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.stacked-control-row label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.language-stack-card select {
+  width: 100%;
+}
+
   </style>
 </head>
 
@@ -1050,7 +1076,8 @@
       </div>
 
       <div class="controls">
-  <div class="control-card">
+  <div class="control-card language-stack-card">
+  <div class="stacked-control-row">
     <label for="languageSelect">Chat</label>
     <div class="select-wrap">
       <select id="languageSelect">
@@ -1070,7 +1097,7 @@
     </div>
   </div>
 
-  <div class="control-card">
+  <div class="stacked-control-row">
     <label for="fluentLanguageSelect">Fluent</label>
     <div class="select-wrap">
       <select id="fluentLanguageSelect">
@@ -1089,6 +1116,7 @@
       </select>
     </div>
   </div>
+</div>
 
   <div class="control-card mode-card">
     <label>Mode</label>
