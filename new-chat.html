@@ -1249,6 +1249,19 @@ form {
   text-align: center;
 }
 
+.auth-modal.recovery-locked .auth-tabs {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.auth-modal.recovery-locked .auth-close-button {
+  display: none !important;
+}
+
+.recovery-backdrop-locked {
+  cursor: not-allowed;
+}
+
 /* System messages */
 
 .system-message {
@@ -1725,6 +1738,41 @@ const correctionState = new Map();
 
     let activePlayback = null;
 
+    let passwordRecoveryLocked = false;
+let thisTabIsRecoveryTab = false;
+
+  function urlLooksLikePasswordRecovery() {
+  const query = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+
+  return (
+    query.get("auth") === "recovery" ||
+    query.get("type") === "recovery" ||
+    hash.get("type") === "recovery"
+  );
+}
+
+  function openPasswordRecoveryUi() {
+  passwordRecoveryLocked = true;
+  thisTabIsRecoveryTab = true;
+
+  openAuthModal("recovery");
+
+  authModal?.classList.add("recovery-locked");
+
+  authCloseButton?.classList.add("hidden");
+  authBackdrop?.classList.add("recovery-backdrop-locked");
+
+  authSignInTab.disabled = true;
+  authSignUpTab.disabled = true;
+
+  setAuthMessage("Enter a new password to finish resetting your account.", "success");
+
+  if (newPasswordInput) {
+    setTimeout(() => newPasswordInput.focus(), 60);
+  }
+}
+  
   function setPasswordVisibility(isVisible) {
   if (!authPassword || !togglePasswordButton) return;
 
@@ -1778,6 +1826,11 @@ function openAuthModal(mode = "sign-in") {
 }
 
 function closeAuthModal() {
+  if (passwordRecoveryLocked) {
+    setAuthMessage("Please choose a new password to finish resetting your account.", "error");
+    return;
+  }
+
   if (authModal) {
     authModal.classList.add("hidden");
   }
@@ -1790,6 +1843,14 @@ function closeAuthModal() {
     authConfirmPassword.value = "";
   }
 
+  if (newPasswordInput) {
+    newPasswordInput.value = "";
+  }
+
+  if (confirmNewPasswordInput) {
+    confirmNewPasswordInput.value = "";
+  }
+
   setPasswordVisibility(false);
 
   if (typeof setConfirmPasswordVisibility === "function") {
@@ -1800,6 +1861,11 @@ function closeAuthModal() {
 }
 
 function setAuthMode(mode) {
+  if (passwordRecoveryLocked && mode !== "recovery") {
+    setAuthMessage("Please choose a new password to finish resetting your account.", "error");
+    return;
+  }
+
   authMode =
     mode === "sign-up" ? "sign-up" :
     mode === "recovery" ? "recovery" :
@@ -1823,6 +1889,7 @@ function setAuthMode(mode) {
 
   forgotPasswordButton?.classList.toggle("hidden", !isSignIn);
   googleAuthButton?.classList.toggle("hidden", isRecovery);
+  document.querySelector(".auth-divider")?.classList.toggle("hidden", isRecovery);
 
   if (authSubmitButton) {
     authSubmitButton.textContent =
@@ -2085,6 +2152,8 @@ async function handleSignOut() {
 }
 
 async function initAuth() {
+  thisTabIsRecoveryTab = urlLooksLikePasswordRecovery();
+
   const { data, error } = await supabaseClient.auth.getSession();
 
   if (error) {
@@ -2093,12 +2162,19 @@ async function initAuth() {
 
   updateAuthUi(data?.session || null);
 
+  if (thisTabIsRecoveryTab) {
+    openPasswordRecoveryUi();
+  }
+
   supabaseClient.auth.onAuthStateChange((event, session) => {
     updateAuthUi(session || null);
 
-    if (event === "PASSWORD_RECOVERY") {
-      openAuthModal("recovery");
-      setAuthMessage("Enter a new password to finish resetting your account.", "success");
+    /*
+      Supabase auth state can sync across tabs.
+      Only the tab that actually has the recovery URL should open the reset modal.
+    */
+    if (event === "PASSWORD_RECOVERY" && urlLooksLikePasswordRecovery()) {
+      openPasswordRecoveryUi();
     }
   });
 }
