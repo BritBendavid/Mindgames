@@ -226,25 +226,7 @@ select option {
   flex: 0 0 auto;
 }
 
-.account-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 240px;
-}
-
-.account-email {
-  color: #e5e7eb;
-  font-size: 0.86rem;
-  font-weight: 800;
-  max-width: 135px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.auth-open-button,
-.sign-out-button {
+.auth-open-button {
   border: none;
   border-radius: 999px;
   padding: 8px 12px;
@@ -258,8 +240,109 @@ select option {
   color: black;
 }
 
-.sign-out-button {
-  background: rgba(255, 255, 255, 0.12);
+.account-card {
+  min-height: 44px;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.account-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.account-avatar-button {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.18), transparent 30%),
+    linear-gradient(145deg, rgba(148, 163, 184, 0.28), rgba(71, 85, 105, 0.22));
+  color: #e5e7eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.32),
+    inset 0 0 18px rgba(255, 255, 255, 0.04);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.account-avatar-button:hover {
+  transform: translateY(-1px) scale(1.03);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 16px 42px rgba(0, 0, 0, 0.42),
+    0 0 24px rgba(148, 163, 184, 0.14),
+    inset 0 0 18px rgba(255, 255, 255, 0.05);
+}
+
+.account-avatar-icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.account-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 230px;
+  background:
+    radial-gradient(circle at top left, rgba(148, 163, 184, 0.14), transparent 34%),
+    rgba(17, 24, 39, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 12px;
+  z-index: 80;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+}
+
+.account-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 15px;
+  width: 12px;
+  height: 12px;
+  background: rgba(17, 24, 39, 0.98);
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  transform: rotate(45deg);
+}
+
+.account-display-name {
+  color: white;
+  font-weight: 950;
+  font-size: 0.96rem;
+  line-height: 1.25;
+  padding: 7px 8px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-logout {
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e5e7eb;
+  font-weight: 900;
+  cursor: pointer;
+  text-align: center;
+}
+
+.account-menu-logout:hover {
+  background: rgba(255, 255, 255, 0.16);
   color: white;
 }
 
@@ -1445,11 +1528,19 @@ form {
     Sign in
   </button>
 
-  <div id="accountBadge" class="account-badge hidden">
-    <span id="accountEmail" class="account-email"></span>
-    <button id="signOutButton" class="sign-out-button" type="button">
-      Sign out
+  <div id="accountMenuWrap" class="account-menu-wrap hidden">
+    <button id="accountAvatarButton" class="account-avatar-button" type="button" aria-label="Open account menu">
+      <svg class="account-avatar-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 12.2a4.4 4.4 0 1 0 0-8.8 4.4 4.4 0 0 0 0 8.8Zm0 2c-4.5 0-8.2 2.8-8.2 6.2 0 .8.6 1.4 1.4 1.4h13.6c.8 0 1.4-.6 1.4-1.4 0-3.4-3.7-6.2-8.2-6.2Z"></path>
+      </svg>
     </button>
+
+    <div id="accountDropdown" class="account-dropdown hidden">
+      <div id="accountDisplayName" class="account-display-name"></div>
+      <button id="signOutButton" class="account-menu-logout" type="button">
+        Log out
+      </button>
+    </div>
   </div>
 </div>
 </div>
@@ -1697,9 +1788,10 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
-const authOpenButton = document.getElementById("authOpenButton");
-const accountBadge = document.getElementById("accountBadge");
-const accountEmail = document.getElementById("accountEmail");
+const authOpenButton = document.getElementById("authOpenButton");const accountMenuWrap = document.getElementById("accountMenuWrap");
+const accountAvatarButton = document.getElementById("accountAvatarButton");
+const accountDropdown = document.getElementById("accountDropdown");
+const accountDisplayName = document.getElementById("accountDisplayName");
 const signOutButton = document.getElementById("signOutButton");
 
 const authModal = document.getElementById("authModal");
@@ -1778,6 +1870,30 @@ const correctionState = new Map();
     let passwordRecoveryLocked = false;
 let thisTabIsRecoveryTab = false;
 
+function getEmailName(email) {
+  return String(email || "")
+    .split("@")[0]
+    .replace(/[._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getAccountDisplayName(user) {
+  const username = user?.user_metadata?.username;
+  const fullName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+  const emailName = getEmailName(user?.email);
+
+  return String(username || fullName || emailName || "Account").trim();
+}
+
+function closeAccountDropdown() {
+  accountDropdown?.classList.add("hidden");
+}
+
+function toggleAccountDropdown() {
+  accountDropdown?.classList.toggle("hidden");
+}
+    
  function setPasswordFieldVisibility(inputEl, buttonEl, isVisible, labelText) {
   if (!inputEl || !buttonEl) return;
 
@@ -1992,17 +2108,18 @@ function updateAuthUi(session) {
 
   if (currentUser) {
     authOpenButton?.classList.add("hidden");
-    accountBadge?.classList.remove("hidden");
+    accountMenuWrap?.classList.remove("hidden");
 
-    if (accountEmail) {
-      accountEmail.textContent = currentUser.email || "Signed in";
+    if (accountDisplayName) {
+      accountDisplayName.textContent = getAccountDisplayName(currentUser);
     }
   } else {
     authOpenButton?.classList.remove("hidden");
-    accountBadge?.classList.add("hidden");
+    accountMenuWrap?.classList.add("hidden");
+    closeAccountDropdown();
 
-    if (accountEmail) {
-      accountEmail.textContent = "";
+    if (accountDisplayName) {
+      accountDisplayName.textContent = "";
     }
   }
 }
@@ -2227,6 +2344,7 @@ async function handleGoogleAuth() {
 
 async function handleSignOut() {
   try {
+    closeAccountDropdown();
     stopAllSpeech();
 
     const { error } = await supabaseClient.auth.signOut();
@@ -4696,6 +4814,23 @@ if (authPassword) {
 if (signOutButton) {
   signOutButton.addEventListener("click", handleSignOut);
 }
+
+if (accountAvatarButton) {
+  accountAvatarButton.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleAccountDropdown();
+  });
+}
+
+document.addEventListener("click", event => {
+  if (
+    accountMenuWrap &&
+    !accountMenuWrap.contains(event.target)
+  ) {
+    closeAccountDropdown();
+  }
+});
 
 if (togglePasswordButton) {
   togglePasswordButton.addEventListener("click", () => {
