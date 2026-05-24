@@ -2009,8 +2009,11 @@ async function handleForgotPassword() {
   setAuthMessage("Sending password reset email...");
 
   try {
+    const resetRedirectUrl =
+      `${window.location.origin}${window.location.pathname}?auth=recovery`;
+
     const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.href
+      redirectTo: resetRedirectUrl
     });
 
     if (error) throw error;
