@@ -1556,24 +1556,21 @@ const authSubmitButton = document.getElementById("authSubmitButton");
 const authMessage = document.getElementById("authMessage");
 
 const togglePasswordButton = document.getElementById("togglePasswordButton");
-
-const authNameGroup = document.getElementById("authNameGroup");
-const authName = document.getElementById("authName");
-const authConfirmPasswordGroup = document.getElementById("authConfirmPasswordGroup");
-const authConfirmPassword = document.getElementById("authConfirmPassword");
 const toggleConfirmPasswordButton = document.getElementById("toggleConfirmPasswordButton");
-const forgotPasswordButton = document.getElementById("forgotPasswordButton");
-const googleAuthButton = document.getElementById("googleAuthButton");
-const googleAuthText = document.getElementById("googleAuthText");
 
 const authNameGroup = document.getElementById("authNameGroup");
 const authName = document.getElementById("authName");
+
 const authConfirmPasswordGroup = document.getElementById("authConfirmPasswordGroup");
 const authConfirmPassword = document.getElementById("authConfirmPassword");
+
 const authGenderGroup = document.getElementById("authGenderGroup");
 const genderManButton = document.getElementById("genderManButton");
 const genderWomanButton = document.getElementById("genderWomanButton");
+
 const forgotPasswordButton = document.getElementById("forgotPasswordButton");
+const googleAuthButton = document.getElementById("googleAuthButton");
+const googleAuthText = document.getElementById("googleAuthText");
 
 let selectedGender = "";
     
@@ -3178,17 +3175,19 @@ function isSamePlayback(button, type, id) {
 }
 
   async function analyzeAndRenderUserMessageLanguage(userMessageId) {
-    const state = userMessageState.get(userMessageId);
-    if (!state) return;
+  const state = userMessageState.get(userMessageId);
+  if (!state) return;
 
-    const parts = await analyzeUserMessageLanguageParts(state.text);
-    if (!parts.length) return;
+  const analysis = await analyzeUserMessageLanguageParts(state.text);
+  const parts = analysis.parts || [];
 
-    const hasForeignPart = parts.some(part => part && part.isChatLanguage === false);
-    if (!hasForeignPart) return;
+  if (!parts.length) return;
 
-    renderAnalyzedUserMessage(state.bubble, parts);
-  }
+  const hasForeignPart = parts.some(part => part && part.isChatLanguage === false);
+  if (!hasForeignPart) return;
+
+  renderAnalyzedUserMessage(state.bubble, parts);
+}
 
   function renderAnalyzedUserMessage(container, parts) {
     container.innerHTML = "";
