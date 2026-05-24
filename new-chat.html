@@ -970,10 +970,11 @@ form {
 
 .auth-label {
   color: #d1d5db;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-align: center;
 }
 
 .centered-auth-label {
@@ -1065,6 +1066,7 @@ form {
   align-self: center;
   padding: 4px 8px;
   margin-top: 2px;
+  width: max-content;
 }
 
 .forgot-password-button:hover {
@@ -1168,6 +1170,17 @@ form {
 
 .auth-message.success {
   color: #bbf7d0;
+}
+
+.auth-scroll-area,
+.auth-field-group,
+.auth-input,
+.password-field-wrap,
+.auth-submit-button,
+.google-auth-button,
+.forgot-password-button,
+.auth-divider {
+  width: 100%;
 }
 
 /* Gender selector */
@@ -1483,7 +1496,6 @@ form {
         class="auth-input"
         type="text"
         autocomplete="username"
-        placeholder="Choose a username"
       />
     </div>
 
@@ -1543,7 +1555,9 @@ form {
     </div>
 
     <div id="authGenderGroup" class="auth-field-group">
-      <div class="auth-label centered-auth-label">Conversation voice <span class="optional-label">Optional</span></div>
+      <div class="auth-label centered-auth-label">
+  Gender
+</div>
 
       <div class="gender-options">
         <button id="genderManButton" class="gender-option gender-man" type="button" data-gender="man">
@@ -1562,8 +1576,8 @@ form {
       </div>
 
       <p class="gender-note">
-        Used only to help the chatbot choose natural masculine or feminine wording in gendered languages.
-      </p>
+  Helps the chatbot address you naturally in languages with masculine and feminine forms.
+</p>
     </div>
   </div>
 
@@ -1858,6 +1872,11 @@ async function handleAuthSubmit() {
     setAuthMessage("Passwords do not match.", "error");
     return;
   }
+
+  if (authMode === "sign-up" && !selectedGender) {
+  setAuthMessage("Select your gender.", "error");
+  return;
+}
 
   authSubmitButton.disabled = true;
   setAuthMessage(authMode === "sign-in" ? "Signing in..." : "Creating account...");
