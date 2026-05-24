@@ -1554,6 +1554,24 @@ form {
       </div>
     </div>
 
+    <div id="newPasswordGroup" class="auth-field-group sign-in-hidden">
+  <label class="auth-label centered-auth-label" for="newPasswordInput">New password</label>
+  <input
+    id="newPasswordInput"
+    class="auth-input"
+    type="password"
+    autocomplete="new-password"
+  />
+
+  <label class="auth-label centered-auth-label" for="confirmNewPasswordInput">Confirm new password</label>
+  <input
+    id="confirmNewPasswordInput"
+    class="auth-input"
+    type="password"
+    autocomplete="new-password"
+  />
+</div>
+
     <div id="authGenderGroup" class="auth-field-group">
       <div class="auth-label centered-auth-label">
   Gender
@@ -1664,6 +1682,10 @@ const genderWomanButton = document.getElementById("genderWomanButton");
 const forgotPasswordButton = document.getElementById("forgotPasswordButton");
 const googleAuthButton = document.getElementById("googleAuthButton");
 const googleAuthText = document.getElementById("googleAuthText");
+
+const newPasswordGroup = document.getElementById("newPasswordGroup");
+const newPasswordInput = document.getElementById("newPasswordInput");
+const confirmNewPasswordInput = document.getElementById("confirmNewPasswordInput");
 
 let selectedGender = "";
     
@@ -1778,24 +1800,35 @@ function closeAuthModal() {
 }
 
 function setAuthMode(mode) {
-  authMode = mode === "sign-up" ? "sign-up" : "sign-in";
+  authMode =
+    mode === "sign-up" ? "sign-up" :
+    mode === "recovery" ? "recovery" :
+    "sign-in";
 
   const isSignUp = authMode === "sign-up";
+  const isRecovery = authMode === "recovery";
+  const isSignIn = authMode === "sign-in";
 
-  authSignInTab?.classList.toggle("active", !isSignUp);
+  authSignInTab?.classList.toggle("active", isSignIn);
   authSignUpTab?.classList.toggle("active", isSignUp);
 
   authNameGroup?.classList.toggle("sign-in-hidden", !isSignUp);
   authConfirmPasswordGroup?.classList.toggle("sign-in-hidden", !isSignUp);
   authGenderGroup?.classList.toggle("sign-in-hidden", !isSignUp);
-  forgotPasswordButton?.classList.toggle("hidden", isSignUp);
 
-  if (authPassword) {
-    authPassword.autocomplete = isSignUp ? "new-password" : "current-password";
-  }
+  newPasswordGroup?.classList.toggle("sign-in-hidden", !isRecovery);
+
+  authEmail?.closest(".auth-field-group")?.classList.toggle("sign-in-hidden", isRecovery);
+  authPassword?.closest(".auth-field-group")?.classList.toggle("sign-in-hidden", isRecovery);
+
+  forgotPasswordButton?.classList.toggle("hidden", !isSignIn);
+  googleAuthButton?.classList.toggle("hidden", isRecovery);
 
   if (authSubmitButton) {
-    authSubmitButton.textContent = isSignUp ? "Create account" : "Sign in";
+    authSubmitButton.textContent =
+      isRecovery ? "Update password" :
+      isSignUp ? "Create account" :
+      "Sign in";
   }
 
   if (googleAuthText) {
@@ -1868,6 +1901,44 @@ async function handleAuthSubmit() {
     return;
   }
 
+  if (authMode === "recovery") {
+  const newPassword = newPasswordInput?.value || "";
+  const confirmNewPassword = confirmNewPasswordInput?.value || "";
+
+  if (newPassword.length < 6) {
+    setAuthMessage("Password should be at least 6 characters.", "error");
+    return;
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    setAuthMessage("Passwords do not match.", "error");
+    return;
+  }
+
+  authSubmitButton.disabled = true;
+  setAuthMessage("Updating password...");
+
+  try {
+    const { error } = await supabaseClient.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) throw error;
+
+    setAuthMessage("Password updated successfully.", "success");
+
+    setTimeout(() => {
+      closeAuthModal();
+    }, 900);
+  } catch (error) {
+    setAuthMessage(getReadableError(error), "error");
+  } finally {
+    authSubmitButton.disabled = false;
+  }
+
+  return;
+}
+  
   if (authMode === "sign-up" && password !== confirmPassword) {
     setAuthMessage("Passwords do not match.", "error");
     return;
@@ -2021,6 +2092,11 @@ async function initAuth() {
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
     updateAuthUi(session || null);
+
+    if (event === "PASSWORD_RECOVERY") {
+      openAuthModal("recovery");
+      setAuthMessage("Enter a new password to finish resetting your account.", "success");
+    }
   });
 }
     
