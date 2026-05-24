@@ -1038,11 +1038,16 @@
   }
 }
 
-  .language-stack-card {
+ .language-stack-card {
   flex-direction: column;
   align-items: stretch;
-  gap: 7px;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 11px 13px;
+}
+
+.stacked-control-row + .stacked-control-row {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 .stacked-control-row {
@@ -1064,6 +1069,54 @@
   width: 100%;
 }
 
+.password-field-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.password-input {
+  padding-right: 52px;
+}
+
+.toggle-password-button {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.toggle-password-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+  transform: translateY(-50%) scale(1.04);
+}
+
+.toggle-password-button.password-visible {
+  background: rgba(96, 165, 250, 0.18);
+  color: white;
+}
+
+.eye-icon {
+  width: 21px;
+  height: 21px;
+  fill: currentColor;
+  display: block;
+}
+    
   </style>
 </head>
 
@@ -1078,7 +1131,7 @@
       <div class="controls">
   <div class="control-card language-stack-card">
   <div class="stacked-control-row">
-    <label for="languageSelect">Chat</label>
+    <label for="languageSelect">Learn</label>
     <div class="select-wrap">
       <select id="languageSelect">
         <option value="English" selected>🇺🇸 English</option>
@@ -1176,7 +1229,7 @@
       ×
     </button>
 
-    <div class="auth-title">Account</div>
+    <div class="auth-title">My Account</div>
     <div class="auth-subtitle">
       Sign in to keep your language practice connected to your account.
     </div>
@@ -1195,7 +1248,27 @@
       <input id="authEmail" class="auth-input" type="email" autocomplete="email" />
 
       <label class="auth-label" for="authPassword">Password</label>
-      <input id="authPassword" class="auth-input" type="password" autocomplete="current-password" />
+
+<div class="password-field-wrap">
+  <input
+    id="authPassword"
+    class="auth-input password-input"
+    type="password"
+    autocomplete="current-password"
+  />
+
+  <button
+    id="togglePasswordButton"
+    class="toggle-password-button"
+    type="button"
+    aria-label="Show password"
+    title="Show password"
+  >
+    <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
+    </svg>
+  </button>
+</div>
 
       <button id="authSubmitButton" class="auth-submit-button" type="button">
         Sign in
@@ -1249,6 +1322,8 @@ const authPassword = document.getElementById("authPassword");
 const authSubmitButton = document.getElementById("authSubmitButton");
 const authMessage = document.getElementById("authMessage");
 
+const togglePasswordButton = document.getElementById("togglePasswordButton");
+
 let authMode = "sign-in";
 let currentSession = null;
 let currentUser = null;
@@ -1285,6 +1360,33 @@ const correctionState = new Map();
 
     let activePlayback = null;
 
+  function setPasswordVisibility(isVisible) {
+  if (!authPassword || !togglePasswordButton) return;
+
+  authPassword.type = isVisible ? "text" : "password";
+  togglePasswordButton.classList.toggle("password-visible", isVisible);
+  togglePasswordButton.setAttribute(
+    "aria-label",
+    isVisible ? "Hide password" : "Show password"
+  );
+  togglePasswordButton.setAttribute(
+    "title",
+    isVisible ? "Hide password" : "Show password"
+  );
+
+  togglePasswordButton.innerHTML = isVisible
+    ? `
+      <svg class="eye-icon eye-closed-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3.3 2.3 21.7 20.7l-1.4 1.4-3.2-3.2A11.5 11.5 0 0 1 12 20.2c-5.1 0-8.7-4.2-10-6.3a1 1 0 0 1 0-1 16 16 0 0 1 4.1-4.4L1.9 3.7l1.4-1.4Zm4.3 7.6A13.3 13.3 0 0 0 4.1 13.4c1.2 2 4.1 4.8 7.9 4.8 1.2 0 2.3-.3 3.3-.7l-2-2a3.3 3.3 0 0 1-4.4-4.4L7.6 9.9Zm4.1-5.3c5.2 0 8.9 4.2 10.2 6.3.2.3.2.7 0 1a15.5 15.5 0 0 1-3 3.5l-1.4-1.4a13.6 13.6 0 0 0 2.4-2.6c-1.2-2-4.1-4.8-8.2-4.8-.9 0-1.8.2-2.6.5L7.5 5.5a11.8 11.8 0 0 1 4.2-.9Zm.3 3.4a3.3 3.3 0 0 1 3.3 3.3c0 .5-.1 1-.3 1.4L10.6 8.3c.4-.2.9-.3 1.4-.3Z"></path>
+      </svg>
+    `
+    : `
+      <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
+      </svg>
+    `;
+}
+    
     function setAuthMessage(text, type = "") {
   if (!authMessage) return;
 
@@ -1320,6 +1422,7 @@ function closeAuthModal() {
   }
 
   setAuthMessage("");
+  setPasswordVisibility(false);
 }
 
 function setAuthMode(mode) {
@@ -3863,7 +3966,14 @@ if (authPassword) {
 if (signOutButton) {
   signOutButton.addEventListener("click", handleSignOut);
 }
+
+if (togglePasswordButton) {
+  togglePasswordButton.addEventListener("click", () => {
+    setPasswordVisibility(authPassword.type === "password");
+  });
 }
+  
+  }
 
   attachUiHandlers();
   setInputMode("speech");
