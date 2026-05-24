@@ -1870,6 +1870,8 @@ const correctionState = new Map();
     let passwordRecoveryLocked = false;
 let thisTabIsRecoveryTab = false;
 
+    let activeCorrectionUserMessageId = null;
+
 function getEmailName(email) {
   return String(email || "")
     .split("@")[0]
@@ -2265,16 +2267,20 @@ async function handleAuthSubmit() {
       return;
     }
 
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
-          gender: selectedGender
-        }
-      }
-    });
+    const confirmRedirectUrl =
+  `${window.location.origin}${window.location.pathname}`;
+
+const { data, error } = await supabaseClient.auth.signUp({
+  email,
+  password,
+  options: {
+    emailRedirectTo: confirmRedirectUrl,
+    data: {
+      username,
+      gender: selectedGender
+    }
+  }
+});
 
     if (error) throw error;
 
@@ -2820,24 +2826,12 @@ function addSpeechReviewCard({
     continueButton.textContent = "Continue anyway";
 
     retryButton.addEventListener("click", async () => {
-      removeSpeechReviewCard();
+  if (typeof onRetry === "function") {
+    onRetry();
+  }
 
-      correctionRetryMode = true;
-
-      if (typeof onRetry === "function") {
-        onRetry();
-      }
-
-      try {
-        await unlockAudio();
-        await startRecording();
-      } catch (error) {
-        correctionRetryMode = false;
-        showSystemMessage(getReadableError(error));
-        resetSpeechButton();
-        setSpeechStatus("Tap to speak");
-      }
-    });
+  await startCorrectionRetryRecording();
+});
 
    continueButton.addEventListener("click", async () => {
   const actions = continueButton.closest(".speech-review-actions");
@@ -3390,12 +3384,24 @@ function isSamePlayback(button, type, id) {
 
     scrollMessagesToBottom();
 
-    analyzeAndRenderUserMessageLanguage(id).catch(() => {
+    /*analyzeAndRenderUserMessageLanguage(id).catch(() => {
       // Keep plain message if analysis fails.
-    });
+    });*/
 
     return id;
   }
+
+  function updateUserMessageText(userMessageId, text) {
+  const state = userMessageState.get(userMessageId);
+  if (!state) return;
+
+  state.text = text;
+
+  if (state.bubble) {
+    state.bubble.classList.remove("user-annotated");
+    state.bubble.textContent = text;
+  }
+}
 
   function addThinkingMessage() {
     const card = document.createElement("div");
@@ -3527,21 +3533,46 @@ function isSamePlayback(button, type, id) {
   }
 }
 
+  async function startCorrectionRetryRecording() {
+  removeSpeechReviewCard();
+
+  correctionRetryMode = true;
+
+  setSpeechStatus("Recording");
+
+  try {
+    await unlockAudio();
+    await startRecording();
+  } catch (error) {
+    correctionRetryMode = false;
+    showSystemMessage(getReadableError(error));
+    resetSpeechButton();
+    setSpeechStatus("Tap to speak");
+  }
+}
+    
   async function handleSpeechTranscript(transcript) {
   if (!transcript.trim()) return;
 
   const isCorrectionRetry = correctionRetryMode;
-  correctionRetryMode = false;
+correctionRetryMode = false;
 
-  if (!isCorrectionRetry) {
-    addUserMessage(transcript);
+if (!isCorrectionRetry) {
+  activeCorrectionUserMessageId = addUserMessage(transcript);
 
-    /*
-      The bot receives the original message immediately.
-      Re-recording is only for practice.
-    */
-    pendingBackgroundBot = await prepareBotResponseInBackground(transcript);
+  /*
+    The bot receives the original message immediately.
+    Re-recording is only for practice.
+  */
+  pendingBackgroundBot = await prepareBotResponseInBackground(transcript);
+} else {
+  /*
+    Retry should replace the original speech bubble, not create a new one.
+  */
+  if (activeCorrectionUserMessageId) {
+    updateUserMessageText(activeCorrectionUserMessageId, transcript);
   }
+}
 
   let analysis;
 
@@ -3561,6 +3592,7 @@ function isSamePlayback(button, type, id) {
 
     activeSpeechCorrection = null;
     pendingBackgroundBot = null;
+    activeCorrectionUserMessageId = null;
 
     await showPerfectCorrectionThenRevealBot({
       transcript,
@@ -3596,6 +3628,7 @@ function isSamePlayback(button, type, id) {
 
       activeSpeechCorrection = null;
       pendingBackgroundBot = null;
+      activeCorrectionUserMessageId = null;
 
       if (prepared) {
         await revealPreparedBotResponse(prepared);
@@ -4692,9 +4725,20 @@ async function handleSpeechRecordButtonClick(event) {
 
     if (isRecording) {
       stopRecording();
-    } else {
-      await startRecording();
+      return;
     }
+
+    /*
+      If a correction is active and the user taps the main mic,
+      behave exactly like Re-record:
+      hide the correction box, start recording, and replace the original bubble.
+    */
+    if (activeSpeechCorrection) {
+      await startCorrectionRetryRecording();
+      return;
+    }
+
+    await startRecording();
   } catch (error) {
     showSystemMessage(getReadableError(error));
 
@@ -4759,7 +4803,12 @@ async function handleSpeechRecordButtonClick(event) {
 }
 
 if (authBackdrop) {
-  authBackdrop.addEventListener("click", closeAuthModal);
+  authBackdrop.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setAuthMessage("Use the close button to leave this window.", "error");
+  });
 }
 
 if (authCloseButton) {
