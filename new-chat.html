@@ -864,18 +864,6 @@
   backdrop-filter: blur(12px);
 }
 
-.auth-panel {
-  position: relative;
-  width: min(430px, 100%);
-  background:
-    radial-gradient(circle at top left, rgba(96, 165, 250, 0.16), transparent 34%),
-    rgba(17, 24, 39, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 28px;
-  padding: 26px;
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
-}
-
 .auth-close-button {
   position: absolute;
   top: 14px;
@@ -924,54 +912,6 @@
 .auth-tab.active {
   background: white;
   color: black;
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 22px;
-  background: transparent;
-  border: none;
-  padding: 0;
-  border-radius: 0;
-  backdrop-filter: none;
-  width: 100%;
-}
-
-.auth-label {
-  color: #d1d5db;
-  font-size: 0.82rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.auth-input {
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
-  padding: 13px 14px;
-  outline: none;
-  font-size: 1rem;
-}
-
-.auth-input:focus {
-  border-color: rgba(96, 165, 250, 0.75);
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.16);
-}
-
-.auth-submit-button {
-  margin-top: 8px;
-  border: none;
-  border-radius: 999px;
-  padding: 13px 18px;
-  background: white;
-  color: black;
-  font-weight: 950;
-  cursor: pointer;
 }
 
 .auth-submit-button:disabled {
@@ -1069,36 +1009,6 @@
   width: 100%;
 }
 
-.password-field-wrap {
-  position: relative;
-  width: 100%;
-}
-
-.password-input {
-  padding-right: 52px;
-}
-
-.toggle-password-button {
-  position: absolute;
-  right: 9px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 38px;
-  height: 38px;
-  border: none;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    background 160ms ease,
-    color 160ms ease,
-    transform 160ms ease;
-}
-
 .toggle-password-button:hover {
   background: rgba(255, 255, 255, 0.14);
   color: white;
@@ -1115,35 +1025,6 @@
   height: 21px;
   fill: currentColor;
   display: block;
-}
-
-.auth-field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.optional-label {
-  color: #64748b;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  margin-left: 4px;
-}
-
-.forgot-password-button {
-  border: none;
-  background: transparent;
-  color: #93c5fd;
-  font-weight: 800;
-  cursor: pointer;
-  align-self: center;
-  padding: 4px 8px;
-  margin-top: 0;
-}
-
-.forgot-password-button:hover {
-  color: white;
-  text-decoration: underline;
 }
 
 .auth-divider {
@@ -1168,24 +1049,6 @@
   letter-spacing: 0.08em;
 }
 
-.google-auth-button {
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
-  font-weight: 950;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition:
-    background 160ms ease,
-    transform 160ms ease,
-    border-color 160ms ease;
-}
-
 .google-auth-button:hover {
   background: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.26);
@@ -1202,6 +1065,209 @@
   place-items: center;
   font-weight: 950;
   font-family: Arial, sans-serif;
+}
+
+.auth-panel {
+  position: relative;
+  width: min(430px, 100%);
+  height: min(680px, calc(100vh - 44px));
+  background:
+    radial-gradient(circle at top left, rgba(96, 165, 250, 0.16), transparent 34%),
+    rgba(17, 24, 39, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 28px;
+  padding: 26px;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 22px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  backdrop-filter: none;
+  width: 100%;
+  min-height: 0;
+}
+
+.auth-scroll-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+.auth-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-field-group.sign-in-hidden {
+  display: none;
+}
+
+.auth-label {
+  color: #d1d5db;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.centered-auth-label {
+  text-align: center;
+}
+
+.auth-input,
+.password-field-wrap {
+  width: 100%;
+}
+
+.auth-input {
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  padding: 0 14px;
+  outline: none;
+  font-size: 1rem;
+  line-height: 48px;
+}
+
+.password-input {
+  padding-right: 52px;
+}
+
+.password-field-wrap {
+  position: relative;
+}
+
+.toggle-password-button {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.optional-label {
+  color: #64748b;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  margin-left: 4px;
+}
+
+.forgot-password-button {
+  border: none;
+  background: transparent;
+  color: #93c5fd;
+  font-weight: 800;
+  cursor: pointer;
+  align-self: center;
+  padding: 4px 8px;
+  margin-top: 2px;
+}
+
+.forgot-password-button.hidden {
+  display: none;
+}
+
+.auth-submit-button,
+.google-auth-button {
+  min-height: 48px;
+}
+
+.gender-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.gender-option {
+  min-height: 92px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  cursor: pointer;
+  font-weight: 950;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.gender-option:hover {
+  transform: translateY(-1px);
+}
+
+.gender-option.gender-man.selected {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(147, 197, 253, 0.85);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+}
+
+.gender-option.gender-woman.selected {
+  background: rgba(236, 72, 153, 0.18);
+  border-color: rgba(249, 168, 212, 0.85);
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.14);
+}
+
+.gender-man .gender-icon {
+  color: #93c5fd;
+}
+
+.gender-woman .gender-icon {
+  color: #f9a8d4;
+}
+
+.gender-icon {
+  width: 34px;
+  height: 34px;
+  fill: currentColor;
+}
+
+.gender-note {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: center;
 }
   </style>
 </head>
@@ -1330,74 +1396,104 @@
     </div>
 
   <form id="authForm" class="auth-form" onsubmit="return false;">
-  <div id="authNameGroup" class="auth-field-group hidden">
-    <label class="auth-label" for="authName">Name <span class="optional-label">Optional</span></label>
-    <input
-      id="authName"
-      class="auth-input"
-      type="text"
-      autocomplete="name"
-      placeholder="Your name"
-    />
-  </div>
-
-  <label class="auth-label" for="authEmail">Email</label>
-  <input id="authEmail" class="auth-input" type="email" autocomplete="email" />
-
-  <label class="auth-label" for="authPassword">Password</label>
-
-  <div class="password-field-wrap">
-    <input
-      id="authPassword"
-      class="auth-input password-input"
-      type="password"
-      autocomplete="current-password"
-    />
-
-    <button
-      id="togglePasswordButton"
-      class="toggle-password-button"
-      type="button"
-      aria-label="Show password"
-      title="Show password"
-    >
-      <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
-      </svg>
-    </button>
-  </div>
-
-  <div id="authConfirmPasswordGroup" class="auth-field-group hidden">
-    <label class="auth-label" for="authConfirmPassword">Confirm password</label>
-
-    <div class="password-field-wrap">
+  <div class="auth-scroll-area">
+    <div id="authNameGroup" class="auth-field-group">
+      <label class="auth-label centered-auth-label" for="authName">Username <span class="optional-label">Optional</span></label>
       <input
-        id="authConfirmPassword"
-        class="auth-input password-input"
-        type="password"
-        autocomplete="new-password"
+        id="authName"
+        class="auth-input"
+        type="text"
+        autocomplete="username"
+        placeholder="Choose a username"
       />
+    </div>
 
-      <button
-        id="toggleConfirmPasswordButton"
-        class="toggle-password-button"
-        type="button"
-        aria-label="Show confirm password"
-        title="Show confirm password"
-      >
-        <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
-        </svg>
-      </button>
+    <div class="auth-field-group">
+      <label class="auth-label" for="authEmail">Email</label>
+      <input id="authEmail" class="auth-input" type="email" autocomplete="email" />
+    </div>
+
+    <div class="auth-field-group">
+      <label class="auth-label" for="authPassword">Password</label>
+
+      <div class="password-field-wrap">
+        <input
+          id="authPassword"
+          class="auth-input password-input"
+          type="password"
+          autocomplete="current-password"
+        />
+
+        <button
+          id="togglePasswordButton"
+          class="toggle-password-button"
+          type="button"
+          aria-label="Show password"
+          title="Show password"
+        >
+          <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="authConfirmPasswordGroup" class="auth-field-group">
+      <label class="auth-label centered-auth-label" for="authConfirmPassword">Confirm password</label>
+
+      <div class="password-field-wrap">
+        <input
+          id="authConfirmPassword"
+          class="auth-input password-input"
+          type="password"
+          autocomplete="new-password"
+        />
+
+        <button
+          id="toggleConfirmPasswordButton"
+          class="toggle-password-button"
+          type="button"
+          aria-label="Show confirm password"
+          title="Show confirm password"
+        >
+          <svg class="eye-icon eye-open-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5.2c5.1 0 8.7 4.2 10 6.3.2.3.2.7 0 1-1.3 2.1-4.9 6.3-10 6.3s-8.7-4.2-10-6.3a1 1 0 0 1 0-1c1.3-2.1 4.9-6.3 10-6.3Zm0 2c-3.8 0-6.7 2.8-7.9 4.8 1.2 2 4.1 4.8 7.9 4.8s6.7-2.8 7.9-4.8c-1.2-2-4.1-4.8-7.9-4.8Zm0 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="authGenderGroup" class="auth-field-group">
+      <div class="auth-label centered-auth-label">Conversation voice <span class="optional-label">Optional</span></div>
+
+      <div class="gender-options">
+        <button id="genderManButton" class="gender-option gender-man" type="button" data-gender="man">
+          <svg class="gender-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 11.5a4.2 4.2 0 1 0 0-8.4 4.2 4.2 0 0 0 0 8.4Zm0 2c-4.2 0-7.6 2.6-7.6 5.9 0 .9.7 1.5 1.6 1.5h12c.9 0 1.6-.6 1.6-1.5 0-3.3-3.4-5.9-7.6-5.9Z"></path>
+          </svg>
+          <span>I am a man</span>
+        </button>
+
+        <button id="genderWomanButton" class="gender-option gender-woman" type="button" data-gender="woman">
+          <svg class="gender-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 11.2a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm-5.9 8.5c-.7 0-1.2-.7-.9-1.4l2-4.1c.7-1.5 2.2-2.4 3.8-2.4h1.8c1.6 0 3.1.9 3.8 2.4l2 4.1c.3.7-.2 1.4-.9 1.4h-2.6v1.1a1 1 0 0 1-2 0v-1.1h-2.2v1.1a1 1 0 0 1-2 0v-1.1H6.1Z"></path>
+          </svg>
+          <span>I am a woman</span>
+        </button>
+      </div>
+
+      <p class="gender-note">
+        Used only to help the chatbot choose natural masculine or feminine wording in gendered languages.
+      </p>
     </div>
   </div>
 
-  <button id="authSubmitButton" class="auth-submit-button" type="button">
-    Sign in
-  </button>
-
   <button id="forgotPasswordButton" class="forgot-password-button" type="button">
     Forgot password?
+  </button>
+
+  <button id="authSubmitButton" class="auth-submit-button" type="button">
+    Sign in
   </button>
 
   <div class="auth-divider">
@@ -1469,6 +1565,17 @@ const toggleConfirmPasswordButton = document.getElementById("toggleConfirmPasswo
 const forgotPasswordButton = document.getElementById("forgotPasswordButton");
 const googleAuthButton = document.getElementById("googleAuthButton");
 const googleAuthText = document.getElementById("googleAuthText");
+
+const authNameGroup = document.getElementById("authNameGroup");
+const authName = document.getElementById("authName");
+const authConfirmPasswordGroup = document.getElementById("authConfirmPasswordGroup");
+const authConfirmPassword = document.getElementById("authConfirmPassword");
+const authGenderGroup = document.getElementById("authGenderGroup");
+const genderManButton = document.getElementById("genderManButton");
+const genderWomanButton = document.getElementById("genderWomanButton");
+const forgotPasswordButton = document.getElementById("forgotPasswordButton");
+
+let selectedGender = "";
     
 let authMode = "sign-in";
 let currentSession = null;
@@ -1588,8 +1695,9 @@ function setAuthMode(mode) {
   authSignInTab?.classList.toggle("active", !isSignUp);
   authSignUpTab?.classList.toggle("active", isSignUp);
 
-  authNameGroup?.classList.toggle("hidden", !isSignUp);
-  authConfirmPasswordGroup?.classList.toggle("hidden", !isSignUp);
+  authNameGroup?.classList.toggle("sign-in-hidden", !isSignUp);
+  authConfirmPasswordGroup?.classList.toggle("sign-in-hidden", !isSignUp);
+  authGenderGroup?.classList.toggle("sign-in-hidden", !isSignUp);
   forgotPasswordButton?.classList.toggle("hidden", isSignUp);
 
   if (authPassword) {
@@ -1607,6 +1715,30 @@ function setAuthMode(mode) {
   }
 
   setAuthMessage("");
+}
+
+function setSelectedGender(gender) {
+  selectedGender = gender === "man" || gender === "woman" ? gender : "";
+
+  genderManButton?.classList.toggle("selected", selectedGender === "man");
+  genderWomanButton?.classList.toggle("selected", selectedGender === "woman");
+}
+
+function getUserGenderInstruction() {
+  const gender =
+    currentUser?.user_metadata?.gender ||
+    selectedGender ||
+    "";
+
+  if (gender === "man") {
+    return "The user selected: I am a man. In gendered languages, address the user with masculine forms when grammar requires it.";
+  }
+
+  if (gender === "woman") {
+    return "The user selected: I am a woman. In gendered languages, address the user with feminine forms when grammar requires it.";
+  }
+
+  return "";
 }
 
 function updateAuthUi(session) {
@@ -1634,7 +1766,7 @@ async function handleAuthSubmit() {
   const email = authEmail?.value.trim();
   const password = authPassword?.value || "";
   const confirmPassword = authConfirmPassword?.value || "";
-  const name = authName?.value.trim() || "";
+  const username = authName?.value.trim() || "";
 
   if (!email || !password) {
     setAuthMessage("Enter an email and password.", "error");
@@ -1673,7 +1805,8 @@ async function handleAuthSubmit() {
       password,
       options: {
         data: {
-          name
+          username,
+          gender: selectedGender
         }
       }
     });
@@ -2824,12 +2957,13 @@ function isSamePlayback(button, type, id) {
   });
 
   const responsePromise = callChatFunction(
-    {
-      messages,
-      language: languageSelect.value
-    },
-    "Chat"
-  );
+  {
+    messages,
+    language: languageSelect.value,
+    userGenderInstruction: getUserGenderInstruction()
+  },
+  "Chat"
+);
 
   return {
     userText,
@@ -3840,9 +3974,10 @@ async function handleMessagePlayButton(messageId, button) {
         "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
       },
       body: JSON.stringify({
-        messages,
-        language: languageSelect.value
-      })
+  messages,
+  language: languageSelect.value,
+  userGenderInstruction: getUserGenderInstruction()
+})
     });
 
     const data = await parseJsonResponse(response, "Chat");
@@ -4248,6 +4383,18 @@ if (authConfirmPassword) {
       event.preventDefault();
       handleAuthSubmit();
     }
+  });
+}
+
+if (genderManButton) {
+  genderManButton.addEventListener("click", () => {
+    setSelectedGender(selectedGender === "man" ? "" : "man");
+  });
+}
+
+if (genderWomanButton) {
+  genderWomanButton.addEventListener("click", () => {
+    setSelectedGender(selectedGender === "woman" ? "" : "woman");
   });
 }
   
