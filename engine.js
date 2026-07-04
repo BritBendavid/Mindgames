@@ -21,6 +21,7 @@ class ChessEngine {
   this.enPassantSquare = null;
   this.halfmoveClock = 0;
   this.fullmoveNumber = 1;
+  this.positionHistory = [];
 }
 
   loadFEN(fen) {
@@ -60,6 +61,7 @@ class ChessEngine {
       square++;
     }
   }
+    this.positionHistory = [this.getPositionKey()];
 }
 
   clone() {
@@ -73,6 +75,7 @@ class ChessEngine {
   copy.fullmoveNumber = this.fullmoveNumber;
 
   return copy;
+    copy.positionHistory = [...this.positionHistory];
 }
 
   squareToCoord(square) {
@@ -587,6 +590,7 @@ class ChessEngine {
   }
 
   this.sideToMove = this.oppositeColor(this.sideToMove);
+  this.recordPosition();
 }
 
   updateCastlingRights(move, piece, capturedPiece) {
@@ -728,6 +732,148 @@ class ChessEngine {
 
     return text;
   }
+
+getPositionKey() {
+  const boardPart = this.board.map(piece => piece || ".").join("");
+
+  const ep = this.enPassantSquare === null
+    ? "-"
+    : this.squareToCoord(this.enPassantSquare);
+
+  return [
+    boardPart,
+    this.sideToMove,
+    this.castlingRights || "-",
+    ep
+  ].join(" ");
+}
+
+recordPosition() {
+  this.positionHistory.push(this.getPositionKey());
+}
+
+isThreefoldRepetition() {
+  const currentKey = this.getPositionKey();
+
+  let count = 0;
+
+  for (const key of this.positionHistory) {
+    if (key === currentKey) {
+      count++;
+    }
+  }
+
+  return count >= 3;
+}
+
+isFiftyMoveRule() {
+  return this.halfmoveClock >= 100;
+}
+
+isInsufficientMaterial() {
+  const pieces = [];
+
+  for (let square = 0; square < 64; square++) {
+    const piece = this.board[square];
+    if (piece) {
+      pieces.push({ piece, square });
+    }
+  }
+
+  const nonKings = pieces.filter(p => p.piece[1] !== "K");
+
+  // King vs king
+  if (nonKings.length === 0) {
+    return true;
+  }
+
+  // King and bishop/knight vs king
+  if (nonKings.length === 1) {
+    const type = nonKings[0].piece[1];
+    return type === "B" || type === "N";
+  }
+
+  // King and bishop vs king and bishop with bishops on same color
+  if (nonKings.length === 2) {
+    const bothBishops = nonKings.every(p => p.piece[1] === "B");
+
+    if (bothBishops) {
+      const colors = nonKings.map(p => {
+        const row = Math.floor(p.square / 8);
+        const col = p.square % 8;
+        return (row + col) % 2;
+      });
+
+      return colors[0] === colors[1];
+    }
+  }
+
+  return false;
+}
+
+getGameStatus() {
+  const legalMoves = this.generateMoves();
+  const inCheck = this.isInCheck(this.sideToMove);
+
+  if (legalMoves.length === 0) {
+    if (inCheck) {
+      return {
+        over: true,
+        type: "checkmate",
+        message: this.sideToMove === "w"
+          ? "Checkmate. Black wins."
+          : "Checkmate. White wins."
+      };
+    }
+
+    return {
+      over: true,
+      type: "stalemate",
+      message: "Draw by stalemate."
+    };
+  }
+
+  if (this.isFiftyMoveRule()) {
+    return {
+      over: true,
+      type: "fifty-move",
+      message: "Draw by fifty-move rule."
+    };
+  }
+
+  if (this.isThreefoldRepetition()) {
+    return {
+      over: true,
+      type: "threefold",
+      message: "Draw by threefold repetition."
+    };
+  }
+
+  if (this.isInsufficientMaterial()) {
+    return {
+      over: true,
+      type: "insufficient-material",
+      message: "Draw by insufficient material."
+    };
+  }
+
+  if (inCheck) {
+    return {
+      over: false,
+      type: "check",
+      message: this.sideToMove === "w"
+        ? "White is in check."
+        : "Black is in check."
+    };
+  }
+
+  return {
+    over: false,
+    type: "ongoing",
+    message: "Game ongoing."
+  };
+}
+  
 }
 
 if (typeof window !== "undefined") {
