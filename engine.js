@@ -15,12 +15,22 @@ class ChessEngine {
   constructor() {
     this.board = new Array(64).fill(EMPTY);
     this.sideToMove = "w";
+    this.castlingRights = "KQkq";
+    this.enPassantSquare = null;
+    this.halfmoveClock = 0;
+    this.fullmoveNumber = 1;
   }
 
   loadFEN(fen) {
     const parts = fen.trim().split(/\s+/);
+
     const boardPart = parts[0];
-    const side = parts[1] || "w";
+    this.sideToMove = parts[1] || "w";
+    this.castlingRights = parts[2] && parts[2] !== "-" ? parts[2] : "";
+    this.enPassantSquare =
+      parts[3] && parts[3] !== "-" ? this.coordToSquare(parts[3]) : null;
+    this.halfmoveClock = parts[4] ? Number(parts[4]) : 0;
+    this.fullmoveNumber = parts[5] ? Number(parts[5]) : 1;
 
     this.board.fill(EMPTY);
 
@@ -38,20 +48,17 @@ class ChessEngine {
         square++;
       }
     }
-
-    this.sideToMove = side;
   }
 
-  printBoard() {
-    for (let r = 0; r < 8; r++) {
-      let row = "";
-      for (let c = 0; c < 8; c++) {
-        const piece = this.board[r * 8 + c];
-        row += piece ? piece + " " : ".. ";
-      }
-      console.log(row);
-    }
-    console.log("Side to move:", this.sideToMove);
+  clone() {
+    const copy = new ChessEngine();
+    copy.board = [...this.board];
+    copy.sideToMove = this.sideToMove;
+    copy.castlingRights = this.castlingRights;
+    copy.enPassantSquare = this.enPassantSquare;
+    copy.halfmoveClock = this.halfmoveClock;
+    copy.fullmoveNumber = this.fullmoveNumber;
+    return copy;
   }
 
   squareToCoord(square) {
@@ -82,15 +89,7 @@ class ChessEngine {
     return color === "w" ? "b" : "w";
   }
 
-  clone() {
-    const copy = new ChessEngine();
-    copy.board = [...this.board];
-    copy.sideToMove = this.sideToMove;
-    return copy;
-  }
-
-  // Main public move generator.
-  // The HTML can keep calling generateMoves().
+  // Important: the public move generator now returns only legal moves.
   generateMoves() {
     return this.generateLegalMoves();
   }
@@ -103,8 +102,7 @@ class ChessEngine {
     for (const move of pseudoMoves) {
       const target = this.board[move.to];
 
-      // In real chess, the king is never captured.
-      // Checkmate means the king has no legal escape.
+      // In chess, kings are never captured.
       if (target && target[1] === "K") {
         continue;
       }
@@ -125,6 +123,7 @@ class ChessEngine {
 
     for (let square = 0; square < 64; square++) {
       const piece = this.board[square];
+
       if (!piece) continue;
       if (this.getColor(piece) !== this.sideToMove) continue;
 
@@ -135,24 +134,26 @@ class ChessEngine {
 
       if (type === "B") {
         this.generateSlidingMoves(square, moves, [
-          [1, 1], [1, -1], [-1, 1], [-1, -1]
+          [1, 1], [1, -1], [-1, 1], [-1, -1],
         ]);
       }
 
       if (type === "R") {
         this.generateSlidingMoves(square, moves, [
-          [1, 0], [-1, 0], [0, 1], [0, -1]
+          [1, 0], [-1, 0], [0, 1], [0, -1],
         ]);
       }
 
       if (type === "Q") {
         this.generateSlidingMoves(square, moves, [
           [1, 1], [1, -1], [-1, 1], [-1, -1],
-          [1, 0], [-1, 0], [0, 1], [0, -1]
+          [1, 0], [-1, 0], [0, 1], [0, -1],
         ]);
       }
 
-      if (type === "K") this.generateKingMoves(square, moves);
+      if (type === "K") {
+        this.generateKingMoves(square, moves);
+      }
     }
 
     return moves;
@@ -189,7 +190,11 @@ class ChessEngine {
           const twoStepSquare = twoStepRow * 8 + col;
 
           if (!this.board[twoStepSquare]) {
-            moves.push({ from: square, to: twoStepSquare });
+            moves.push({
+              from: square,
+              to: twoStepSquare,
+              doublePawnPush: true,
+            });
           }
         }
       }
@@ -212,6 +217,14 @@ class ChessEngine {
         } else {
           moves.push({ from: square, to: targetSquare });
         }
+      }
+
+      if (this.enPassantSquare === targetSquare) {
+        moves.push({
+          from: square,
+          to: targetSquare,
+          enPassant: true,
+        });
       }
     }
   }
@@ -299,6 +312,69 @@ class ChessEngine {
         }
       }
     }
+
+    this.generateCastlingMoves(square, moves);
+  }
+
+  generateCastlingMoves(square, moves) {
+    const color = this.sideToMove;
+    const enemy = this.oppositeColor(color);
+
+    if (this.isInCheck(color)) return;
+
+    if (color === "w" && square === 60) {
+      // White kingside: e1 to g1
+      if (
+        this.castlingRights.includes("K") &&
+        this.board[63] === "wR" &&
+        !this.board[61] &&
+        !this.board[62] &&
+        !this.isSquareAttacked(61, enemy) &&
+        !this.isSquareAttacked(62, enemy)
+      ) {
+        moves.push({ from: 60, to: 62, castle: "K" });
+      }
+
+      // White queenside: e1 to c1
+      if (
+        this.castlingRights.includes("Q") &&
+        this.board[56] === "wR" &&
+        !this.board[59] &&
+        !this.board[58] &&
+        !this.board[57] &&
+        !this.isSquareAttacked(59, enemy) &&
+        !this.isSquareAttacked(58, enemy)
+      ) {
+        moves.push({ from: 60, to: 58, castle: "Q" });
+      }
+    }
+
+    if (color === "b" && square === 4) {
+      // Black kingside: e8 to g8
+      if (
+        this.castlingRights.includes("k") &&
+        this.board[7] === "bR" &&
+        !this.board[5] &&
+        !this.board[6] &&
+        !this.isSquareAttacked(5, enemy) &&
+        !this.isSquareAttacked(6, enemy)
+      ) {
+        moves.push({ from: 4, to: 6, castle: "k" });
+      }
+
+      // Black queenside: e8 to c8
+      if (
+        this.castlingRights.includes("q") &&
+        this.board[0] === "bR" &&
+        !this.board[3] &&
+        !this.board[2] &&
+        !this.board[1] &&
+        !this.isSquareAttacked(3, enemy) &&
+        !this.isSquareAttacked(2, enemy)
+      ) {
+        moves.push({ from: 4, to: 2, castle: "q" });
+      }
+    }
   }
 
   findKing(color) {
@@ -335,6 +411,7 @@ class ChessEngine {
 
       if (this.inBounds(pawnSourceRow, pawnCol)) {
         const pawnSquare = pawnSourceRow * 8 + pawnCol;
+
         if (this.board[pawnSquare] === byColor + "P") {
           return true;
         }
@@ -355,9 +432,7 @@ class ChessEngine {
 
       if (!this.inBounds(r, c)) continue;
 
-      const piece = this.board[r * 8 + c];
-
-      if (piece === byColor + "N") {
+      if (this.board[r * 8 + c] === byColor + "N") {
         return true;
       }
     }
@@ -372,17 +447,15 @@ class ChessEngine {
 
         if (!this.inBounds(r, c)) continue;
 
-        const piece = this.board[r * 8 + c];
-
-        if (piece === byColor + "K") {
+        if (this.board[r * 8 + c] === byColor + "K") {
           return true;
         }
       }
     }
 
-    // Bishop / queen diagonal attacks
+    // Bishop and queen diagonal attacks
     const diagonalDirections = [
-      [1, 1], [1, -1], [-1, 1], [-1, -1]
+      [1, 1], [1, -1], [-1, 1], [-1, -1],
     ];
 
     for (const [dr, dc] of diagonalDirections) {
@@ -408,9 +481,9 @@ class ChessEngine {
       }
     }
 
-    // Rook / queen straight attacks
+    // Rook and queen straight attacks
     const straightDirections = [
-      [1, 0], [-1, 0], [0, 1], [0, -1]
+      [1, 0], [-1, 0], [0, 1], [0, -1],
     ];
 
     for (const [dr, dc] of straightDirections) {
@@ -441,14 +514,93 @@ class ChessEngine {
 
   makeMove(move) {
     const piece = this.board[move.from];
+    const color = this.getColor(piece);
+    const type = this.getType(piece);
+    const capturedPiece = this.board[move.to];
+
+    this.updateCastlingRights(move, piece, capturedPiece);
 
     this.board[move.to] = move.promotion
-      ? piece[0] + move.promotion
+      ? color + move.promotion
       : piece;
 
     this.board[move.from] = EMPTY;
 
-    this.sideToMove = this.sideToMove === "w" ? "b" : "w";
+    if (move.enPassant) {
+      const capturedPawnSquare = color === "w" ? move.to + 8 : move.to - 8;
+      this.board[capturedPawnSquare] = EMPTY;
+    }
+
+    if (move.castle) {
+      if (move.castle === "K") {
+        this.board[61] = this.board[63];
+        this.board[63] = EMPTY;
+      }
+
+      if (move.castle === "Q") {
+        this.board[59] = this.board[56];
+        this.board[56] = EMPTY;
+      }
+
+      if (move.castle === "k") {
+        this.board[5] = this.board[7];
+        this.board[7] = EMPTY;
+      }
+
+      if (move.castle === "q") {
+        this.board[3] = this.board[0];
+        this.board[0] = EMPTY;
+      }
+    }
+
+    if (type === "P" && Math.abs(move.to - move.from) === 16) {
+      this.enPassantSquare = (move.from + move.to) / 2;
+    } else {
+      this.enPassantSquare = null;
+    }
+
+    if (type === "P" || capturedPiece || move.enPassant) {
+      this.halfmoveClock = 0;
+    } else {
+      this.halfmoveClock++;
+    }
+
+    if (this.sideToMove === "b") {
+      this.fullmoveNumber++;
+    }
+
+    this.sideToMove = this.oppositeColor(this.sideToMove);
+  }
+
+  updateCastlingRights(move, piece, capturedPiece) {
+    if (!piece) return;
+
+    const remove = rights => {
+      for (const r of rights) {
+        this.castlingRights = this.castlingRights.replace(r, "");
+      }
+    };
+
+    const type = this.getType(piece);
+
+    if (type === "K") {
+      if (this.getColor(piece) === "w") remove("KQ");
+      if (this.getColor(piece) === "b") remove("kq");
+    }
+
+    if (type === "R") {
+      if (move.from === 63) remove("K");
+      if (move.from === 56) remove("Q");
+      if (move.from === 7) remove("k");
+      if (move.from === 0) remove("q");
+    }
+
+    if (capturedPiece && this.getType(capturedPiece) === "R") {
+      if (move.to === 63) remove("K");
+      if (move.to === 56) remove("Q");
+      if (move.to === 7) remove("k");
+      if (move.to === 0) remove("q");
+    }
   }
 
   evaluate() {
@@ -509,8 +661,8 @@ class ChessEngine {
 
   findBestMove(depth) {
     const moves = this.generateMoves();
-    let bestMove = null;
 
+    let bestMove = null;
     let bestScore = this.sideToMove === "w" ? -Infinity : Infinity;
 
     for (const move of moves) {
@@ -552,17 +704,19 @@ class ChessEngine {
 
   moveToString(move) {
     let text = this.squareToCoord(move.from) + this.squareToCoord(move.to);
-    if (move.promotion) text += move.promotion.toLowerCase();
+
+    if (move.promotion) {
+      text += move.promotion.toLowerCase();
+    }
+
     return text;
   }
 }
 
-// Browser support for GitHub Pages
 if (typeof window !== "undefined") {
   window.ChessEngine = ChessEngine;
 }
 
-// Optional Node.js support for local testing
 if (typeof module !== "undefined") {
   module.exports = ChessEngine;
 }
