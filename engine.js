@@ -13,53 +13,67 @@ const PIECE_VALUES = {
 
 class ChessEngine {
   constructor() {
-    this.board = new Array(64).fill(EMPTY);
-    this.sideToMove = "w";
-    this.castlingRights = "KQkq";
-    this.enPassantSquare = null;
-    this.halfmoveClock = 0;
-    this.fullmoveNumber = 1;
-  }
+  this.board = new Array(64).fill(EMPTY);
+  this.sideToMove = "w";
+
+  // New full-position state
+  this.castlingRights = "KQkq";
+  this.enPassantSquare = null;
+  this.halfmoveClock = 0;
+  this.fullmoveNumber = 1;
+}
 
   loadFEN(fen) {
-    const parts = fen.trim().split(/\s+/);
+  const parts = fen.trim().split(/\s+/);
 
-    const boardPart = parts[0];
-    this.sideToMove = parts[1] || "w";
-    this.castlingRights = parts[2] && parts[2] !== "-" ? parts[2] : "";
-    this.enPassantSquare =
-      parts[3] && parts[3] !== "-" ? this.coordToSquare(parts[3]) : null;
-    this.halfmoveClock = parts[4] ? Number(parts[4]) : 0;
-    this.fullmoveNumber = parts[5] ? Number(parts[5]) : 1;
+  const boardPart = parts[0];
 
-    this.board.fill(EMPTY);
+  this.sideToMove = parts[1] || "w";
 
-    let square = 0;
+  // If FEN includes castling rights, use them.
+  // If not, default to KQkq so the simple starting FEN still works.
+  if (parts[2] === undefined) {
+    this.castlingRights = "KQkq";
+  } else {
+    this.castlingRights = parts[2] !== "-" ? parts[2] : "";
+  }
 
-    for (const char of boardPart) {
-      if (char === "/") continue;
+  this.enPassantSquare =
+    parts[3] && parts[3] !== "-" ? this.coordToSquare(parts[3]) : null;
 
-      if (/\d/.test(char)) {
-        square += Number(char);
-      } else {
-        const color = char === char.toUpperCase() ? "w" : "b";
-        const type = char.toUpperCase();
-        this.board[square] = color + type;
-        square++;
-      }
+  this.halfmoveClock = parts[4] ? Number(parts[4]) : 0;
+  this.fullmoveNumber = parts[5] ? Number(parts[5]) : 1;
+
+  this.board.fill(EMPTY);
+
+  let square = 0;
+
+  for (const char of boardPart) {
+    if (char === "/") continue;
+
+    if (/\d/.test(char)) {
+      square += Number(char);
+    } else {
+      const color = char === char.toUpperCase() ? "w" : "b";
+      const type = char.toUpperCase();
+      this.board[square] = color + type;
+      square++;
     }
   }
+}
 
   clone() {
-    const copy = new ChessEngine();
-    copy.board = [...this.board];
-    copy.sideToMove = this.sideToMove;
-    copy.castlingRights = this.castlingRights;
-    copy.enPassantSquare = this.enPassantSquare;
-    copy.halfmoveClock = this.halfmoveClock;
-    copy.fullmoveNumber = this.fullmoveNumber;
-    return copy;
-  }
+  const copy = new ChessEngine();
+
+  copy.board = [...this.board];
+  copy.sideToMove = this.sideToMove;
+  copy.castlingRights = this.castlingRights;
+  copy.enPassantSquare = this.enPassantSquare;
+  copy.halfmoveClock = this.halfmoveClock;
+  copy.fullmoveNumber = this.fullmoveNumber;
+
+  return copy;
+}
 
   squareToCoord(square) {
     const file = square % 8;
@@ -513,64 +527,67 @@ class ChessEngine {
   }
 
   makeMove(move) {
-    const piece = this.board[move.from];
-    const color = this.getColor(piece);
-    const type = this.getType(piece);
-    const capturedPiece = this.board[move.to];
+  const piece = this.board[move.from];
+  const color = this.getColor(piece);
+  const type = this.getType(piece);
+  const capturedPiece = this.board[move.to];
 
-    this.updateCastlingRights(move, piece, capturedPiece);
+  this.updateCastlingRights(move, piece, capturedPiece);
 
-    this.board[move.to] = move.promotion
-      ? color + move.promotion
-      : piece;
+  this.board[move.to] = move.promotion
+    ? color + move.promotion
+    : piece;
 
-    this.board[move.from] = EMPTY;
+  this.board[move.from] = EMPTY;
 
-    if (move.enPassant) {
-      const capturedPawnSquare = color === "w" ? move.to + 8 : move.to - 8;
-      this.board[capturedPawnSquare] = EMPTY;
-    }
-
-    if (move.castle) {
-      if (move.castle === "K") {
-        this.board[61] = this.board[63];
-        this.board[63] = EMPTY;
-      }
-
-      if (move.castle === "Q") {
-        this.board[59] = this.board[56];
-        this.board[56] = EMPTY;
-      }
-
-      if (move.castle === "k") {
-        this.board[5] = this.board[7];
-        this.board[7] = EMPTY;
-      }
-
-      if (move.castle === "q") {
-        this.board[3] = this.board[0];
-        this.board[0] = EMPTY;
-      }
-    }
-
-    if (type === "P" && Math.abs(move.to - move.from) === 16) {
-      this.enPassantSquare = (move.from + move.to) / 2;
-    } else {
-      this.enPassantSquare = null;
-    }
-
-    if (type === "P" || capturedPiece || move.enPassant) {
-      this.halfmoveClock = 0;
-    } else {
-      this.halfmoveClock++;
-    }
-
-    if (this.sideToMove === "b") {
-      this.fullmoveNumber++;
-    }
-
-    this.sideToMove = this.oppositeColor(this.sideToMove);
+  // En passant capture removes the pawn behind the target square
+  if (move.enPassant) {
+    const capturedPawnSquare = color === "w" ? move.to + 8 : move.to - 8;
+    this.board[capturedPawnSquare] = EMPTY;
   }
+
+  // Move the rook during castling
+  if (move.castle) {
+    if (move.castle === "K") {
+      this.board[61] = this.board[63];
+      this.board[63] = EMPTY;
+    }
+
+    if (move.castle === "Q") {
+      this.board[59] = this.board[56];
+      this.board[56] = EMPTY;
+    }
+
+    if (move.castle === "k") {
+      this.board[5] = this.board[7];
+      this.board[7] = EMPTY;
+    }
+
+    if (move.castle === "q") {
+      this.board[3] = this.board[0];
+      this.board[0] = EMPTY;
+    }
+  }
+
+  // Set en passant target after a double pawn push
+  if (type === "P" && Math.abs(move.to - move.from) === 16) {
+    this.enPassantSquare = (move.from + move.to) / 2;
+  } else {
+    this.enPassantSquare = null;
+  }
+
+  if (type === "P" || capturedPiece || move.enPassant) {
+    this.halfmoveClock = 0;
+  } else {
+    this.halfmoveClock++;
+  }
+
+  if (this.sideToMove === "b") {
+    this.fullmoveNumber++;
+  }
+
+  this.sideToMove = this.oppositeColor(this.sideToMove);
+}
 
   updateCastlingRights(move, piece, capturedPiece) {
     if (!piece) return;
