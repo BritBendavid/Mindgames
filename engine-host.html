@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>JavaScript Chess Engine</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      display: flex;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .container {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 70px);
+      grid-template-rows: repeat(8, 70px);
+      border: 4px solid #333;
+    }
+
+    .square {
+      width: 70px;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .light {
+      background: #f0d9b5;
+      color: black;
+    }
+
+    .dark {
+      background: #b58863;
+      color: black;
+    }
+
+    .selected {
+      outline: 4px solid yellow;
+      outline-offset: -4px;
+    }
+
+    .legal-target {
+      box-shadow: inset 0 0 0 6px rgba(0, 255, 0, 0.45);
+    }
+
+    .panel {
+      width: 360px;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+    }
+
+    button, input {
+      font-size: 16px;
+      padding: 10px;
+      margin-top: 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      cursor: pointer;
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 6px;
+    }
+
+    button:hover {
+      background: #444;
+    }
+
+    input {
+      background: #111;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 6px;
+    }
+
+    .info {
+      margin-top: 15px;
+      line-height: 1.5;
+      font-size: 15px;
+      color: #ddd;
+    }
+
+    .moves {
+      max-height: 220px;
+      overflow-y: auto;
+      background: #111;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div id="board" class="board"></div>
+
+    <div class="panel">
+      <h1>JavaScript Chess Engine</h1>
+
+      <button onclick="newGame()">New Game</button>
+      <button onclick="engineMove()">Engine Move</button>
+      <button onclick="showBestMove()">Show Best Move</button>
+
+      <input id="moveInput" placeholder="Enter move, e.g. e2e4" />
+      <button onclick="playTypedMove()">Play Move</button>
+
+      <input id="fenInput" placeholder="Paste FEN here" />
+      <button onclick="loadFenFromInput()">Load FEN</button>
+
+      <div class="info">
+        <div><strong>Side to move:</strong> <span id="sideToMove"></span></div>
+        <div><strong>Evaluation:</strong> <span id="evaluation"></span></div>
+        <div><strong>Move count:</strong> <span id="moveCount"></span></div>
+        <div><strong>Status:</strong> <span id="status">Ready</span></div>
+      </div>
+
+      <h3>Generated Moves</h3>
+      <div id="moves" class="moves"></div>
+    </div>
+  </div>
+
+  <!-- Your engine file -->
+  <script src="engine.js"></script>
+
+  <script>
+    const START_FEN =
+      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
+
+    const pieceSymbols = {
+      wK: "♔",
+      wQ: "♕",
+      wR: "♖",
+      wB: "♗",
+      wN: "♘",
+      wP: "♙",
+      bK: "♚",
+      bQ: "♛",
+      bR: "♜",
+      bB: "♝",
+      bN: "♞",
+      bP: "♟"
+    };
+
+    const uiEngine = new ChessEngine();
+
+    let selectedSquare = null;
+    let currentMoves = [];
+
+    function newGame() {
+      uiEngine.loadFEN(START_FEN);
+      selectedSquare = null;
+      updateUI();
+      setStatus("New game loaded.");
+    }
+
+    function updateUI() {
+      currentMoves = uiEngine.generateMoves();
+
+      drawBoard();
+      updatePanel();
+    }
+
+    function drawBoard() {
+      const boardDiv = document.getElementById("board");
+      boardDiv.innerHTML = "";
+
+      const legalTargets = selectedSquare === null
+        ? []
+        : currentMoves
+            .filter(move => move.from === selectedSquare)
+            .map(move => move.to);
+
+      for (let square = 0; square < 64; square++) {
+        const row = Math.floor(square / 8);
+        const col = square % 8;
+
+        const squareDiv = document.createElement("div");
+
+        squareDiv.classList.add("square");
+        squareDiv.classList.add((row + col) % 2 === 0 ? "light" : "dark");
+
+        if (square === selectedSquare) {
+          squareDiv.classList.add("selected");
+        }
+
+        if (legalTargets.includes(square)) {
+          squareDiv.classList.add("legal-target");
+        }
+
+        const piece = uiEngine.board[square];
+        squareDiv.textContent = piece ? pieceSymbols[piece] : "";
+
+        squareDiv.addEventListener("click", () => handleSquareClick(square));
+
+        boardDiv.appendChild(squareDiv);
+      }
+    }
+
+    function updatePanel() {
+      document.getElementById("sideToMove").textContent =
+        uiEngine.sideToMove === "w" ? "White" : "Black";
+
+      document.getElementById("evaluation").textContent = uiEngine.evaluate();
+
+      document.getElementById("moveCount").textContent = currentMoves.length;
+
+      document.getElementById("moves").textContent =
+        currentMoves.map(move => uiEngine.moveToString(move)).join(" ");
+    }
+
+    function handleSquareClick(square) {
+      const piece = uiEngine.board[square];
+
+      if (selectedSquare === null) {
+        if (!piece) return;
+
+        if (piece[0] !== uiEngine.sideToMove) {
+          setStatus("That is not the side to move.");
+          return;
+        }
+
+        selectedSquare = square;
+        updateUI();
+        return;
+      }
+
+      const move = currentMoves.find(m =>
+        m.from === selectedSquare && m.to === square
+      );
+
+      if (move) {
+        uiEngine.makeMove(move);
+        selectedSquare = null;
+        updateUI();
+        setStatus("Move played: " + uiEngine.moveToString(move));
+      } else {
+        selectedSquare = null;
+        updateUI();
+        setStatus("Illegal or unavailable move.");
+      }
+    }
+
+    function playTypedMove() {
+      const input = document.getElementById("moveInput");
+      const text = input.value.trim().toLowerCase();
+
+      if (text.length < 4) {
+        setStatus("Enter a move like e2e4.");
+        return;
+      }
+
+      const from = uiEngine.coordToSquare(text.slice(0, 2));
+      const to = uiEngine.coordToSquare(text.slice(2, 4));
+      const promotion = text.length >= 5 ? text[4].toUpperCase() : undefined;
+
+      const move = currentMoves.find(m =>
+        m.from === from &&
+        m.to === to &&
+        (!m.promotion || m.promotion === promotion)
+      );
+
+      if (!move) {
+        setStatus("Move not found in generated moves.");
+        return;
+      }
+
+      uiEngine.makeMove(move);
+      input.value = "";
+      selectedSquare = null;
+      updateUI();
+      setStatus("Move played: " + uiEngine.moveToString(move));
+    }
+
+    function engineMove() {
+      const result = uiEngine.findBestMove(3);
+
+      if (!result.move) {
+        setStatus("No move found.");
+        return;
+      }
+
+      uiEngine.makeMove(result.move);
+      selectedSquare = null;
+      updateUI();
+
+      setStatus(
+        "Engine played: " +
+        uiEngine.moveToString(result.move) +
+        " | Score: " +
+        result.score
+      );
+    }
+
+    function showBestMove() {
+      const result = uiEngine.findBestMove(3);
+
+      if (!result.move) {
+        setStatus("No best move found.");
+        return;
+      }
+
+      setStatus(
+        "Best move: " +
+        uiEngine.moveToString(result.move) +
+        " | Score: " +
+        result.score
+      );
+    }
+
+    function loadFenFromInput() {
+      const fen = document.getElementById("fenInput").value.trim();
+
+      if (!fen) {
+        setStatus("Paste a FEN first.");
+        return;
+      }
+
+      try {
+        uiEngine.loadFEN(fen);
+        selectedSquare = null;
+        updateUI();
+        setStatus("FEN loaded.");
+      } catch (error) {
+        setStatus("Could not load FEN.");
+        console.error(error);
+      }
+    }
+
+    function setStatus(message) {
+      document.getElementById("status").textContent = message;
+    }
+
+    newGame();
+  </script>
+</body>
+</html>
