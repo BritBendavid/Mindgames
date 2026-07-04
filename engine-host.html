@@ -222,7 +222,7 @@
 
   <script>
     const START_FEN =
-      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
+  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
     const pieceNames = {
       P: "Pawn",
@@ -321,31 +321,43 @@
     }
 
     function moveToReadableNotation(move) {
-      const piece = uiEngine.board[move.from];
+  const piece = uiEngine.board[move.from];
 
-      if (!piece) {
-        return "";
-      }
+  if (!piece) {
+    return "";
+  }
 
-      const type = piece[1];
-      const pieceName = pieceNames[type];
-      const destination = uiEngine.squareToCoord(move.to);
-      const target = uiEngine.board[move.to];
+  if (move.castle === "K" || move.castle === "k") {
+    return "King castles kingside";
+  }
 
-      let text = "";
+  if (move.castle === "Q" || move.castle === "q") {
+    return "King castles queenside";
+  }
 
-      if (target) {
-        text = pieceName + " captures " + destination;
-      } else {
-        text = pieceName + " " + destination;
-      }
+  const type = piece[1];
+  const pieceName = pieceNames[type];
+  const destination = uiEngine.squareToCoord(move.to);
+  const target = uiEngine.board[move.to];
 
-      if (move.promotion) {
-        text += " = " + pieceNames[move.promotion];
-      }
+  let text = "";
 
-      return text;
-    }
+  if (target || move.enPassant) {
+    text = pieceName + " captures " + destination;
+  } else {
+    text = pieceName + " " + destination;
+  }
+
+  if (move.enPassant) {
+    text += " en passant";
+  }
+
+  if (move.promotion) {
+    text += " = " + pieceNames[move.promotion];
+  }
+
+  return text;
+}
 
     function handleSquareClick(square) {
       const piece = uiEngine.board[square];
