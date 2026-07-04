@@ -375,9 +375,11 @@
         return;
       }
 
-      const move = currentMoves.find(m =>
-        m.from === selectedSquare && m.to === square
-      );
+      const candidateMoves = currentMoves.filter(m =>
+  m.from === selectedSquare && m.to === square
+);
+
+const move = choosePromotionMove(candidateMoves);
 
       if (move) {
         const moveLabel = moveToReadableNotation(move);
@@ -407,11 +409,22 @@
       const to = uiEngine.coordToSquare(text.slice(2, 4));
       const promotion = text.length >= 5 ? text[4].toUpperCase() : undefined;
 
-      const move = currentMoves.find(m =>
-        m.from === from &&
-        m.to === to &&
-        (!m.promotion || m.promotion === promotion)
-      );
+      const candidateMoves = currentMoves.filter(m =>
+  m.from === from &&
+  m.to === to
+);
+
+let move = null;
+
+if (candidateMoves.some(m => m.promotion)) {
+  if (promotion) {
+    move = candidateMoves.find(m => m.promotion === promotion);
+  } else {
+    move = choosePromotionMove(candidateMoves);
+  }
+} else {
+  move = candidateMoves[0];
+}
 
       if (!move) {
         setStatus("Move not found in generated moves.");
@@ -490,6 +503,29 @@
     function setStatus(message) {
       document.getElementById("status").textContent = message;
     }
+
+    function choosePromotionMove(candidateMoves) {
+  const promotionMoves = candidateMoves.filter(m => m.promotion);
+
+  if (promotionMoves.length === 0) {
+    return candidateMoves[0];
+  }
+
+  let choice = prompt("Promote to Q, R, B, or N:", "Q");
+
+  if (!choice) {
+    return null;
+  }
+
+  choice = choice.trim().toUpperCase();
+
+  if (!["Q", "R", "B", "N"].includes(choice)) {
+    alert("Invalid promotion. Use Q, R, B, or N.");
+    return null;
+  }
+
+  return promotionMoves.find(m => m.promotion === choice) || null;
+}
 
     newGame();
   </script>
