@@ -312,6 +312,8 @@
       document.getElementById("moveCount").textContent = currentMoves.length;
 
       document.getElementById("moves").textContent = formatGeneratedMoves();
+      const gameStatus = uiEngine.getGameStatus();
+document.getElementById("status").textContent = gameStatus.message;
     }
 
     function formatGeneratedMoves() {
