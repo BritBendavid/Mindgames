@@ -109,7 +109,7 @@
     }
 
     .panel {
-      width: 390px;
+      width: 410px;
       background: rgba(30, 30, 30, 0.96);
       padding: 22px;
       border-radius: 16px;
@@ -161,9 +161,8 @@
       color: #ddd;
     }
 
-    .moves {
-      max-height: 260px;
-      overflow-y: auto;
+    .moves,
+    .history {
       background: #101010;
       padding: 12px;
       border-radius: 8px;
@@ -172,6 +171,17 @@
       margin-top: 10px;
       white-space: pre-wrap;
       border: 1px solid rgba(255, 255, 255, 0.08);
+      line-height: 1.5;
+      overflow-y: auto;
+    }
+
+    .moves {
+      max-height: 260px;
+    }
+
+    .history {
+      min-height: 120px;
+      max-height: 220px;
     }
 
     .note {
@@ -193,14 +203,14 @@
       <h1>JavaScript Chess Engine</h1>
 
       <button onclick="newGame()">New Game</button>
-<button onclick="engineMove()">Engine Move</button>
-<button onclick="playRandomMove()">Play Random Move</button>
-<button onclick="showBestMove()">Show Best Move</button>
+      <button onclick="engineMove()">Engine Move</button>
+      <button onclick="playRandomMove()">Play Random Move</button>
+      <button onclick="showBestMove()">Show Best Move</button>
 
-      <input id="moveInput" placeholder="Enter move, e.g. e2e4" />
+      <input id="moveInput" placeholder="Enter move, e.g. e2e4 or a7a8n" />
       <button onclick="playTypedMove()">Play Move</button>
 
-      <input id="fenInput" placeholder="Paste FEN" />
+      <input id="fenInput" placeholder="Paste FEN here" />
       <button onclick="loadFenFromInput()">Load FEN</button>
 
       <div class="info">
@@ -213,31 +223,35 @@
       <h3>Generated Moves</h3>
       <div id="moves" class="moves"></div>
 
+      <h3>Move History</h3>
+      <div id="moveHistory" class="history"></div>
+
       <div class="note">
-        Typed moves still use coordinate input like e2e4, but the generated move list now uses readable notation.
+        Typed moves use coordinate input like e2e4. Promotions can be typed as a7a8q, a7a8r, a7a8b, or a7a8n.
       </div>
     </div>
   </div>
 
-  <script src="engine.js"></script>
+  <script src="./engine.js"></script>
 
   <script>
     const START_FEN =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-    const pieceNames = {
-      P: "Pawn",
-      N: "Knight",
-      B: "Bishop",
-      R: "Rook",
-      Q: "Queen",
-      K: "King"
+    const sanPieceLetters = {
+      P: "",
+      N: "N",
+      B: "B",
+      R: "R",
+      Q: "Q",
+      K: "K"
     };
 
     const uiEngine = new ChessEngine();
 
     let selectedSquare = null;
     let currentMoves = [];
+    let moveHistory = [];
 
     function pieceImageUrl(piece) {
       return "https://lichess1.org/assets/piece/cburnett/" + piece + ".svg";
@@ -246,22 +260,23 @@
     function newGame() {
       uiEngine.loadFEN(START_FEN);
       selectedSquare = null;
+      moveHistory = [];
       updateUI();
       setStatus("New game loaded.");
     }
 
     function updateUI() {
-  const gameStatus = uiEngine.getGameStatus();
+      const gameStatus = uiEngine.getGameStatus();
 
-  if (gameStatus.over) {
-    currentMoves = [];
-  } else {
-    currentMoves = uiEngine.generateMoves();
-  }
+      if (gameStatus.over) {
+        currentMoves = [];
+      } else {
+        currentMoves = uiEngine.generateMoves();
+      }
 
-  drawBoard();
-  updatePanel(gameStatus);
-}
+      drawBoard();
+      updatePanel(gameStatus);
+    }
 
     function drawBoard() {
       const boardDiv = document.getElementById("board");
@@ -287,7 +302,7 @@
         const targetMove = legalTargets.find(move => move.to === square);
 
         if (targetMove) {
-          if (uiEngine.board[square]) {
+          if (uiEngine.board[square] || targetMove.enPassant) {
             squareDiv.classList.add("capture-target");
           } else {
             squareDiv.classList.add("legal-target");
@@ -312,75 +327,235 @@
     }
 
     function updatePanel(gameStatus) {
-  document.getElementById("sideToMove").textContent =
-    uiEngine.sideToMove === "w" ? "White" : "Black";
+      document.getElementById("sideToMove").textContent =
+        uiEngine.sideToMove === "w" ? "White" : "Black";
 
-  document.getElementById("evaluation").textContent = uiEngine.evaluate();
+      document.getElementById("evaluation").textContent = uiEngine.evaluate();
 
-  document.getElementById("moveCount").textContent = currentMoves.length;
+      document.getElementById("moveCount").textContent = currentMoves.length;
 
-  if (gameStatus.over) {
-    document.getElementById("moves").textContent =
-      "Game over — no legal moves available.";
-  } else {
-    document.getElementById("moves").textContent = formatGeneratedMoves();
-  }
+      if (gameStatus.over) {
+        document.getElementById("moves").textContent =
+          "Game over — no legal moves available.";
+      } else {
+        document.getElementById("moves").textContent = formatGeneratedMoves();
+      }
 
-  document.getElementById("status").textContent = gameStatus.message;
-}
+      document.getElementById("moveHistory").textContent = formatMoveHistory();
+
+      document.getElementById("status").textContent = gameStatus.message;
+    }
 
     function formatGeneratedMoves() {
       return currentMoves
-        .map(move => moveToReadableNotation(move))
+        .map(move => moveToSAN(move, uiEngine))
         .join("\n");
     }
 
-    function moveToReadableNotation(move) {
-  const piece = uiEngine.board[move.from];
+    function moveToSAN(move, engine = uiEngine) {
+      const piece = engine.board[move.from];
 
-  if (!piece) {
-    return "";
-  }
+      if (!piece) {
+        return "";
+      }
 
-  if (move.castle === "K" || move.castle === "k") {
-    return "King castles kingside";
-  }
+      const type = piece[1];
+      const destination = engine.squareToCoord(move.to);
 
-  if (move.castle === "Q" || move.castle === "q") {
-    return "King castles queenside";
-  }
+      if (move.castle) {
+        const castleText = move.to % 8 === 6 ? "O-O" : "O-O-O";
+        return castleText + getCheckOrMateSuffix(engine, move);
+      }
 
-  const type = piece[1];
-  const pieceName = pieceNames[type];
-  const destination = uiEngine.squareToCoord(move.to);
-  const target = uiEngine.board[move.to];
+      const capture = Boolean(engine.board[move.to]) || Boolean(move.enPassant);
 
-  let text = "";
+      let san = "";
 
-  if (target || move.enPassant) {
-    text = pieceName + " captures " + destination;
-  } else {
-    text = pieceName + " " + destination;
-  }
+      if (type === "P") {
+        if (capture) {
+          san += engine.squareToCoord(move.from)[0] + "x";
+        }
 
-  if (move.enPassant) {
-    text += " en passant";
-  }
+        san += destination;
+      } else {
+        san += sanPieceLetters[type];
+        san += getDisambiguation(move, engine);
 
-  if (move.promotion) {
-    text += " = " + pieceNames[move.promotion];
-  }
+        if (capture) {
+          san += "x";
+        }
 
-  return text;
-}
+        san += destination;
+      }
+
+      if (move.promotion) {
+        san += "=" + move.promotion;
+      }
+
+      san += getCheckOrMateSuffix(engine, move);
+
+      return san;
+    }
+
+    function getDisambiguation(move, engine) {
+      const piece = engine.board[move.from];
+
+      if (!piece) return "";
+
+      const type = piece[1];
+
+      if (type === "P" || type === "K") {
+        return "";
+      }
+
+      const fromCoord = engine.squareToCoord(move.from);
+      const fromFile = fromCoord[0];
+      const fromRank = fromCoord[1];
+
+      const alternatives = engine.generateMoves().filter(otherMove => {
+        if (otherMove.from === move.from) return false;
+        if (otherMove.to !== move.to) return false;
+
+        const otherPiece = engine.board[otherMove.from];
+
+        return otherPiece === piece;
+      });
+
+      if (alternatives.length === 0) {
+        return "";
+      }
+
+      const sameFile = alternatives.some(otherMove =>
+        engine.squareToCoord(otherMove.from)[0] === fromFile
+      );
+
+      const sameRank = alternatives.some(otherMove =>
+        engine.squareToCoord(otherMove.from)[1] === fromRank
+      );
+
+      if (!sameFile) {
+        return fromFile;
+      }
+
+      if (!sameRank) {
+        return fromRank;
+      }
+
+      return fromFile + fromRank;
+    }
+
+    function getCheckOrMateSuffix(engine, move) {
+      const position = engine.clone();
+      position.makeMove(move);
+
+      const enemyColor = position.sideToMove;
+
+      if (!position.isInCheck(enemyColor)) {
+        return "";
+      }
+
+      const enemyLegalMoves = position.generateMoves();
+
+      if (enemyLegalMoves.length === 0) {
+        return "#";
+      }
+
+      return "+";
+    }
+
+    function choosePromotionMove(candidateMoves) {
+      const promotionMoves = candidateMoves.filter(m => m.promotion);
+
+      if (promotionMoves.length === 0) {
+        return candidateMoves[0];
+      }
+
+      let choice = prompt("Promote to Q, R, B, or N:", "Q");
+
+      if (!choice) {
+        return null;
+      }
+
+      choice = choice.trim().toUpperCase();
+
+      if (!["Q", "R", "B", "N"].includes(choice)) {
+        alert("Invalid promotion. Use Q, R, B, or N.");
+        return null;
+      }
+
+      return promotionMoves.find(m => m.promotion === choice) || null;
+    }
+
+    function playMoveAndRecord(move, labelPrefix = "Move played", extraText = "") {
+      const san = moveToSAN(move, uiEngine);
+      const color = uiEngine.sideToMove;
+      const moveNumber =
+        uiEngine.fullmoveNumber || Math.floor(moveHistory.length / 2) + 1;
+
+      uiEngine.makeMove(move);
+
+      moveHistory.push({
+        number: moveNumber,
+        color,
+        san
+      });
+
+      selectedSquare = null;
+      updateUI();
+
+      const gameStatus = uiEngine.getGameStatus();
+      let suffix = "";
+
+      if (gameStatus.over) {
+        suffix = " — " + gameStatus.message;
+      } else if (gameStatus.type === "check") {
+        suffix = " — " + gameStatus.message;
+      }
+
+      setStatus(labelPrefix + ": " + san + extraText + suffix);
+    }
+
+    function formatMoveHistory() {
+      if (moveHistory.length === 0) {
+        return "No moves played yet.";
+      }
+
+      const lines = [];
+      let currentLine = "";
+
+      for (const entry of moveHistory) {
+        if (entry.color === "w") {
+          if (currentLine) {
+            lines.push(currentLine);
+          }
+
+          currentLine = entry.number + ". " + entry.san;
+        } else {
+          if (!currentLine) {
+            lines.push(entry.number + "... " + entry.san);
+          } else {
+            currentLine += " " + entry.san;
+            lines.push(currentLine);
+            currentLine = "";
+          }
+        }
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      return lines.join("\n");
+    }
 
     function handleSquareClick(square) {
       const gameStatus = uiEngine.getGameStatus();
 
-if (gameStatus.over) {
-  setStatus(gameStatus.message);
-  return;
-}
+      if (gameStatus.over) {
+        setStatus(gameStatus.message);
+        return;
+      }
+
       const piece = uiEngine.board[square];
 
       if (selectedSquare === null) {
@@ -396,20 +571,20 @@ if (gameStatus.over) {
         return;
       }
 
-      const candidateMoves = currentMoves.filter(m =>
-  m.from === selectedSquare && m.to === square
-);
+      if (piece && piece[0] === uiEngine.sideToMove) {
+        selectedSquare = square;
+        updateUI();
+        return;
+      }
 
-const move = choosePromotionMove(candidateMoves);
+      const candidateMoves = currentMoves.filter(m =>
+        m.from === selectedSquare && m.to === square
+      );
+
+      const move = choosePromotionMove(candidateMoves);
 
       if (move) {
-        const moveLabel = moveToReadableNotation(move);
-
-        uiEngine.makeMove(move);
-        selectedSquare = null;
-        updateUI();
-
-        setStatus("Move played: " + moveLabel);
+        playMoveAndRecord(move, "Move played");
       } else {
         selectedSquare = null;
         updateUI();
@@ -420,10 +595,11 @@ const move = choosePromotionMove(candidateMoves);
     function playTypedMove() {
       const gameStatus = uiEngine.getGameStatus();
 
-if (gameStatus.over) {
-  setStatus(gameStatus.message);
-  return;
-}
+      if (gameStatus.over) {
+        setStatus(gameStatus.message);
+        return;
+      }
+
       const input = document.getElementById("moveInput");
       const text = input.value.trim().toLowerCase();
 
@@ -437,44 +613,39 @@ if (gameStatus.over) {
       const promotion = text.length >= 5 ? text[4].toUpperCase() : undefined;
 
       const candidateMoves = currentMoves.filter(m =>
-  m.from === from &&
-  m.to === to
-);
+        m.from === from &&
+        m.to === to
+      );
 
-let move = null;
+      let move = null;
 
-if (candidateMoves.some(m => m.promotion)) {
-  if (promotion) {
-    move = candidateMoves.find(m => m.promotion === promotion);
-  } else {
-    move = choosePromotionMove(candidateMoves);
-  }
-} else {
-  move = candidateMoves[0];
-}
+      if (candidateMoves.some(m => m.promotion)) {
+        if (promotion) {
+          move = candidateMoves.find(m => m.promotion === promotion);
+        } else {
+          move = choosePromotionMove(candidateMoves);
+        }
+      } else {
+        move = candidateMoves[0];
+      }
 
       if (!move) {
         setStatus("Move not found in generated moves.");
         return;
       }
 
-      const moveLabel = moveToReadableNotation(move);
-
-      uiEngine.makeMove(move);
       input.value = "";
-      selectedSquare = null;
-      updateUI();
-
-      setStatus("Move played: " + moveLabel);
+      playMoveAndRecord(move, "Move played");
     }
 
     function engineMove() {
       const gameStatus = uiEngine.getGameStatus();
 
-if (gameStatus.over) {
-  setStatus(gameStatus.message);
-  return;
-}
+      if (gameStatus.over) {
+        setStatus(gameStatus.message);
+        return;
+      }
+
       const result = uiEngine.findBestMove(3);
 
       if (!result.move) {
@@ -482,54 +653,42 @@ if (gameStatus.over) {
         return;
       }
 
-      const moveLabel = moveToReadableNotation(result.move);
-
-      uiEngine.makeMove(result.move);
-      selectedSquare = null;
-      updateUI();
-
-      setStatus(
-        "Engine played: " +
-        moveLabel +
-        " | Score: " +
-        result.score
+      playMoveAndRecord(
+        result.move,
+        "Engine played",
+        " | Score: " + result.score
       );
     }
 
     function playRandomMove() {
-  const gameStatus = uiEngine.getGameStatus();
+      const gameStatus = uiEngine.getGameStatus();
 
-  if (gameStatus.over) {
-    setStatus(gameStatus.message);
-    return;
-  }
+      if (gameStatus.over) {
+        setStatus(gameStatus.message);
+        return;
+      }
 
-  const moves = uiEngine.generateMoves();
+      const moves = uiEngine.generateMoves();
 
-  if (moves.length === 0) {
-    setStatus("No legal moves available.");
-    return;
-  }
+      if (moves.length === 0) {
+        setStatus("No legal moves available.");
+        return;
+      }
 
-  const randomIndex = Math.floor(Math.random() * moves.length);
-  const move = moves[randomIndex];
+      const randomIndex = Math.floor(Math.random() * moves.length);
+      const move = moves[randomIndex];
 
-  const moveLabel = moveToReadableNotation(move);
-
-  uiEngine.makeMove(move);
-  selectedSquare = null;
-  updateUI();
-
-  setStatus("Random move played: " + moveLabel);
-}
+      playMoveAndRecord(move, "Random move played");
+    }
 
     function showBestMove() {
       const gameStatus = uiEngine.getGameStatus();
 
-if (gameStatus.over) {
-  setStatus(gameStatus.message);
-  return;
-}
+      if (gameStatus.over) {
+        setStatus(gameStatus.message);
+        return;
+      }
+
       const result = uiEngine.findBestMove(3);
 
       if (!result.move) {
@@ -537,7 +696,7 @@ if (gameStatus.over) {
         return;
       }
 
-      const moveLabel = moveToReadableNotation(result.move);
+      const moveLabel = moveToSAN(result.move, uiEngine);
 
       setStatus(
         "Best move: " +
@@ -558,6 +717,7 @@ if (gameStatus.over) {
       try {
         uiEngine.loadFEN(fen);
         selectedSquare = null;
+        moveHistory = [];
         updateUI();
         setStatus("FEN loaded.");
       } catch (error) {
@@ -569,29 +729,6 @@ if (gameStatus.over) {
     function setStatus(message) {
       document.getElementById("status").textContent = message;
     }
-
-    function choosePromotionMove(candidateMoves) {
-  const promotionMoves = candidateMoves.filter(m => m.promotion);
-
-  if (promotionMoves.length === 0) {
-    return candidateMoves[0];
-  }
-
-  let choice = prompt("Promote to Q, R, B, or N:", "Q");
-
-  if (!choice) {
-    return null;
-  }
-
-  choice = choice.trim().toUpperCase();
-
-  if (!["Q", "R", "B", "N"].includes(choice)) {
-    alert("Invalid promotion. Use Q, R, B, or N.");
-    return null;
-  }
-
-  return promotionMoves.find(m => m.promotion === choice) || null;
-}
 
     newGame();
   </script>
