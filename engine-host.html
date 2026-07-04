@@ -250,10 +250,17 @@
     }
 
     function updateUI() {
-      currentMoves = uiEngine.generateMoves();
-      drawBoard();
-      updatePanel();
-    }
+  const gameStatus = uiEngine.getGameStatus();
+
+  if (gameStatus.over) {
+    currentMoves = [];
+  } else {
+    currentMoves = uiEngine.generateMoves();
+  }
+
+  drawBoard();
+  updatePanel(gameStatus);
+}
 
     function drawBoard() {
       const boardDiv = document.getElementById("board");
@@ -303,18 +310,23 @@
       }
     }
 
-    function updatePanel() {
-      document.getElementById("sideToMove").textContent =
-        uiEngine.sideToMove === "w" ? "White" : "Black";
+    function updatePanel(gameStatus) {
+  document.getElementById("sideToMove").textContent =
+    uiEngine.sideToMove === "w" ? "White" : "Black";
 
-      document.getElementById("evaluation").textContent = uiEngine.evaluate();
+  document.getElementById("evaluation").textContent = uiEngine.evaluate();
 
-      document.getElementById("moveCount").textContent = currentMoves.length;
+  document.getElementById("moveCount").textContent = currentMoves.length;
 
-      document.getElementById("moves").textContent = formatGeneratedMoves();
-      const gameStatus = uiEngine.getGameStatus();
-document.getElementById("status").textContent = gameStatus.message;
-    }
+  if (gameStatus.over) {
+    document.getElementById("moves").textContent =
+      "Game over — no legal moves available.";
+  } else {
+    document.getElementById("moves").textContent = formatGeneratedMoves();
+  }
+
+  document.getElementById("status").textContent = gameStatus.message;
+}
 
     function formatGeneratedMoves() {
       return currentMoves
@@ -362,6 +374,12 @@ document.getElementById("status").textContent = gameStatus.message;
 }
 
     function handleSquareClick(square) {
+      const gameStatus = uiEngine.getGameStatus();
+
+if (gameStatus.over) {
+  setStatus(gameStatus.message);
+  return;
+}
       const piece = uiEngine.board[square];
 
       if (selectedSquare === null) {
@@ -399,6 +417,12 @@ const move = choosePromotionMove(candidateMoves);
     }
 
     function playTypedMove() {
+      const gameStatus = uiEngine.getGameStatus();
+
+if (gameStatus.over) {
+  setStatus(gameStatus.message);
+  return;
+}
       const input = document.getElementById("moveInput");
       const text = input.value.trim().toLowerCase();
 
@@ -444,6 +468,12 @@ if (candidateMoves.some(m => m.promotion)) {
     }
 
     function engineMove() {
+      const gameStatus = uiEngine.getGameStatus();
+
+if (gameStatus.over) {
+  setStatus(gameStatus.message);
+  return;
+}
       const result = uiEngine.findBestMove(3);
 
       if (!result.move) {
@@ -466,6 +496,12 @@ if (candidateMoves.some(m => m.promotion)) {
     }
 
     function showBestMove() {
+      const gameStatus = uiEngine.getGameStatus();
+
+if (gameStatus.over) {
+  setStatus(gameStatus.message);
+  return;
+}
       const result = uiEngine.findBestMove(3);
 
       if (!result.move) {
