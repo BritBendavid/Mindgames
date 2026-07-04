@@ -8,7 +8,8 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #111;
+      background:
+        radial-gradient(circle at top, #2a2a2a 0%, #111 45%, #050505 100%);
       color: white;
       display: flex;
       justify-content: center;
@@ -21,93 +22,109 @@
       align-items: flex-start;
     }
 
+    .board-wrap {
+      padding: 16px;
+      background: linear-gradient(145deg, #3a2a1a, #120c07);
+      border-radius: 18px;
+      box-shadow:
+        0 25px 60px rgba(0, 0, 0, 0.6),
+        inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+    }
+
     .board {
       display: grid;
-      grid-template-columns: repeat(8, 70px);
-      grid-template-rows: repeat(8, 70px);
-      border: 4px solid #333;
+      grid-template-columns: repeat(8, 74px);
+      grid-template-rows: repeat(8, 74px);
+      border: 3px solid #1b130d;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+      overflow: hidden;
     }
 
     .square {
-      width: 70px;
-      height: 70px;
+      width: 74px;
+      height: 74px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 42px;
       cursor: pointer;
       user-select: none;
+      position: relative;
     }
 
-    .piece {
-  font-size: 52px;
-  line-height: 1;
-  font-family: "Georgia", "Times New Roman", serif;
-  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.45));
-  transform: translateY(-2px);
-}
-
-.white-piece {
-  color: #fff8e7;
-  text-shadow:
-    0 1px 0 #777,
-    0 2px 2px rgba(0, 0, 0, 0.65);
-}
-
-.black-piece {
-  color: #1b1b1b;
-  text-shadow:
-    0 1px 0 #777,
-    0 2px 2px rgba(255, 255, 255, 0.2);
-}
-
-.square:hover {
-  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.35);
-}
-
-.light {
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), transparent 45%),
-    #f0d9b5;
-  color: black;
-}
-
-.dark {
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 45%),
-    #b58863;
-  color: black;
-}
-
     .light {
-      background: #f0d9b5;
-      color: black;
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.35), transparent 45%),
+        #f0d9b5;
     }
 
     .dark {
-      background: #b58863;
-      color: black;
+      background:
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.16), transparent 45%),
+        #b58863;
+    }
+
+    .square:hover {
+      box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.35);
     }
 
     .selected {
-      outline: 4px solid yellow;
-      outline-offset: -4px;
+      box-shadow: inset 0 0 0 5px #f7e35f !important;
     }
 
-    .legal-target {
-      box-shadow: inset 0 0 0 6px rgba(0, 255, 0, 0.45);
+    .legal-target::after {
+      content: "";
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(30, 140, 50, 0.45);
+      position: absolute;
+      z-index: 1;
+    }
+
+    .capture-target::after {
+      content: "";
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: 6px solid rgba(30, 140, 50, 0.45);
+      position: absolute;
+      z-index: 1;
+      box-sizing: border-box;
+    }
+
+    .piece-img {
+      width: 66px;
+      height: 66px;
+      object-fit: contain;
+      position: relative;
+      z-index: 2;
+      filter:
+        drop-shadow(0 5px 3px rgba(0, 0, 0, 0.45))
+        drop-shadow(0 1px 0 rgba(255, 255, 255, 0.25));
+      transition: transform 0.12s ease;
+    }
+
+    .square:hover .piece-img {
+      transform: translateY(-2px) scale(1.04);
     }
 
     .panel {
-      width: 360px;
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 10px;
+      width: 390px;
+      background: rgba(30, 30, 30, 0.96);
+      padding: 22px;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     h1 {
       margin-top: 0;
       font-size: 24px;
+      letter-spacing: 0.4px;
+    }
+
+    h3 {
+      margin-bottom: 8px;
     }
 
     button, input {
@@ -120,47 +137,57 @@
 
     button {
       cursor: pointer;
-      background: #333;
+      background: linear-gradient(#3b3b3b, #242424);
       color: white;
       border: 1px solid #555;
-      border-radius: 6px;
+      border-radius: 8px;
     }
 
     button:hover {
-      background: #444;
+      background: linear-gradient(#4a4a4a, #303030);
     }
 
     input {
-      background: #111;
+      background: #101010;
       color: white;
       border: 1px solid #555;
-      border-radius: 6px;
+      border-radius: 8px;
     }
 
     .info {
       margin-top: 15px;
-      line-height: 1.5;
+      line-height: 1.6;
       font-size: 15px;
       color: #ddd;
     }
 
     .moves {
-      max-height: 220px;
+      max-height: 260px;
       overflow-y: auto;
-      background: #111;
-      padding: 10px;
-      border-radius: 6px;
-      font-family: monospace;
+      background: #101010;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: "Courier New", monospace;
       font-size: 14px;
       margin-top: 10px;
       white-space: pre-wrap;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .note {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #aaa;
+      line-height: 1.4;
     }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <div id="board" class="board"></div>
+    <div class="board-wrap">
+      <div id="board" class="board"></div>
+    </div>
 
     <div class="panel">
       <h1>JavaScript Chess Engine</h1>
@@ -184,113 +211,37 @@
 
       <h3>Generated Moves</h3>
       <div id="moves" class="moves"></div>
+
+      <div class="note">
+        Typed moves still use coordinate input like e2e4, but the generated move list now uses readable notation.
+      </div>
     </div>
   </div>
 
-  <!-- Your engine file -->
   <script src="engine.js"></script>
 
   <script>
     const START_FEN =
       "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
 
-    const pieceSymbols = {
-      wK: "♔",
-      wQ: "♕",
-      wR: "♖",
-      wB: "♗",
-      wN: "♘",
-      wP: "♙",
-      bK: "♚",
-      bQ: "♛",
-      bR: "♜",
-      bB: "♝",
-      bN: "♞",
-      bP: "♟"
+    const pieceNames = {
+      P: "Pawn",
+      N: "Knight",
+      B: "Bishop",
+      R: "Rook",
+      Q: "Queen",
+      K: "King"
     };
 
     const uiEngine = new ChessEngine();
-    
+
     let selectedSquare = null;
     let currentMoves = [];
 
-    const pieceNames = {
-  P: "Pawn",
-  N: "Knight",
-  B: "Bishop",
-  R: "Rook",
-  Q: "Queen",
-  K: "King"
-};
+    function pieceImageUrl(piece) {
+      return "https://lichess1.org/assets/piece/cburnett/" + piece + ".svg";
+    }
 
-const pieceLetters = {
-  P: "",
-  N: "N",
-  B: "B",
-  R: "R",
-  Q: "Q",
-  K: "K"
-};
-
-function moveToReadableNotation(move) {
-  const piece = uiEngine.board[move.from];
-  if (!piece) return uiEngine.moveToString(move);
-
-  const type = piece[1];
-  const name = pieceNames[type];
-  const destination = uiEngine.squareToCoord(move.to);
-  const target = uiEngine.board[move.to];
-
-  let text = "";
-
-  if (target) {
-    text = `${name} captures ${destination}`;
-  } else {
-    text = `${name} ${destination}`;
-  }
-
-  if (move.promotion) {
-    text += ` = ${pieceNames[move.promotion]}`;
-  }
-
-  return text;
-}
-
-function moveToAlgebraicStyle(move) {
-  const piece = uiEngine.board[move.from];
-  if (!piece) return uiEngine.moveToString(move);
-
-  const type = piece[1];
-  const destination = uiEngine.squareToCoord(move.to);
-  const target = uiEngine.board[move.to];
-
-  let text = "";
-
-  if (type === "P") {
-    text = target
-      ? uiEngine.squareToCoord(move.from)[0] + "x" + destination
-      : destination;
-  } else {
-    text = pieceLetters[type] + (target ? "x" : "") + destination;
-  }
-
-  if (move.promotion) {
-    text += "=" + move.promotion;
-  }
-
-  return text;
-}
-
-function formatMoveList() {
-  return currentMoves
-    .map(move => {
-      const algebraic = moveToAlgebraicStyle(move);
-      const readable = moveToReadableNotation(move);
-      return `${algebraic.padEnd(6, " ")}  ${readable}`;
-    })
-    .join("\n");
-}
-    
     function newGame() {
       uiEngine.loadFEN(START_FEN);
       selectedSquare = null;
@@ -300,53 +251,57 @@ function formatMoveList() {
 
     function updateUI() {
       currentMoves = uiEngine.generateMoves();
-
       drawBoard();
       updatePanel();
     }
 
     function drawBoard() {
-  const boardDiv = document.getElementById("board");
-  boardDiv.innerHTML = "";
+      const boardDiv = document.getElementById("board");
+      boardDiv.innerHTML = "";
 
-  const legalTargets = selectedSquare === null
-    ? []
-    : currentMoves
-        .filter(move => move.from === selectedSquare)
-        .map(move => move.to);
+      const legalTargets = selectedSquare === null
+        ? []
+        : currentMoves.filter(move => move.from === selectedSquare);
 
-  for (let square = 0; square < 64; square++) {
-    const row = Math.floor(square / 8);
-    const col = square % 8;
+      for (let square = 0; square < 64; square++) {
+        const row = Math.floor(square / 8);
+        const col = square % 8;
 
-    const squareDiv = document.createElement("div");
+        const squareDiv = document.createElement("div");
 
-    squareDiv.classList.add("square");
-    squareDiv.classList.add((row + col) % 2 === 0 ? "light" : "dark");
+        squareDiv.classList.add("square");
+        squareDiv.classList.add((row + col) % 2 === 0 ? "light" : "dark");
 
-    if (square === selectedSquare) {
-      squareDiv.classList.add("selected");
+        if (square === selectedSquare) {
+          squareDiv.classList.add("selected");
+        }
+
+        const targetMove = legalTargets.find(move => move.to === square);
+
+        if (targetMove) {
+          if (uiEngine.board[square]) {
+            squareDiv.classList.add("capture-target");
+          } else {
+            squareDiv.classList.add("legal-target");
+          }
+        }
+
+        const piece = uiEngine.board[square];
+
+        if (piece) {
+          const img = document.createElement("img");
+          img.className = "piece-img";
+          img.src = pieceImageUrl(piece);
+          img.alt = piece;
+          img.draggable = false;
+          squareDiv.appendChild(img);
+        }
+
+        squareDiv.addEventListener("click", () => handleSquareClick(square));
+
+        boardDiv.appendChild(squareDiv);
+      }
     }
-
-    if (legalTargets.includes(square)) {
-      squareDiv.classList.add("legal-target");
-    }
-
-    const piece = uiEngine.board[square];
-
-    if (piece) {
-      const pieceSpan = document.createElement("span");
-      pieceSpan.classList.add("piece");
-      pieceSpan.classList.add(piece[0] === "w" ? "white-piece" : "black-piece");
-      pieceSpan.textContent = pieceSymbols[piece];
-      squareDiv.appendChild(pieceSpan);
-    }
-
-    squareDiv.addEventListener("click", () => handleSquareClick(square));
-
-    boardDiv.appendChild(squareDiv);
-  }
-}
 
     function updatePanel() {
       document.getElementById("sideToMove").textContent =
@@ -356,7 +311,40 @@ function formatMoveList() {
 
       document.getElementById("moveCount").textContent = currentMoves.length;
 
-      document.getElementById("moves").textContent = formatMoveList();
+      document.getElementById("moves").textContent = formatGeneratedMoves();
+    }
+
+    function formatGeneratedMoves() {
+      return currentMoves
+        .map(move => moveToReadableNotation(move))
+        .join("\n");
+    }
+
+    function moveToReadableNotation(move) {
+      const piece = uiEngine.board[move.from];
+
+      if (!piece) {
+        return "";
+      }
+
+      const type = piece[1];
+      const pieceName = pieceNames[type];
+      const destination = uiEngine.squareToCoord(move.to);
+      const target = uiEngine.board[move.to];
+
+      let text = "";
+
+      if (target) {
+        text = pieceName + " captures " + destination;
+      } else {
+        text = pieceName + " " + destination;
+      }
+
+      if (move.promotion) {
+        text += " = " + pieceNames[move.promotion];
+      }
+
+      return text;
     }
 
     function handleSquareClick(square) {
@@ -380,10 +368,13 @@ function formatMoveList() {
       );
 
       if (move) {
+        const moveLabel = moveToReadableNotation(move);
+
         uiEngine.makeMove(move);
         selectedSquare = null;
         updateUI();
-        setStatus("Move played: " + moveToReadableNotation(move));
+
+        setStatus("Move played: " + moveLabel);
       } else {
         selectedSquare = null;
         updateUI();
@@ -415,11 +406,14 @@ function formatMoveList() {
         return;
       }
 
+      const moveLabel = moveToReadableNotation(move);
+
       uiEngine.makeMove(move);
       input.value = "";
       selectedSquare = null;
       updateUI();
-      setStatus("Move played: " + moveToReadableNotation(move));
+
+      setStatus("Move played: " + moveLabel);
     }
 
     function engineMove() {
@@ -430,15 +424,17 @@ function formatMoveList() {
         return;
       }
 
+      const moveLabel = moveToReadableNotation(result.move);
+
       uiEngine.makeMove(result.move);
       selectedSquare = null;
       updateUI();
 
       setStatus(
         "Engine played: " +
-moveToReadableNotation(result.move) +
-" | Score: " +
-result.score
+        moveLabel +
+        " | Score: " +
+        result.score
       );
     }
 
@@ -450,11 +446,13 @@ result.score
         return;
       }
 
+      const moveLabel = moveToReadableNotation(result.move);
+
       setStatus(
         "Best move: " +
-moveToReadableNotation(result.move) +
-" | Score: " +
-result.score
+        moveLabel +
+        " | Score: " +
+        result.score
       );
     }
 
