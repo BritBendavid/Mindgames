@@ -193,8 +193,9 @@
       <h1>JavaScript Chess Engine</h1>
 
       <button onclick="newGame()">New Game</button>
-      <button onclick="engineMove()">Engine Move</button>
-      <button onclick="showBestMove()">Show Best Move</button>
+<button onclick="engineMove()">Engine Move</button>
+<button onclick="playRandomMove()">Play Random Move</button>
+<button onclick="showBestMove()">Show Best Move</button>
 
       <input id="moveInput" placeholder="Enter move, e.g. e2e4" />
       <button onclick="playTypedMove()">Play Move</button>
@@ -494,6 +495,33 @@ if (gameStatus.over) {
         result.score
       );
     }
+
+    function playRandomMove() {
+  const gameStatus = uiEngine.getGameStatus();
+
+  if (gameStatus.over) {
+    setStatus(gameStatus.message);
+    return;
+  }
+
+  const moves = uiEngine.generateMoves();
+
+  if (moves.length === 0) {
+    setStatus("No legal moves available.");
+    return;
+  }
+
+  const randomIndex = Math.floor(Math.random() * moves.length);
+  const move = moves[randomIndex];
+
+  const moveLabel = moveToReadableNotation(move);
+
+  uiEngine.makeMove(move);
+  selectedSquare = null;
+  updateUI();
+
+  setStatus("Random move played: " + moveLabel);
+}
 
     function showBestMove() {
       const gameStatus = uiEngine.getGameStatus();
