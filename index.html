@@ -1,736 +1,905 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>JavaScript Chess Engine</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brit Never Misses</title>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
+    :root{
+      --bg0:#070a14;
+      --bg1:#0b1220;
+      --text:#e9eefc;
+      --muted:#b8c4e6;
+      --border:rgba(255,255,255,.10);
+      --shadow:0 18px 60px rgba(0,0,0,.45);
+      --ring:0 0 0 4px rgba(122,162,255,.18);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
       background:
-        radial-gradient(circle at top, #2a2a2a 0%, #111 45%, #050505 100%);
-      color: white;
-      display: flex;
-      justify-content: center;
-      padding: 30px;
+        radial-gradient(1200px 700px at 20% 10%, rgba(122,162,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 85% 85%, rgba(121,255,215,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 40%, var(--bg0));
+      padding: 28px 18px 56px;
     }
 
-    .container {
-      display: flex;
-      gap: 30px;
-      align-items: flex-start;
+    .wrap{max-width:980px;margin:0 auto}
+    .hero{padding: 26px 8px 18px}
+    .brand{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom: 10px;
     }
-
-    .board-wrap {
-      padding: 16px;
-      background: linear-gradient(145deg, #3a2a1a, #120c07);
-      border-radius: 18px;
-      box-shadow:
-        0 25px 60px rgba(0, 0, 0, 0.6),
-        inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+    .brand-left{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
     }
-
-    .board {
-      display: grid;
-      grid-template-columns: repeat(8, 74px);
-      grid-template-rows: repeat(8, 74px);
-      border: 3px solid #1b130d;
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
-      overflow: hidden;
+    .logo{
+      width:44px;height:44px;border-radius:14px;
+      background: linear-gradient(135deg, rgba(122,162,255,.35), rgba(121,255,215,.20));
+      border:1px solid var(--border);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      display:grid;place-items:center;
     }
-
-    .square {
-      width: 74px;
-      height: 74px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      user-select: none;
-      position: relative;
+    .logo span{font-size:22px}
+    h1{
+      margin:0;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing:.2px;
     }
-
-    .light {
-      background:
-        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.35), transparent 45%),
-        #f0d9b5;
-    }
-
-    .dark {
-      background:
-        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.16), transparent 45%),
-        #b58863;
-    }
-
-    .square:hover {
-      box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.35);
-    }
-
-    .selected {
-      box-shadow: inset 0 0 0 5px #f7e35f !important;
-    }
-
-    .legal-target::after {
-      content: "";
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: rgba(30, 140, 50, 0.45);
-      position: absolute;
-      z-index: 1;
-    }
-
-    .capture-target::after {
-      content: "";
-      width: 58px;
-      height: 58px;
-      border-radius: 50%;
-      border: 6px solid rgba(30, 140, 50, 0.45);
-      position: absolute;
-      z-index: 1;
-      box-sizing: border-box;
-    }
-
-    .piece-img {
-      width: 66px;
-      height: 66px;
-      object-fit: contain;
-      position: relative;
-      z-index: 2;
-      filter:
-        drop-shadow(0 5px 3px rgba(0, 0, 0, 0.45))
-        drop-shadow(0 1px 0 rgba(255, 255, 255, 0.25));
-      transition: transform 0.12s ease;
-    }
-
-    .square:hover .piece-img {
-      transform: translateY(-2px) scale(1.04);
-    }
-
-    .panel {
-      width: 410px;
-      background: rgba(30, 30, 30, 0.96);
-      padding: 22px;
-      border-radius: 16px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    h1 {
-      margin-top: 0;
-      font-size: 24px;
-      letter-spacing: 0.4px;
-    }
-
-    h3 {
-      margin-bottom: 8px;
-    }
-
-    button, input {
-      font-size: 16px;
-      padding: 10px;
-      margin-top: 8px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    button {
-      cursor: pointer;
-      background: linear-gradient(#3b3b3b, #242424);
-      color: white;
-      border: 1px solid #555;
-      border-radius: 8px;
-    }
-
-    button:hover {
-      background: linear-gradient(#4a4a4a, #303030);
-    }
-
-    input {
-      background: #101010;
-      color: white;
-      border: 1px solid #555;
-      border-radius: 8px;
-    }
-
-    .info {
-      margin-top: 15px;
-      line-height: 1.6;
-      font-size: 15px;
-      color: #ddd;
-    }
-
-    .moves,
-    .history {
-      background: #101010;
-      padding: 12px;
-      border-radius: 8px;
-      font-family: "Courier New", monospace;
-      font-size: 14px;
-      margin-top: 10px;
-      white-space: pre-wrap;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      line-height: 1.5;
-      overflow-y: auto;
-    }
-
-    .moves {
-      max-height: 260px;
-    }
-
-    .history {
-      min-height: 120px;
-      max-height: 220px;
-    }
-
-    .note {
-      margin-top: 12px;
+    .tag{
+      display:inline-flex;align-items:center;gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: rgba(233,238,252,.85);
       font-size: 13px;
-      color: #aaa;
-      line-height: 1.4;
+      user-select:none;
     }
+    .sub{
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 70ch;
+      font-size: 15.5px;
+    }
+
+    /* Sign-in link (button style) */
+    .signin-link{
+      text-decoration:none;
+      color:#e9eefc;
+      font-weight:700;
+      padding:8px 14px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.05);
+      transition:0.2s;
+      white-space:nowrap;
+    }
+    .signin-link:hover{
+      background:rgba(122,162,255,.15);
+      border-color:rgba(122,162,255,.4);
+    }
+    .signin-link:focus-visible{outline:none; box-shadow: var(--ring)}
+    
+    .account-menu-wrap{
+  position:relative;
+}
+
+.account-dropdown{
+  position:absolute;
+  top:calc(100% + 10px);
+  right:0;
+  min-width:180px;
+  background:#0f172a;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
+  padding:8px;
+  display:none;
+  z-index:1001;
+}
+
+.account-dropdown.open{
+  display:block;
+}
+
+.account-dropdown-item{
+  width:100%;
+  text-align:left;
+  border:0;
+  background:transparent;
+  color:#e9eefc;
+  padding:10px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:600;
+}
+
+.account-dropdown-item:hover{
+  background:rgba(255,255,255,.06);
+}
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .panel-head{
+      padding: 16px 18px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .panel-head h2{
+      margin:0;
+      font-size: 14px;
+      color: rgba(233,238,252,.85);
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+
+    /* Horizontal dropdown buttons row */
+    .cat-row{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:10px;
+  padding:12px;
+}
+
+    .cat-block{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+    .category-btn{
+      width:100%;
+      text-align:left;
+      border:1px solid rgba(255,255,255,.06);
+      background: rgba(0,0,0,.10);
+      color: var(--text);
+      padding: 14px 14px;
+      border-radius: 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      cursor:pointer;
+      transition: background .18s ease, transform .10s ease, border-color .18s ease;
+    }
+    .category-btn:hover{
+      background: rgba(255,255,255,.05);
+      border-color: rgba(122,162,255,.28);
+      transform: translateY(-2px);
+    }
+    .category-btn:focus-visible{outline:none; box-shadow: var(--ring)}
+    .cat-left{display:flex;align-items:center;gap:12px;min-width:0}
+    .cat-ico{
+      width:44px;height:44px;border-radius:14px;
+      background: linear-gradient(135deg, rgba(122,162,255,.22), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      display:grid;place-items:center;
+      flex: 0 0 auto;
+    }
+    .cat-ico span{font-size:20px}
+    .cat-meta{min-width:0}
+    .cat-title{
+      margin:0;
+      font-size: 18px;
+      letter-spacing:.2px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .cat-desc{
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.45;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .chev{
+      width:38px;height:38px;border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.20);
+      display:grid;place-items:center;
+      transition: transform .22s ease;
+      flex: 0 0 auto;
+    }
+
+    /* Roll-down content */
+    .roll{
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 16px;
+      background: rgba(0,0,0,.10);
+      overflow:hidden;
+
+      display:grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows .28s ease;
+    }
+    .roll > .roll-inner{overflow:hidden}
+    .roll.open{grid-template-rows: 1fr}
+
+    .games{
+      padding: 12px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .game-card{
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.20);
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      cursor:pointer;
+      transition: transform .10s ease, background .18s ease, border-color .18s ease;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .game-card:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.05);
+      border-color: rgba(122,162,255,.35);
+    }
+    .game-card:focus-visible{outline:none; box-shadow: var(--ring)}
+    .game-top{display:flex;align-items:center;gap:10px}
+    .game-ico{
+      width:38px;height:38px;border-radius:13px;
+      border:1px solid var(--border);
+      background: linear-gradient(135deg, rgba(121,255,215,.14), rgba(122,162,255,.12));
+      display:grid;place-items:center;
+      flex:0 0 auto;
+    }
+    .game-ico span{font-size:18px}
+    .game-title{margin:0;font-size: 15.5px;letter-spacing:.1px}
+    .game-desc{
+      margin:0;
+      color: rgba(233,238,252,.78);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .pill{
+      align-self:flex-start;
+      font-size: 12px;
+      color: rgba(233,238,252,.85);
+      border: 1px solid rgba(122,162,255,.38);
+      background: rgba(122,162,255,.12);
+      padding: 5px 9px;
+      border-radius: 999px;
+    }
+
+    /* Disabled card */
+    .game-card.disabled{
+      cursor:not-allowed;
+      opacity:.75;
+    }
+    .game-card.disabled:hover{
+      transform:none;
+      background: rgba(0,0,0,.20);
+      border-color: var(--border);
+    }
+    .pill.disabled{
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: rgba(233,238,252,.70);
+    }
+
+    footer{
+      margin-top: 18px;
+      text-align:center;
+      color: rgba(233,238,252,.52);
+      font-size: 12.5px;
+    }
+
+    @media (max-width: 900px){
+      .cat-row{grid-template-columns:1fr}
+    }
+
+    /* =========================
+       SIGN-IN MODAL
+       ========================= */
+    .modal{
+      display:none;
+      position:fixed;
+      z-index:1000;
+      left:0;
+      top:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      padding: 18px;
+    }
+
+    .modal-content{
+      background: #0f172a;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      width: min(420px, 100%);
+      margin: 10vh auto 0;
+      padding: 18px 18px 16px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.55);
+    }
+
+    .modal-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .modal h2{
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: .2px;
+    }
+    
+    .show-password-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+  color: rgba(233,238,252,.82);
+  font-size: 13.5px;
+  user-select:none;
+}
+
+.show-password-row input{
+  margin:0;
+  width:16px;
+  height:16px;
+  cursor:pointer;
+}
+
+.show-password-row span{
+  cursor:pointer;
+}
+
+    .close{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color: rgba(233,238,252,.9);
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 0;
+      display:grid;
+      place-items:center;
+    }
+    .close:focus-visible{outline:none; box-shadow: var(--ring)}
+
+    .signin-input{
+      width:100%;
+      padding: 11px 12px;
+      margin: 10px 0 0;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.15);
+      background:#020617;
+      color:white;
+      font-size: 14.5px;
+    }
+    .signin-input:focus{
+      outline:none;
+      box-shadow: var(--ring);
+      border-color: rgba(122,162,255,.45);
+    }
+
+    .auth-error{
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,180,180,.35);
+      background: rgba(255,180,180,.10);
+      color: rgba(255,220,220,.95);
+      font-size: 13px;
+      text-align: left;
+      display:none;
+    }
+
+    .signin-btn{
+      width:100%;
+      padding: 11px 12px;
+      margin-top: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(122,162,255,.45);
+      background: rgba(122,162,255,.18);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+      transition: .15s;
+      font-size: 14.5px;
+    }
+    .signin-btn:hover{filter: brightness(1.08)}
+    .signin-btn:active{transform: translateY(1px)}
+    .signin-btn:focus-visible{outline:none; box-shadow: var(--ring)}
+    .signin-btn[disabled]{opacity:.6; cursor:not-allowed}
+
+    .link-btn{
+      margin-top: 10px;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: rgba(233,238,252,.85);
+      cursor: pointer;
+      font-weight: 700;
+      padding: 10px 0 0;
+      text-align:center;
+    }
+    .link-btn:hover{text-decoration: underline}
   </style>
 </head>
-
 <body>
-  <div class="container">
-    <div class="board-wrap">
-      <div id="board" class="board"></div>
-    </div>
+  <div class="wrap">
+    <section class="hero" aria-label="Welcome">
+      <div class="brand">
+        <div class="brand-left">
+          <div class="logo" aria-hidden="true"><span>🧩</span></div>
+          <h1>Brit Never Misses</h1>
+          <span class="tag">Train memory • speed • focus</span>
+        </div>
 
-    <div class="panel">
-      <h1>JavaScript Chess Engine</h1>
+        <div class="account-menu-wrap">
+  <a id="signInLink" href="#" class="signin-link" onclick="handleAccountClick(event)">Sign In</a>
 
-      <button onclick="newGame()">New Game</button>
-      <button onclick="engineMove()">Engine Move</button>
-      <button onclick="playRandomMove()">Play Random Move</button>
-      <button onclick="showBestMove()">Show Best Move</button>
-
-      <input id="moveInput" placeholder="Enter move, e.g. e2e4 or a7a8n" />
-      <button onclick="playTypedMove()">Play Move</button>
-
-      <input id="fenInput" placeholder="Paste FEN here" />
-      <button onclick="loadFenFromInput()">Load FEN</button>
-
-      <div class="info">
-        <div><strong>Side to move:</strong> <span id="sideToMove"></span></div>
-        <div><strong>Evaluation:</strong> <span id="evaluation"></span></div>
-        <div><strong>Move count:</strong> <span id="moveCount"></span></div>
-        <div><strong>Status:</strong> <span id="status">Ready</span></div>
+  <div id="accountDropdown" class="account-dropdown">
+    <button type="button" class="account-dropdown-item" onclick="goToStats()">
+      My Stats
+    </button>
+    <button type="button" class="account-dropdown-item" onclick="logOut()">
+      Log Out
+    </button>
+  </div>
+</div>
       </div>
 
-      <h3>Generated Moves</h3>
-      <div id="moves" class="moves"></div>
+      <p class="sub">
+        Click a link group below to expand it, then choose a game.
+      </p>
+    </section>
 
-      <h3>Move History</h3>
-      <div id="moveHistory" class="history"></div>
+    <section class="panel" aria-label="My Links">
+      <div class="panel-head">
+        <h2>My Links</h2>
+      </div>
 
-      <div class="note">
-        Typed moves use coordinate input like e2e4. Promotions can be typed as a7a8q, a7a8r, a7a8b, or a7a8n.
+      <!-- Horizontal buttons -->
+      <div class="cat-row">
+        <div class = "cat-block">
+        <button class="category-btn" id="mindBtn" type="button" aria-expanded="false" aria-controls="mindRoll">
+          <div class="cat-left">
+            <div class="cat-ico" aria-hidden="true"><span>🧠</span></div>
+            <div class="cat-meta">
+              <div class="cat-title">Mind Games</div>
+              <div class="cat-desc">Memory challenges, sequences, mental math</div>
+            </div>
+          </div>
+          <div class="chev" aria-hidden="true" id="mindChev">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </button>
+          <div class="roll" id="mindRoll">
+          <div class="roll-inner">
+            <div class="games" role="group" aria-label="Mind Games list">
+              <div class="game-card" tabindex="0" role="button" data-href="digit-memory.html" aria-label="Start Digit Memory">
+                <div class="game-top">
+                  <div class="game-ico" aria-hidden="true"><span>🔢</span></div>
+                  <h3 class="game-title">Digit Memory</h3>
+                </div>
+                <p class="game-desc">Memorize a number, hide it, and type it back.</p>
+                <span class="pill">Working memory</span>
+              </div>
+
+              <div class="game-card" tabindex="0" role="button" data-href="memory-sequence.html" aria-label="Start Memory Sequence">
+                <div class="game-top">
+                  <div class="game-ico" aria-hidden="true"><span>🧱</span></div>
+                  <h3 class="game-title">Memory Sequence</h3>
+                </div>
+                <p class="game-desc">Remember the grid order and tap the sequence correctly.</p>
+                <span class="pill">Pattern recall</span>
+              </div>
+
+              <div class="game-card" tabindex="0" role="button" data-href="multiplication-timer.html" aria-label="Start Multiplication Timer">
+                <div class="game-top">
+                  <div class="game-ico" aria-hidden="true"><span>✖️</span></div>
+                  <h3 class="game-title">Multiplication Timer</h3>
+                </div>
+                <p class="game-desc">Solve multiplication problems quickly and track your time.</p>
+                <span class="pill">Mental math</span>
+              </div>
+            </div>
+          </div>
+        </div>
+          </div>
+<div class = "cat-block">
+<button class="category-btn" id="multiplayerBtn" type="button" aria-expanded="false" aria-controls="multiplayerRoll">
+  <div class="cat-left">
+    <div class="cat-ico" aria-hidden="true"><span>🎮</span></div>
+    <div class="cat-meta">
+      <div class="cat-title">Multiplayer</div>
+      <div class="cat-desc">Play against other users</div>
+    </div>
+  </div>
+  <div class="chev" aria-hidden="true" id="multiplayerChev">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</button>
+  <div class="roll" id="multiplayerRoll">
+  <div class="roll-inner">
+    <div class="games" role="group" aria-label="Multiplayer list">
+      <div class="game-card" tabindex="0" role="button" data-href="auction.html" aria-label="Start Auction">
+        <div class="game-top">
+          <div class="game-ico" aria-hidden="true"><span>🏛️</span></div>
+          <h3 class="game-title">Auction</h3>
+        </div>
+        <p class="game-desc">Join a multiplayer auction game.</p>
+        <span class="pill">Multiplayer</span>
       </div>
     </div>
   </div>
+</div>
+  </div>
+        <div class = "cat-block">
+        <button class="category-btn" id="otherBtn" type="button" aria-expanded="false" aria-controls="otherRoll">
+          <div class="cat-left">
+            <div class="cat-ico" aria-hidden="true"><span>✨</span></div>
+            <div class="cat-meta">
+              <div class="cat-title">Other</div>
+              <div class="cat-desc">More things coming soon</div>
+            </div>
+          </div>
+          <div class="chev" aria-hidden="true" id="otherChev">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </button>
+          <div class="roll" id="otherRoll">
+          <div class="roll-inner">
+            <div class="games" role="group" aria-label="Other list">
+              <div class="game-card disabled" tabindex="0" role="button" aria-label="TBA (coming soon)" data-href="">
+                <div class="game-top">
+                  <div class="game-ico" aria-hidden="true"><span>🕒</span></div>
+                  <h3 class="game-title">TBA</h3>
+                </div>
+                <p class="game-desc">Coming soon.</p>
+                <span class="pill disabled">No link yet</span>
+              </div>
+            </div>
+          </div>
+        </div>
+          </div>
+      </div>
+    </section>
 
-  <script src="./engine.js"></script>
+    <footer>
+      © <span id="year"></span> Brit Never Misses
+    </footer>
+  </div>
+
+  <!-- SIGN-IN MODAL -->
+  <div id="signinModal" class="modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label="Sign in">
+      <div class="modal-top">
+        <h2 id="authTitle">Sign In</h2>
+        <button class="close" type="button" id="closeSignInBtn" aria-label="Close">×</button>
+      </div>
+
+      <input id="authUsername" type="text" placeholder="Email or Username" class="signin-input" autocomplete="username">
+      <input id="authPassword" type="password" placeholder="Password" class="signin-input" autocomplete="current-password">
+      
+      <label class="show-password-row">
+  <input type="checkbox" id="showPasswordToggle">
+  <span>Show password</span>
+</label>
+
+      <div id="authError" class="auth-error"></div>
+
+      <button class="signin-btn" id="authSubmitBtn" type="button">Sign In</button>
+
+      <button class="link-btn" id="toggleAuthModeBtn" type="button">
+        Don’t have an account? Create one
+      </button>
+    </div>
+  </div>
+
+  <!-- Supabase JS (optional; leave commented until you're ready) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    const START_FEN =
-      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    /* =========================
+       BASIC UI / NAV
+       ========================= */
+    const mindBtn = document.getElementById("mindBtn");
+    const otherBtn = document.getElementById("otherBtn");
+    const mindRoll = document.getElementById("mindRoll");
+    const otherRoll = document.getElementById("otherRoll");
+    const mindChev = document.getElementById("mindChev");
+    const otherChev = document.getElementById("otherChev");
+    const multiplayerBtn = document.getElementById("multiplayerBtn");
+    const multiplayerRoll = document.getElementById("multiplayerRoll");
+    const multiplayerChev = document.getElementById("multiplayerChev");
 
-    const sanPieceLetters = {
-      P: "",
-      N: "N",
-      B: "B",
-      R: "R",
-      Q: "Q",
-      K: "K"
-    };
+    document.getElementById("year").textContent = new Date().getFullYear();
 
-    const uiEngine = new ChessEngine();
-
-    let selectedSquare = null;
-    let currentMoves = [];
-    let moveHistory = [];
-
-    function pieceImageUrl(piece) {
-      return "https://lichess1.org/assets/piece/cburnett/" + piece + ".svg";
+    function setOpen(rollEl, btnEl, chevEl, open) {
+      rollEl.classList.toggle("open", open);
+      btnEl.setAttribute("aria-expanded", String(open));
+      chevEl.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
     }
 
-    function newGame() {
-      uiEngine.loadFEN(START_FEN);
-      selectedSquare = null;
-      moveHistory = [];
-      updateUI();
-      setStatus("New game loaded.");
+    function toggle(rollEl, btnEl, chevEl) {
+      const isOpen = rollEl.classList.contains("open");
+      setOpen(rollEl, btnEl, chevEl, !isOpen);
     }
 
-    function updateUI() {
-      const gameStatus = uiEngine.getGameStatus();
+if (mindBtn && mindRoll && mindChev) {
+  mindBtn.addEventListener("click", () => {
+    toggle(mindRoll, mindBtn, mindChev);
+  });
+}
 
-      if (gameStatus.over) {
-        currentMoves = [];
-      } else {
-        currentMoves = uiEngine.generateMoves();
-      }
+if (otherBtn && otherRoll && otherChev) {
+  otherBtn.addEventListener("click", () => {
+    toggle(otherRoll, otherBtn, otherChev);
+  });
+}
 
-      drawBoard();
-      updatePanel(gameStatus);
+if (multiplayerBtn && multiplayerRoll && multiplayerChev) {
+  multiplayerBtn.addEventListener("click", () => {
+    toggle(multiplayerRoll, multiplayerBtn, multiplayerChev);
+  });
+}
+
+    function goTo(href) {
+      if (!href) return;
+      window.location.href = href;
     }
 
-    function drawBoard() {
-      const boardDiv = document.getElementById("board");
-      boardDiv.innerHTML = "";
+    document.querySelectorAll(".game-card").forEach(card => {
+      const href = card.dataset.href || "";
+      const isDisabled = card.classList.contains("disabled") || !href;
 
-      const legalTargets = selectedSquare === null
-        ? []
-        : currentMoves.filter(move => move.from === selectedSquare);
-
-      for (let square = 0; square < 64; square++) {
-        const row = Math.floor(square / 8);
-        const col = square % 8;
-
-        const squareDiv = document.createElement("div");
-
-        squareDiv.classList.add("square");
-        squareDiv.classList.add((row + col) % 2 === 0 ? "light" : "dark");
-
-        if (square === selectedSquare) {
-          squareDiv.classList.add("selected");
-        }
-
-        const targetMove = legalTargets.find(move => move.to === square);
-
-        if (targetMove) {
-          if (uiEngine.board[square] || targetMove.enPassant) {
-            squareDiv.classList.add("capture-target");
-          } else {
-            squareDiv.classList.add("legal-target");
-          }
-        }
-
-        const piece = uiEngine.board[square];
-
-        if (piece) {
-          const img = document.createElement("img");
-          img.className = "piece-img";
-          img.src = pieceImageUrl(piece);
-          img.alt = piece;
-          img.draggable = false;
-          squareDiv.appendChild(img);
-        }
-
-        squareDiv.addEventListener("click", () => handleSquareClick(square));
-
-        boardDiv.appendChild(squareDiv);
-      }
-    }
-
-    function updatePanel(gameStatus) {
-      document.getElementById("sideToMove").textContent =
-        uiEngine.sideToMove === "w" ? "White" : "Black";
-
-      document.getElementById("evaluation").textContent = uiEngine.evaluate();
-
-      document.getElementById("moveCount").textContent = currentMoves.length;
-
-      if (gameStatus.over) {
-        document.getElementById("moves").textContent =
-          "Game over — no legal moves available.";
-      } else {
-        document.getElementById("moves").textContent = formatGeneratedMoves();
-      }
-
-      document.getElementById("moveHistory").textContent = formatMoveHistory();
-
-      document.getElementById("status").textContent = gameStatus.message;
-    }
-
-    function formatGeneratedMoves() {
-      return currentMoves
-        .map(move => moveToSAN(move, uiEngine))
-        .join("\n");
-    }
-
-    function moveToSAN(move, engine = uiEngine) {
-      const piece = engine.board[move.from];
-
-      if (!piece) {
-        return "";
-      }
-
-      const type = piece[1];
-      const destination = engine.squareToCoord(move.to);
-
-      if (move.castle) {
-        const castleText = move.to % 8 === 6 ? "O-O" : "O-O-O";
-        return castleText + getCheckOrMateSuffix(engine, move);
-      }
-
-      const capture = Boolean(engine.board[move.to]) || Boolean(move.enPassant);
-
-      let san = "";
-
-      if (type === "P") {
-        if (capture) {
-          san += engine.squareToCoord(move.from)[0] + "x";
-        }
-
-        san += destination;
-      } else {
-        san += sanPieceLetters[type];
-        san += getDisambiguation(move, engine);
-
-        if (capture) {
-          san += "x";
-        }
-
-        san += destination;
-      }
-
-      if (move.promotion) {
-        san += "=" + move.promotion;
-      }
-
-      san += getCheckOrMateSuffix(engine, move);
-
-      return san;
-    }
-
-    function getDisambiguation(move, engine) {
-      const piece = engine.board[move.from];
-
-      if (!piece) return "";
-
-      const type = piece[1];
-
-      if (type === "P" || type === "K") {
-        return "";
-      }
-
-      const fromCoord = engine.squareToCoord(move.from);
-      const fromFile = fromCoord[0];
-      const fromRank = fromCoord[1];
-
-      const alternatives = engine.generateMoves().filter(otherMove => {
-        if (otherMove.from === move.from) return false;
-        if (otherMove.to !== move.to) return false;
-
-        const otherPiece = engine.board[otherMove.from];
-
-        return otherPiece === piece;
+      card.addEventListener("click", () => {
+        if (isDisabled) return;
+        goTo(href);
       });
 
-      if (alternatives.length === 0) {
-        return "";
-      }
-
-      const sameFile = alternatives.some(otherMove =>
-        engine.squareToCoord(otherMove.from)[0] === fromFile
-      );
-
-      const sameRank = alternatives.some(otherMove =>
-        engine.squareToCoord(otherMove.from)[1] === fromRank
-      );
-
-      if (!sameFile) {
-        return fromFile;
-      }
-
-      if (!sameRank) {
-        return fromRank;
-      }
-
-      return fromFile + fromRank;
-    }
-
-    function getCheckOrMateSuffix(engine, move) {
-      const position = engine.clone();
-      position.makeMove(move);
-
-      const enemyColor = position.sideToMove;
-
-      if (!position.isInCheck(enemyColor)) {
-        return "";
-      }
-
-      const enemyLegalMoves = position.generateMoves();
-
-      if (enemyLegalMoves.length === 0) {
-        return "#";
-      }
-
-      return "+";
-    }
-
-    function choosePromotionMove(candidateMoves) {
-      const promotionMoves = candidateMoves.filter(m => m.promotion);
-
-      if (promotionMoves.length === 0) {
-        return candidateMoves[0];
-      }
-
-      let choice = prompt("Promote to Q, R, B, or N:", "Q");
-
-      if (!choice) {
-        return null;
-      }
-
-      choice = choice.trim().toUpperCase();
-
-      if (!["Q", "R", "B", "N"].includes(choice)) {
-        alert("Invalid promotion. Use Q, R, B, or N.");
-        return null;
-      }
-
-      return promotionMoves.find(m => m.promotion === choice) || null;
-    }
-
-    function playMoveAndRecord(move, labelPrefix = "Move played", extraText = "") {
-      const san = moveToSAN(move, uiEngine);
-      const color = uiEngine.sideToMove;
-      const moveNumber =
-        uiEngine.fullmoveNumber || Math.floor(moveHistory.length / 2) + 1;
-
-      uiEngine.makeMove(move);
-
-      moveHistory.push({
-        number: moveNumber,
-        color,
-        san
-      });
-
-      selectedSquare = null;
-      updateUI();
-
-      const gameStatus = uiEngine.getGameStatus();
-      let suffix = "";
-
-      if (gameStatus.over) {
-        suffix = " — " + gameStatus.message;
-      } else if (gameStatus.type === "check") {
-        suffix = " — " + gameStatus.message;
-      }
-
-      setStatus(labelPrefix + ": " + san + extraText + suffix);
-    }
-
-    function formatMoveHistory() {
-      if (moveHistory.length === 0) {
-        return "No moves played yet.";
-      }
-
-      const lines = [];
-      let currentLine = "";
-
-      for (const entry of moveHistory) {
-        if (entry.color === "w") {
-          if (currentLine) {
-            lines.push(currentLine);
-          }
-
-          currentLine = entry.number + ". " + entry.san;
-        } else {
-          if (!currentLine) {
-            lines.push(entry.number + "... " + entry.san);
-          } else {
-            currentLine += " " + entry.san;
-            lines.push(currentLine);
-            currentLine = "";
-          }
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (isDisabled) return;
+          goTo(href);
         }
-      }
+      });
+    });
 
-      if (currentLine) {
-        lines.push(currentLine);
-      }
+    /* =========================
+       SIGN-IN MODAL (UI)
+       ========================= */
+    let authMode = "login"; // "login" or "signup"
 
-      return lines.join("\n");
+    function openSignIn(e){
+      e.preventDefault();
+      const modal = document.getElementById("signinModal");
+      modal.style.display = "block";
+      modal.setAttribute("aria-hidden", "false");
+      clearAuthError();
+      syncAuthUI();
+      document.getElementById("authUsername").focus();
     }
 
-    function handleSquareClick(square) {
-      const gameStatus = uiEngine.getGameStatus();
+    function closeSignIn(){
+      const modal = document.getElementById("signinModal");
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
+      document.getElementById("showPasswordToggle").checked = false;
+document.getElementById("authPassword").type = "password";
+    }
+    
+    const showPasswordToggle = document.getElementById("showPasswordToggle");
+const authPassword = document.getElementById("authPassword");
 
-      if (gameStatus.over) {
-        setStatus(gameStatus.message);
+showPasswordToggle.addEventListener("change", () => {
+  authPassword.type = showPasswordToggle.checked ? "text" : "password";
+});
+
+    function clearAuthError(){
+      const el = document.getElementById("authError");
+      el.style.display = "none";
+      el.textContent = "";
+    }
+
+    function showAuthError(msg){
+      const el = document.getElementById("authError");
+      el.textContent = msg;
+      el.style.display = "block";
+    }
+
+    function syncAuthUI(){
+      const title = document.getElementById("authTitle");
+      const btn = document.getElementById("authSubmitBtn");
+      const toggleBtn = document.getElementById("toggleAuthModeBtn");
+      const pass = document.getElementById("authPassword");
+
+      if (authMode === "login"){
+        title.textContent = "Sign In";
+        btn.textContent = "Sign In";
+        toggleBtn.textContent = "Don’t have an account? Create one";
+        pass.autocomplete = "current-password";
+      } else {
+        title.textContent = "Create Account";
+        btn.textContent = "Create Account";
+        toggleBtn.textContent = "Already have an account? Sign in";
+        pass.autocomplete = "new-password";
+      }
+    }
+
+    document.getElementById("closeSignInBtn").addEventListener("click", closeSignIn);
+
+    // Click outside to close
+    window.addEventListener("click", (event) => {
+      const modal = document.getElementById("signinModal");
+      if (event.target === modal) closeSignIn();
+  const dropdown = document.getElementById("accountDropdown");
+  const wrap = document.querySelector(".account-menu-wrap");
+
+  if (wrap && !wrap.contains(event.target)) {
+    dropdown.classList.remove("open");
+  }
+
+    });
+
+    document.getElementById("toggleAuthModeBtn").addEventListener("click", () => {
+      authMode = authMode === "login" ? "signup" : "login";
+      clearAuthError();
+      syncAuthUI();
+    });
+
+    /* =========================
+       AUTH HOOK (placeholder)
+       - Replace this with Supabase integration
+       ========================= */
+/*    async function authSubmit(){
+      clearAuthError();
+      const username = document.getElementById("authUsername").value.trim();
+      const password = document.getElementById("authPassword").value;
+
+      if (!username || !password){
+        showAuthError("Please enter a username/email and password.");
         return;
       }
 
-      const piece = uiEngine.board[square];
+      // Placeholder until wired to a provider (Supabase/Firebase/etc.)
+      showAuthError("Auth backend not connected yet. Wire this to Supabase Auth to enable real sign-in.");
+    }
+*/
+    document.getElementById("authSubmitBtn").addEventListener("click", authSubmit);
 
-      if (selectedSquare === null) {
-        if (!piece) return;
+    // Enter submits
+    ["authUsername","authPassword"].forEach(id => {
+      document.getElementById(id).addEventListener("keydown", (e) => {
+        if (e.key === "Enter") authSubmit();
+      });
+    });
 
-        if (piece[0] !== uiEngine.sideToMove) {
-          setStatus("That is not the side to move.");
+    /* =========================
+       OPTIONAL: Supabase Auth wiring
+       1) Uncomment the supabase-js script tag above
+       2) Fill in SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY
+       3) Uncomment the supabase code block below and delete the placeholder authSubmit()
+       ========================= */
+
+    
+    const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    async function authSubmit(){
+      clearAuthError();
+      const usernameOrEmail = document.getElementById("authUsername").value.trim();
+      const password = document.getElementById("authPassword").value;
+
+      if (!usernameOrEmail || !password){
+        showAuthError("Please enter an email and password.");
+        return;
+      }
+
+      const btn = document.getElementById("authSubmitBtn");
+      btn.disabled = true;
+
+      try {
+        let resp;
+        if (authMode === "login"){
+          resp = await supabaseClient.auth.signInWithPassword({ email: usernameOrEmail, password });
+        } else {
+          resp = await supabaseClient.auth.signUp({ email: usernameOrEmail, password });
+        }
+
+        if (resp.error){
+          showAuthError(resp.error.message);
           return;
         }
 
-        selectedSquare = square;
-        updateUI();
-        return;
-      }
+        closeSignIn();
 
-      if (piece && piece[0] === uiEngine.sideToMove) {
-        selectedSquare = square;
-        updateUI();
-        return;
-      }
-
-      const candidateMoves = currentMoves.filter(m =>
-        m.from === selectedSquare && m.to === square
-      );
-
-      const move = choosePromotionMove(candidateMoves);
-
-      if (move) {
-        playMoveAndRecord(move, "Move played");
-      } else {
-        selectedSquare = null;
-        updateUI();
-        setStatus("Illegal or unavailable move.");
-      }
-    }
-
-    function playTypedMove() {
-      const gameStatus = uiEngine.getGameStatus();
-
-      if (gameStatus.over) {
-        setStatus(gameStatus.message);
-        return;
-      }
-
-      const input = document.getElementById("moveInput");
-      const text = input.value.trim().toLowerCase();
-
-      if (text.length < 4) {
-        setStatus("Enter a move like e2e4.");
-        return;
-      }
-
-      const from = uiEngine.coordToSquare(text.slice(0, 2));
-      const to = uiEngine.coordToSquare(text.slice(2, 4));
-      const promotion = text.length >= 5 ? text[4].toUpperCase() : undefined;
-
-      const candidateMoves = currentMoves.filter(m =>
-        m.from === from &&
-        m.to === to
-      );
-
-      let move = null;
-
-      if (candidateMoves.some(m => m.promotion)) {
-        if (promotion) {
-          move = candidateMoves.find(m => m.promotion === promotion);
-        } else {
-          move = choosePromotionMove(candidateMoves);
+        // Update UI: show the logged-in email
+        const me = await supabaseClient.auth.getUser();
+        if (me.data && me.data.user){
+          isLoggedIn = true;
+          const link = document.getElementById("signInLink");
+          link.textContent = me.data.user.email;
         }
-      } else {
-        move = candidateMoves[0];
-      }
-
-      if (!move) {
-        setStatus("Move not found in generated moves.");
-        return;
-      }
-
-      input.value = "";
-      playMoveAndRecord(move, "Move played");
-    }
-
-    function engineMove() {
-      const gameStatus = uiEngine.getGameStatus();
-
-      if (gameStatus.over) {
-        setStatus(gameStatus.message);
-        return;
-      }
-
-      const result = uiEngine.findBestMove(3);
-
-      if (!result.move) {
-        setStatus("No move found.");
-        return;
-      }
-
-      playMoveAndRecord(
-        result.move,
-        "Engine played",
-        " | Score: " + result.score
-      );
-    }
-
-    function playRandomMove() {
-      const gameStatus = uiEngine.getGameStatus();
-
-      if (gameStatus.over) {
-        setStatus(gameStatus.message);
-        return;
-      }
-
-      const moves = uiEngine.generateMoves();
-
-      if (moves.length === 0) {
-        setStatus("No legal moves available.");
-        return;
-      }
-
-      const randomIndex = Math.floor(Math.random() * moves.length);
-      const move = moves[randomIndex];
-
-      playMoveAndRecord(move, "Random move played");
-    }
-
-    function showBestMove() {
-      const gameStatus = uiEngine.getGameStatus();
-
-      if (gameStatus.over) {
-        setStatus(gameStatus.message);
-        return;
-      }
-
-      const result = uiEngine.findBestMove(3);
-
-      if (!result.move) {
-        setStatus("No best move found.");
-        return;
-      }
-
-      const moveLabel = moveToSAN(result.move, uiEngine);
-
-      setStatus(
-        "Best move: " +
-        moveLabel +
-        " | Score: " +
-        result.score
-      );
-    }
-
-    function loadFenFromInput() {
-      const fen = document.getElementById("fenInput").value.trim();
-
-      if (!fen) {
-        setStatus("Paste a FEN first.");
-        return;
-      }
-
-      try {
-        uiEngine.loadFEN(fen);
-        selectedSquare = null;
-        moveHistory = [];
-        updateUI();
-        setStatus("FEN loaded.");
-      } catch (error) {
-        setStatus("Could not load FEN.");
-        console.error(error);
+      } finally {
+        btn.disabled = false;
       }
     }
 
-    function setStatus(message) {
-      document.getElementById("status").textContent = message;
-    }
+    // keep user label on refresh
+    (async () => {
+      const me = await supabaseClient.auth.getUser();
+      if (me.data && me.data.user){
+        isLoggedIn = true;
+document.getElementById("signInLink").textContent = me.data.user.email;
+      }
+    })(); 
+    
+    let isLoggedIn = false;
 
-    newGame();
+function handleAccountClick(e){
+  e.preventDefault();
+
+  if (!isLoggedIn){
+    openSignIn(e);
+    return;
+  }
+
+  const dropdown = document.getElementById("accountDropdown");
+  dropdown.classList.toggle("open");
+}
+
+function closeAccountDropdown(){
+  document.getElementById("accountDropdown").classList.remove("open");
+}
+
+function goToStats(){
+  window.location.href = "my-stats.html";
+}
+
+async function logOut(){
+  try {
+    await supabaseClient.auth.signOut();
+  } catch (err) {
+    console.error(err);
+  }
+
+  isLoggedIn = false;
+  document.getElementById("signInLink").textContent = "Sign In";
+  closeAccountDropdown();
+}
+
   </script>
 </body>
 </html>
