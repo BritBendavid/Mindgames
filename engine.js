@@ -64,7 +64,7 @@ class ChessEngine {
     this.positionHistory = [this.getPositionKey()];
 }
 
-  clone() {
+ clone() {
   const copy = new ChessEngine();
 
   copy.board = [...this.board];
@@ -73,9 +73,9 @@ class ChessEngine {
   copy.enPassantSquare = this.enPassantSquare;
   copy.halfmoveClock = this.halfmoveClock;
   copy.fullmoveNumber = this.fullmoveNumber;
+  copy.positionHistory = [...this.positionHistory];
 
   return copy;
-    copy.positionHistory = [...this.positionHistory];
 }
 
   squareToCoord(square) {
@@ -872,6 +872,600 @@ getGameStatus() {
     type: "ongoing",
     message: "Game ongoing."
   };
+}
+
+squareRow(square) {
+  return Math.floor(square / 8);
+}
+
+squareCol(square) {
+  return square % 8;
+}
+
+squareColor(square) {
+  return (this.squareRow(square) + this.squareCol(square)) % 2;
+}
+
+analyzeWhitePathsToBlackKing(maxDepth = 14) {
+  return this.analyzePathsToKing("w", "b", maxDepth);
+}
+
+analyzePathsToKing(attackerColor = "w", defenderColor = "b", maxDepth = 14) {
+  const defenderKingSquare = this.findKing(defenderColor);
+
+  if (defenderKingSquare === -1) {
+    return {
+      target: null,
+      targetCoord: null,
+      results: [],
+      summary: "No defending king found."
+    };
+  }
+
+  const results = [];
+
+  for (let from = 0; from < 64; from++) {
+    const piece = this.board[from];
+
+    if (!piece) continue;
+    if (this.getColor(piece) !== attackerColor) continue;
+
+    const type = this.getType(piece);
+
+    if (type === "K") {
+      results.push({
+        piece,
+        from,
+        fromCoord: this.squareToCoord(from),
+        target: defenderKingSquare,
+        targetCoord: this.squareToCoord(defenderKingSquare),
+        included: false,
+        reason: "Kings are excluded from this path-to-king function.",
+        emptyDistance: Infinity,
+        blockedDistance: Infinity,
+        extraSteps: Infinity,
+        route: []
+      });
+
+      continue;
+    }
+
+    if (
+      type === "B" &&
+      this.squareColor(from) !== this.squareColor(defenderKingSquare)
+    ) {
+      results.push({
+        piece,
+        from,
+        fromCoord: this.squareToCoord(from),
+        target: defenderKingSquare,
+        targetCoord: this.squareToCoord(defenderKingSquare),
+        included: false,
+        reason: "Bishop is on the opposite color from the Black king.",
+        emptyDistance: Infinity,
+        blockedDistance: Infinity,
+        extraSteps: Infinity,
+        route: []
+      });
+
+      continue;
+    }
+
+    const empty = this.shortestKingCaptureRoute({
+      piece,
+      from,
+      target: defenderKingSquare,
+      ignoreBlockers: true,
+      maxDepth
+    });
+
+    const blocked = this.shortestKingCaptureRoute({
+      piece,
+      from,
+      target: defenderKingSquare,
+      ignoreBlockers: false,
+      maxDepth
+    });
+
+    const emptyDistance = empty.distance;
+    const blockedDistance = blocked.distance;
+
+    results.push({
+      piece,
+      from,
+      fromCoord: this.squareToCoord(from),
+      target: defenderKingSquare,
+      targetCoord: this.squareToCoord(defenderKingSquare),
+      included: Number.isFinite(emptyDistance),
+      reason: Number.isFinite(emptyDistance)
+        ? "Eligible."
+        : "No empty-board path found within depth limit.",
+      emptyDistance,
+      blockedDistance,
+      extraSteps:
+        Number.isFinite(emptyDistance) && Number.isFinite(blockedDistance)
+          ? blockedDistance - emptyDistance
+          : Infinity,
+      emptyRoute: empty.route,
+      route: blocked.route,
+      captures: blocked.captures,
+      maxDepth
+    });
+  }
+
+  results.sort((a, b) => {
+    if (a.included !== b.included) return a.included ? -1 : 1;
+    if (a.blockedDistance !== b.blockedDistance) {
+      return a.blockedDistance - b.blockedDistance;
+    }
+    return a.emptyDistance - b.emptyDistance;
+  });
+
+  return {
+    target: defenderKingSquare,
+    targetCoord: this.squareToCoord(defenderKingSquare),
+    results,
+    summary:
+      "Path-to-king analysis for " +
+      attackerColor +
+      " pieces against " +
+      defenderColor +
+      " king on " +
+      this.squareToCoord(defenderKingSquare) +
+      "."
+  };
+}
+
+shortestKingCaptureRoute({
+  piece,
+  from,
+  target,
+  ignoreBlockers = false,
+  maxDepth = 14
+}) {
+  const startState = {
+    square: from,
+    type: this.getType(piece),
+    captured: new Set()
+  };
+
+  const queue = [startState];
+
+  const visited = new Set([
+    this.routeStateKey(startState)
+  ]);
+
+  const parent = new Map();
+
+  while (queue.length > 0) {
+    const state = queue.shift();
+
+    const distance = this.routeDepth(state, parent);
+
+    if (distance >= maxDepth) {
+      continue;
+    }
+
+    const nextStates = this.getKingCaptureRouteNextStates(
+      state,
+      piece,
+      from,
+      target,
+      ignoreBlockers
+    );
+
+    for (const next of nextStates) {
+      const key = this.routeStateKey(next);
+
+      if (visited.has(key)) continue;
+
+      visited.add(key);
+      parent.set(key, {
+        previous: this.routeStateKey(state),
+        state,
+        moveTo: next.square,
+        capturedSquare: next.capturedSquare || null,
+        promotion: next.promotion || null
+      });
+
+      if (next.square === target) {
+        const route = this.reconstructRoute(next, parent);
+
+        return {
+          distance: route.length - 1,
+          route: route.map(sq => this.squareToCoord(sq)),
+          captures: this.extractRouteCaptures(next, parent),
+          finalType: next.type
+        };
+      }
+
+      queue.push(next);
+    }
+  }
+
+  return {
+    distance: Infinity,
+    route: [],
+    captures: [],
+    finalType: null
+  };
+}
+
+routeStateKey(state) {
+  return (
+    state.square +
+    "|" +
+    state.type +
+    "|" +
+    [...state.captured].sort((a, b) => a - b).join(",")
+  );
+}
+
+routeDepth(state, parent) {
+  let key = this.routeStateKey(state);
+  let depth = 0;
+
+  while (parent.has(key)) {
+    depth++;
+    key = parent.get(key).previous;
+  }
+
+  return depth;
+}
+
+reconstructRoute(finalState, parent) {
+  const route = [finalState.square];
+
+  let key = this.routeStateKey(finalState);
+
+  while (parent.has(key)) {
+    const record = parent.get(key);
+    route.push(record.state.square);
+    key = record.previous;
+  }
+
+  return route.reverse();
+}
+
+extractRouteCaptures(finalState, parent) {
+  const captures = [];
+
+  let key = this.routeStateKey(finalState);
+
+  while (parent.has(key)) {
+    const record = parent.get(key);
+
+    if (record.capturedSquare !== null) {
+      captures.push(this.squareToCoord(record.capturedSquare));
+    }
+
+    key = record.previous;
+  }
+
+  return captures.reverse();
+}
+
+getKingCaptureRouteNextStates(
+  state,
+  originalPiece,
+  originalFrom,
+  target,
+  ignoreBlockers
+) {
+  const type = state.type;
+
+  if (type === "P") {
+    return this.getPawnKingCaptureRouteNextStates(
+      state,
+      originalPiece,
+      originalFrom,
+      target,
+      ignoreBlockers
+    );
+  }
+
+  if (type === "N") {
+    return this.getKnightKingCaptureRouteNextStates(
+      state,
+      originalPiece,
+      originalFrom,
+      target,
+      ignoreBlockers
+    );
+  }
+
+  if (type === "B") {
+    return this.getSlidingKingCaptureRouteNextStates(
+      state,
+      originalPiece,
+      originalFrom,
+      target,
+      ignoreBlockers,
+      [
+        [1, 1], [1, -1], [-1, 1], [-1, -1]
+      ]
+    );
+  }
+
+  if (type === "R") {
+    return this.getSlidingKingCaptureRouteNextStates(
+      state,
+      originalPiece,
+      originalFrom,
+      target,
+      ignoreBlockers,
+      [
+        [1, 0], [-1, 0], [0, 1], [0, -1]
+      ]
+    );
+  }
+
+  if (type === "Q") {
+    return this.getSlidingKingCaptureRouteNextStates(
+      state,
+      originalPiece,
+      originalFrom,
+      target,
+      ignoreBlockers,
+      [
+        [1, 1], [1, -1], [-1, 1], [-1, -1],
+        [1, 0], [-1, 0], [0, 1], [0, -1]
+      ]
+    );
+  }
+
+  return [];
+}
+
+getRouteOccupant(square, originalPiece, originalFrom, state, ignoreBlockers) {
+  if (square === originalFrom) {
+    return null;
+  }
+
+  if (square === state.square) {
+    return null;
+  }
+
+  if (ignoreBlockers) {
+    return null;
+  }
+
+  if (state.captured.has(square)) {
+    return null;
+  }
+
+  return this.board[square];
+}
+
+makeRouteState(previousState, nextSquare, newType = previousState.type, capturedSquare = null) {
+  const captured = new Set(previousState.captured);
+
+  if (capturedSquare !== null) {
+    captured.add(capturedSquare);
+  }
+
+  return {
+    square: nextSquare,
+    type: newType,
+    captured,
+    capturedSquare
+  };
+}
+
+maybePromoteRouteState(state, square, color, capturedSquare = null) {
+  const row = this.squareRow(square);
+  const promotionRow = color === "w" ? 0 : 7;
+
+  if (row !== promotionRow) {
+    return [this.makeRouteState(state, square, "P", capturedSquare)];
+  }
+
+  return ["Q", "R", "B", "N"].map(promotionType => {
+    const next = this.makeRouteState(state, square, promotionType, capturedSquare);
+    next.promotion = promotionType;
+    return next;
+  });
+}
+
+getPawnKingCaptureRouteNextStates(
+  state,
+  originalPiece,
+  originalFrom,
+  target,
+  ignoreBlockers
+) {
+  const color = this.getColor(originalPiece);
+  const row = this.squareRow(state.square);
+  const col = this.squareCol(state.square);
+
+  const direction = color === "w" ? -1 : 1;
+  const startRow = color === "w" ? 6 : 1;
+
+  const result = [];
+
+  const oneRow = row + direction;
+
+  // Forward pawn movement. Pawns cannot capture the king forward.
+  if (this.inBounds(oneRow, col)) {
+    const one = oneRow * 8 + col;
+    const oneOccupant = this.getRouteOccupant(
+      one,
+      originalPiece,
+      originalFrom,
+      state,
+      ignoreBlockers
+    );
+
+    if (!oneOccupant && one !== target) {
+      result.push(...this.maybePromoteRouteState(state, one, color));
+
+      const twoRow = row + direction * 2;
+
+      if (row === startRow && this.inBounds(twoRow, col)) {
+        const two = twoRow * 8 + col;
+        const twoOccupant = this.getRouteOccupant(
+          two,
+          originalPiece,
+          originalFrom,
+          state,
+          ignoreBlockers
+        );
+
+        if (!twoOccupant && two !== target) {
+          result.push(this.makeRouteState(state, two, "P"));
+        }
+      }
+    }
+  }
+
+  // Pawn captures, including the target king.
+  for (const dc of [-1, 1]) {
+    const captureRow = row + direction;
+    const captureCol = col + dc;
+
+    if (!this.inBounds(captureRow, captureCol)) continue;
+
+    const captureSquare = captureRow * 8 + captureCol;
+
+    if (captureSquare === target) {
+      result.push(this.makeRouteState(state, captureSquare, "P"));
+      continue;
+    }
+
+    const occupant = this.getRouteOccupant(
+      captureSquare,
+      originalPiece,
+      originalFrom,
+      state,
+      ignoreBlockers
+    );
+
+    if (!occupant) continue;
+
+    const occupantColor = this.getColor(occupant);
+
+    if (occupantColor !== color) {
+      result.push(
+        ...this.maybePromoteRouteState(
+          state,
+          captureSquare,
+          color,
+          captureSquare
+        )
+      );
+    }
+  }
+
+  return result;
+}
+
+getKnightKingCaptureRouteNextStates(
+  state,
+  originalPiece,
+  originalFrom,
+  target,
+  ignoreBlockers
+) {
+  const color = this.getColor(originalPiece);
+  const row = this.squareRow(state.square);
+  const col = this.squareCol(state.square);
+
+  const jumps = [
+    [2, 1], [2, -1],
+    [-2, 1], [-2, -1],
+    [1, 2], [1, -2],
+    [-1, 2], [-1, -2]
+  ];
+
+  const result = [];
+
+  for (const [dr, dc] of jumps) {
+    const r = row + dr;
+    const c = col + dc;
+
+    if (!this.inBounds(r, c)) continue;
+
+    const nextSquare = r * 8 + c;
+
+    if (nextSquare === target) {
+      result.push(this.makeRouteState(state, nextSquare, state.type));
+      continue;
+    }
+
+    const occupant = this.getRouteOccupant(
+      nextSquare,
+      originalPiece,
+      originalFrom,
+      state,
+      ignoreBlockers
+    );
+
+    if (!occupant) {
+      result.push(this.makeRouteState(state, nextSquare, state.type));
+      continue;
+    }
+
+    if (this.getColor(occupant) !== color) {
+      result.push(
+        this.makeRouteState(state, nextSquare, state.type, nextSquare)
+      );
+    }
+  }
+
+  return result;
+}
+
+getSlidingKingCaptureRouteNextStates(
+  state,
+  originalPiece,
+  originalFrom,
+  target,
+  ignoreBlockers,
+  directions
+) {
+  const color = this.getColor(originalPiece);
+  const row = this.squareRow(state.square);
+  const col = this.squareCol(state.square);
+  const result = [];
+
+  for (const [dr, dc] of directions) {
+    let r = row + dr;
+    let c = col + dc;
+
+    while (this.inBounds(r, c)) {
+      const nextSquare = r * 8 + c;
+
+      if (nextSquare === target) {
+        result.push(this.makeRouteState(state, nextSquare, state.type));
+        break;
+      }
+
+      const occupant = this.getRouteOccupant(
+        nextSquare,
+        originalPiece,
+        originalFrom,
+        state,
+        ignoreBlockers
+      );
+
+      if (!occupant) {
+        result.push(this.makeRouteState(state, nextSquare, state.type));
+      } else {
+        if (this.getColor(occupant) !== color) {
+          result.push(
+            this.makeRouteState(state, nextSquare, state.type, nextSquare)
+          );
+        }
+
+        break;
+      }
+
+      r += dr;
+      c += dc;
+    }
+  }
+
+  return result;
 }
   
 }
