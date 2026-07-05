@@ -206,6 +206,7 @@
       <button onclick="engineMove()">Engine Move</button>
       <button onclick="playRandomMove()">Play Random Move</button>
       <button onclick="showBestMove()">Show Best Move</button>
+      <button onclick="analyzePathsToBlackKing()">Analyze Paths to Black King</button>
 
       <input id="moveInput" placeholder="Enter move, e.g. e2e4 or a7a8n" />
       <button onclick="playTypedMove()">Play Move</button>
@@ -729,6 +730,44 @@
     function setStatus(message) {
       document.getElementById("status").textContent = message;
     }
+
+    function analyzePathsToBlackKing() {
+  const analysis = uiEngine.analyzeWhitePathsToBlackKing(14);
+
+  const lines = [];
+
+  lines.push(analysis.summary);
+  lines.push("");
+
+  for (const item of analysis.results) {
+    lines.push(item.piece + " from " + item.fromCoord);
+
+    if (!item.included) {
+      lines.push("  excluded: " + item.reason);
+      lines.push("");
+      continue;
+    }
+
+    lines.push("  empty-board distance: " + item.emptyDistance);
+
+    if (Number.isFinite(item.blockedDistance)) {
+      lines.push("  blocked-board distance: " + item.blockedDistance);
+      lines.push("  extra steps from blockers: " + item.extraSteps);
+      lines.push("  route: " + item.route.join(" → "));
+
+      if (item.captures.length > 0) {
+        lines.push("  captures on route: " + item.captures.join(", "));
+      }
+    } else {
+      lines.push("  blocked-board distance: not found within depth limit");
+    }
+
+    lines.push("");
+  }
+
+  document.getElementById("moves").textContent = lines.join("\n");
+  setStatus("Path-to-king analysis complete.");
+}
 
     newGame();
   </script>
