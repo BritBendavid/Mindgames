@@ -731,42 +731,75 @@
       document.getElementById("status").textContent = message;
     }
 
-    function analyzePathsToBlackKing() {
-  const analysis = uiEngine.analyzeWhitePathsToBlackKing(14);
+ function analyzePathsToBlackKing() {
+  const analysis = uiEngine.analyzeWhitePathsToBlackKing();
 
   const lines = [];
 
   lines.push(analysis.summary);
   lines.push("");
 
-  for (const item of analysis.results) {
-    lines.push(item.piece + " from " + item.fromCoord);
+  if (analysis.results.length === 0) {
+    lines.push("No White knights or rooks found.");
+  }
 
-    if (!item.included) {
-      lines.push("  excluded: " + item.reason);
-      lines.push("");
-      continue;
+  for (const item of analysis.results) {
+    lines.push(item.piece + " from " + item.fromCoord + " to " + item.targetCoord);
+
+    lines.push("  empty-board distance: " + item.emptyBoardDistance);
+    lines.push("  blocked-board distance: " +
+      (Number.isFinite(item.blockedBoardDistance)
+        ? item.blockedBoardDistance
+        : "not fully clearable")
+    );
+
+    lines.push("  extra blocker cost: " +
+      (Number.isFinite(item.extraBlockerCost)
+        ? item.extraBlockerCost
+        : "not fully clearable")
+    );
+
+    lines.push("  total estimated moves: " +
+      (Number.isFinite(item.totalEstimatedMoves)
+        ? item.totalEstimatedMoves
+        : "not fully clearable")
+    );
+
+    if (item.note) {
+      lines.push("  note: " + item.note);
     }
 
-    lines.push("  empty-board distance: " + item.emptyDistance);
+    if (item.type === "R" && item.bestPath) {
+      lines.push("  best rook path: " + item.bestPath.name);
+      lines.push("  path squares: " +
+        (item.bestPath.travelSquares.length
+          ? item.bestPath.travelSquares.join(", ")
+          : "none")
+      );
 
-    if (Number.isFinite(item.blockedDistance)) {
-      lines.push("  blocked-board distance: " + item.blockedDistance);
-      lines.push("  extra steps from blockers: " + item.extraSteps);
-      lines.push("  route: " + item.route.join(" → "));
+      if (item.bestPath.blockers.length > 0) {
+        lines.push("  blockers:");
 
-      if (item.captures.length > 0) {
-        lines.push("  captures on route: " + item.captures.join(", "));
+        for (const blocker of item.bestPath.blockers) {
+          lines.push(
+            "    - " +
+            blocker.piece +
+            " on " +
+            blocker.coord +
+            " | " +
+            blocker.note
+          );
+        }
+      } else {
+        lines.push("  blockers: none");
       }
-    } else {
-      lines.push("  blocked-board distance: not found within depth limit");
     }
 
     lines.push("");
   }
 
   document.getElementById("moves").textContent = lines.join("\n");
-  setStatus("Path-to-king analysis complete.");
+  setStatus("Distance-to-king analysis complete.");
 }
 
     newGame();
