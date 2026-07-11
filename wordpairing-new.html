@@ -10,6 +10,8 @@
 
   <title>Definition Branch Sorter</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     :root {
       --background: #090b0e;
@@ -20,11 +22,11 @@
       --text: #f4f6f8;
       --muted: #9ca7b3;
       --accent: #8ab4f8;
-      --accent-dark: #17273c;
       --success: #78d89c;
       --warning: #efc56d;
       --danger: #ee8181;
       --purple: #c99cff;
+      --orange: #f0a35b;
     }
 
     * {
@@ -50,8 +52,7 @@
 
     button,
     input,
-    textarea,
-    select {
+    textarea {
       font: inherit;
     }
 
@@ -66,7 +67,7 @@
     }
 
     .header {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .header h1 {
@@ -76,7 +77,7 @@
     }
 
     .header p {
-      max-width: 980px;
+      max-width: 1000px;
       margin: 0;
       color: var(--muted);
       line-height: 1.6;
@@ -89,10 +90,27 @@
       border-radius: 15px;
     }
 
-    .input-grid {
+    .auth-panel {
+      margin-bottom: 16px;
+    }
+
+    .auth-layout {
       display: grid;
-      grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
-      gap: 14px;
+      grid-template-columns: minmax(220px, 1fr) minmax(180px, 1fr) auto;
+      gap: 9px;
+      align-items: end;
+    }
+
+    .auth-state {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      align-items: center;
+    }
+
+    .auth-email {
+      color: var(--accent);
+      font-weight: 700;
     }
 
     .field {
@@ -107,8 +125,7 @@
     }
 
     input,
-    textarea,
-    select {
+    textarea {
       width: 100%;
       color: var(--text);
       background: var(--panel-2);
@@ -117,8 +134,7 @@
       outline: none;
     }
 
-    input,
-    select {
+    input {
       min-height: 43px;
       padding: 0 11px;
     }
@@ -131,9 +147,14 @@
     }
 
     input:focus,
-    textarea:focus,
-    select:focus {
+    textarea:focus {
       border-color: var(--accent);
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
+      gap: 14px;
     }
 
     .inline-row,
@@ -179,6 +200,11 @@
     .warning-button {
       color: #1c1405;
       background: var(--warning);
+    }
+
+    .post-button {
+      color: #1c0e05;
+      background: var(--orange);
     }
 
     .danger-button {
@@ -231,6 +257,21 @@
 
     .status.error {
       color: var(--danger);
+    }
+
+    .save-state {
+      min-height: 21px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .save-state.saving {
+      color: var(--warning);
+    }
+
+    .save-state.saved {
+      color: var(--success);
     }
 
     .workspace {
@@ -405,10 +446,6 @@
       text-align: right;
     }
 
-    .definition-content {
-      min-width: 0;
-    }
-
     .labels {
       display: flex;
       flex-wrap: wrap;
@@ -466,19 +503,6 @@
       grid-template-columns: 1fr auto;
       gap: 8px;
       margin-top: 15px;
-    }
-
-    .current-relation {
-      margin-top: 13px;
-      padding: 11px;
-      color: var(--muted);
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-    }
-
-    .current-relation strong {
-      color: var(--text);
     }
 
     .branch-tree,
@@ -544,7 +568,7 @@
 
     .progress-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(90px, 1fr));
+      grid-template-columns: repeat(5, minmax(80px, 1fr));
       gap: 10px;
       margin-top: 16px;
     }
@@ -599,7 +623,9 @@
 
     @media (max-width: 1150px) {
       .workspace {
-        grid-template-columns: minmax(240px, 0.7fr) minmax(450px, 1.4fr);
+        grid-template-columns:
+          minmax(240px, 0.7fr)
+          minmax(450px, 1.4fr);
       }
 
       .branches-panel {
@@ -608,6 +634,7 @@
     }
 
     @media (max-width: 800px) {
+      .auth-layout,
       .input-grid,
       .workspace {
         grid-template-columns: 1fr;
@@ -646,12 +673,98 @@
       <h1>Definition Branch Sorter</h1>
 
       <p>
-        Add words directly, paste text, upload a text file, or import
-        text from a webpage. For each word, choose any word from any
-        Merriam-Webster definition as its parent, enter a parent
-        manually, or skip the word.
+        Sort words into definition-based branches. Click any word in
+        any Merriam-Webster definition, enter a parent manually, skip
+        the word, or post it outside the active classification.
       </p>
     </header>
+
+    <section class="panel auth-panel">
+      <div id="signedOutControls">
+        <div class="auth-layout">
+          <div class="field">
+            <label for="emailInput">
+              Email
+            </label>
+
+            <input
+              id="emailInput"
+              type="email"
+              autocomplete="email"
+              placeholder="name@example.com"
+            />
+          </div>
+
+          <div class="field">
+            <label for="passwordInput">
+              Password
+            </label>
+
+            <input
+              id="passwordInput"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Password"
+            />
+          </div>
+
+          <div class="button-row">
+            <button
+              id="signInButton"
+              class="button primary"
+              type="button"
+            >
+              Sign in
+            </button>
+
+            <button
+              id="signUpButton"
+              class="button secondary"
+              type="button"
+            >
+              Sign up
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="signedInControls"
+        class="auth-state"
+        hidden
+      >
+        <span>Signed in as</span>
+
+        <span
+          id="signedInEmail"
+          class="auth-email"
+        ></span>
+
+        <button
+          id="signOutButton"
+          class="button secondary small-button"
+          type="button"
+        >
+          Sign out
+        </button>
+
+        <button
+          id="saveNowButton"
+          class="button primary small-button"
+          type="button"
+        >
+          Save now
+        </button>
+      </div>
+
+      <div id="authStatus" class="status">
+        Sign in to save and restore your work across devices.
+      </div>
+
+      <div id="saveState" class="save-state">
+        Not signed in. Work is temporarily saved in this browser.
+      </div>
+    </section>
 
     <section class="panel">
       <div class="input-grid">
@@ -662,7 +775,7 @@
 
           <textarea
             id="wordTextInput"
-            placeholder="Enter one word, paste a list, or paste a full passage..."
+            placeholder="Enter a word, paste a list, or paste a passage..."
           ></textarea>
         </div>
 
@@ -686,8 +799,10 @@
               Import link
             </button>
 
-            <span style="color: var(--muted); font-size: 12px;">
-              Requires the optional Supabase extract-text function
+            <span
+              style="color: var(--muted); font-size: 12px;"
+            >
+              Requires the extract-text Edge Function
             </span>
           </div>
         </div>
@@ -704,6 +819,7 @@
 
         <label class="file-label">
           Upload TXT
+
           <input
             id="txtFileInput"
             type="file"
@@ -721,6 +837,7 @@
 
         <label class="file-label">
           Import project
+
           <input
             id="projectFileInput"
             type="file"
@@ -744,7 +861,7 @@
       <div class="progress-grid">
         <div class="progress-card">
           <div id="totalCount" class="progress-value">0</div>
-          <div class="progress-label">Total words</div>
+          <div class="progress-label">Total</div>
         </div>
 
         <div class="progress-card">
@@ -761,6 +878,11 @@
           <div id="skippedCount" class="progress-value">0</div>
           <div class="progress-label">Skipped</div>
         </div>
+
+        <div class="progress-card">
+          <div id="postedCount" class="progress-value">0</div>
+          <div class="progress-label">Posted</div>
+        </div>
       </div>
     </section>
 
@@ -768,7 +890,7 @@
       <section class="panel">
         <div class="section-header">
           <h2>Sorting queue</h2>
-          <span>Parents are prioritized</span>
+          <span>New parents go first</span>
         </div>
 
         <div id="queueList" class="queue-list">
@@ -806,54 +928,58 @@
 
     /*
       ============================================================
-      REQUIRED CONFIGURATION
+      REQUIRED VALUES
       ============================================================
-
-      Paste your Supabase project URL here.
-
-      Example:
-      https://abcdefghijk.supabase.co
     */
 
     const SUPABASE_PROJECT_URL =
       "https://tyzvxrlimbhmvmjenjxy.supabase.co";
 
+    const SUPABASE_ANON_KEY =
+      "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
+
     /*
-      This HTML expects the existing dictionary Edge Function to be
-      named "merriam-webster".
-
-      It should accept:
-      GET ?word=rabbit
-
-      and return the unmodified Merriam-Webster Collegiate API JSON.
+      Edge Function names expected by this file.
     */
+
+    const DICTIONARY_FUNCTION_NAME =
+      "merriam-webster";
+
+    const EXTRACT_TEXT_FUNCTION_NAME =
+      "extract-text";
 
     const DICTIONARY_FUNCTION_URL =
-      `${SUPABASE_PROJECT_URL}/functions/v1/merriam-webster`;
-
-    /*
-      OPTIONAL LINK IMPORT FUNCTION
-
-      To import text from arbitrary webpage links, deploy another
-      Supabase function named "extract-text".
-
-      It should accept:
-      POST { "url": "https://example.com/page" }
-
-      and return:
-      { "text": "Readable page text..." }
-
-      The rest of the site works without this optional function.
-    */
+      `${SUPABASE_PROJECT_URL}/functions/v1/${DICTIONARY_FUNCTION_NAME}`;
 
     const EXTRACT_TEXT_FUNCTION_URL =
-      `${SUPABASE_PROJECT_URL}/functions/v1/extract-text`;
+      `${SUPABASE_PROJECT_URL}/functions/v1/${EXTRACT_TEXT_FUNCTION_NAME}`;
 
-    const STORAGE_KEY =
-      "definition-branch-sorter-v1";
+    const PROJECT_TABLE =
+      "word_sort_projects";
+
+    const LOCAL_STORAGE_KEY =
+      "definition-branch-sorter-v2";
 
     const WORD_PATTERN =
       /[A-Za-z]+(?:[-'][A-Za-z]+)*/g;
+
+    /*
+      Supabase's publishable/anon key is expected here.
+      Never use the service_role key in browser code.
+    */
+
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_PROJECT_URL,
+        SUPABASE_ANON_KEY,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        }
+      );
 
     const state = {
       words: new Map(),
@@ -861,10 +987,48 @@
       priorityQueue: [],
       currentWord: null,
       dictionaryCache: new Map(),
-      loadingWord: null
+      loadingWord: null,
+      user: null,
+      cloudProjectLoaded: false,
+      saveTimer: null,
+      saveInProgress: false,
+      saveAgainAfterCurrent: false
     };
 
     const elements = {
+      emailInput:
+        document.getElementById("emailInput"),
+
+      passwordInput:
+        document.getElementById("passwordInput"),
+
+      signInButton:
+        document.getElementById("signInButton"),
+
+      signUpButton:
+        document.getElementById("signUpButton"),
+
+      signOutButton:
+        document.getElementById("signOutButton"),
+
+      saveNowButton:
+        document.getElementById("saveNowButton"),
+
+      signedOutControls:
+        document.getElementById("signedOutControls"),
+
+      signedInControls:
+        document.getElementById("signedInControls"),
+
+      signedInEmail:
+        document.getElementById("signedInEmail"),
+
+      authStatus:
+        document.getElementById("authStatus"),
+
+      saveState:
+        document.getElementById("saveState"),
+
       wordTextInput:
         document.getElementById("wordTextInput"),
 
@@ -911,8 +1075,31 @@
         document.getElementById("assignedCount"),
 
       skippedCount:
-        document.getElementById("skippedCount")
+        document.getElementById("skippedCount"),
+
+      postedCount:
+        document.getElementById("postedCount")
     };
+
+    function validateConfiguration() {
+      if (
+        !SUPABASE_PROJECT_URL ||
+        SUPABASE_PROJECT_URL.includes("PASTE_YOUR")
+      ) {
+        throw new Error(
+          "Paste the Supabase Project URL into the configuration."
+        );
+      }
+
+      if (
+        !SUPABASE_ANON_KEY ||
+        SUPABASE_ANON_KEY.includes("PASTE_YOUR")
+      ) {
+        throw new Error(
+          "Paste the Supabase publishable or anon key into the configuration."
+        );
+      }
+    }
 
     function normalizeWord(value) {
       return String(value || "")
@@ -922,55 +1109,24 @@
         .replace(/^[^a-z]+|[^a-z'-]+$/g, "");
     }
 
-    function validateConfiguration() {
-      if (
-        !SUPABASE_PROJECT_URL ||
-        SUPABASE_PROJECT_URL.includes("PASTE_YOUR")
-      ) {
-        throw new Error(
-          "Paste your Supabase Project URL into " +
-          "SUPABASE_PROJECT_URL near the start of the script."
-        );
-      }
-
-      let url;
-
-      try {
-        url = new URL(SUPABASE_PROJECT_URL);
-      } catch {
-        throw new Error(
-          "SUPABASE_PROJECT_URL is not a valid URL."
-        );
-      }
-
-      if (
-        url.protocol !== "https:" ||
-        !url.hostname.endsWith(".supabase.co")
-      ) {
-        throw new Error(
-          "The project URL should resemble " +
-          "https://abcdefghijk.supabase.co"
-        );
-      }
-    }
-
     function tokenizeText(text) {
-      const matches =
-        String(text || "").match(WORD_PATTERN) || [];
-
-      return matches
+      return (
+        String(text || "").match(WORD_PATTERN) || []
+      )
         .map(normalizeWord)
         .filter(Boolean);
     }
 
     function createWord(word, options = {}) {
-      const normalized = normalizeWord(word);
+      const normalized =
+        normalizeWord(word);
 
       if (!normalized) {
         return null;
       }
 
-      const existing = state.words.get(normalized);
+      const existing =
+        state.words.get(normalized);
 
       if (existing) {
         if (options.origin) {
@@ -982,7 +1138,15 @@
 
       const item = {
         word: normalized,
+
+        /*
+          pending  = awaiting classification
+          assigned = placed under a parent
+          skipped  = explicitly placed in Skipped
+          posted   = removed without a branch or Skipped listing
+        */
         status: "pending",
+
         parent: null,
         children: new Set(),
         definitions: [],
@@ -1002,18 +1166,509 @@
       return item;
     }
 
-    function addWords(words, origin = "manual text") {
+    /*
+      ============================================================
+      AUTHENTICATION
+      ============================================================
+    */
+
+    async function signUp() {
+      const email =
+        elements.emailInput.value.trim();
+
+      const password =
+        elements.passwordInput.value;
+
+      if (!email || !password) {
+        setAuthStatus(
+          "Enter both an email address and password.",
+          "warning"
+        );
+
+        return;
+      }
+
+      setAuthButtonsDisabled(true);
+
+      try {
+        validateConfiguration();
+
+        const {
+          data,
+          error
+        } = await supabaseClient.auth.signUp({
+          email,
+          password
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (data.session) {
+          setAuthStatus(
+            "Account created and signed in.",
+            "success"
+          );
+        } else {
+          setAuthStatus(
+            "Account created. Check your email to confirm the account.",
+            "success"
+          );
+        }
+      } catch (error) {
+        console.error(error);
+
+        setAuthStatus(
+          error.message || "Sign-up failed.",
+          "error"
+        );
+      } finally {
+        setAuthButtonsDisabled(false);
+      }
+    }
+
+    async function signIn() {
+      const email =
+        elements.emailInput.value.trim();
+
+      const password =
+        elements.passwordInput.value;
+
+      if (!email || !password) {
+        setAuthStatus(
+          "Enter both an email address and password.",
+          "warning"
+        );
+
+        return;
+      }
+
+      setAuthButtonsDisabled(true);
+
+      try {
+        validateConfiguration();
+
+        const {
+          error
+        } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        elements.passwordInput.value = "";
+
+        setAuthStatus(
+          "Signed in successfully.",
+          "success"
+        );
+      } catch (error) {
+        console.error(error);
+
+        setAuthStatus(
+          error.message || "Sign-in failed.",
+          "error"
+        );
+      } finally {
+        setAuthButtonsDisabled(false);
+      }
+    }
+
+    async function signOut() {
+      try {
+        await saveProjectToCloud();
+
+        const {
+          error
+        } = await supabaseClient.auth.signOut();
+
+        if (error) {
+          throw error;
+        }
+
+        setAuthStatus(
+          "Signed out. Work will now be saved only in this browser."
+        );
+      } catch (error) {
+        console.error(error);
+
+        setAuthStatus(
+          error.message || "Sign-out failed.",
+          "error"
+        );
+      }
+    }
+
+    function setAuthButtonsDisabled(disabled) {
+      elements.signInButton.disabled = disabled;
+      elements.signUpButton.disabled = disabled;
+    }
+
+    function updateAuthInterface() {
+      const signedIn = Boolean(state.user);
+
+      elements.signedOutControls.hidden =
+        signedIn;
+
+      elements.signedInControls.hidden =
+        !signedIn;
+
+      elements.signedInEmail.textContent =
+        state.user?.email || "";
+
+      if (!signedIn) {
+        setSaveState(
+          "Not signed in. Work is temporarily saved in this browser."
+        );
+      }
+    }
+
+    async function initializeAuth() {
+      try {
+        validateConfiguration();
+
+        const {
+          data,
+          error
+        } = await supabaseClient.auth.getSession();
+
+        if (error) {
+          throw error;
+        }
+
+        state.user =
+          data.session?.user || null;
+
+        updateAuthInterface();
+
+        if (state.user) {
+          await loadProjectFromCloud();
+        } else {
+          loadLocalProject();
+        }
+      } catch (error) {
+        console.error(error);
+
+        setAuthStatus(
+          error.message,
+          "error"
+        );
+
+        loadLocalProject();
+      }
+
+      supabaseClient.auth.onAuthStateChange(
+        async (event, session) => {
+          const previousUserId =
+            state.user?.id || null;
+
+          state.user =
+            session?.user || null;
+
+          updateAuthInterface();
+
+          if (
+            state.user &&
+            state.user.id !== previousUserId
+          ) {
+            state.cloudProjectLoaded = false;
+            await loadProjectFromCloud();
+          }
+
+          if (!state.user) {
+            state.cloudProjectLoaded = false;
+          }
+        }
+      );
+    }
+
+    /*
+      ============================================================
+      CLOUD PERSISTENCE
+      ============================================================
+    */
+
+    function projectHasData() {
+      return state.words.size > 0;
+    }
+
+    function queueSave() {
+      saveProjectLocally();
+
+      if (!state.user) {
+        return;
+      }
+
+      clearTimeout(state.saveTimer);
+
+      setSaveState(
+        "Changes waiting to save…",
+        "saving"
+      );
+
+      state.saveTimer = setTimeout(
+        saveProjectToCloud,
+        700
+      );
+    }
+
+    async function saveProjectToCloud() {
+      if (!state.user) {
+        saveProjectLocally();
+        return;
+      }
+
+      if (state.saveInProgress) {
+        state.saveAgainAfterCurrent = true;
+        return;
+      }
+
+      state.saveInProgress = true;
+
+      clearTimeout(state.saveTimer);
+
+      setSaveState(
+        "Saving to Supabase…",
+        "saving"
+      );
+
+      try {
+        const projectData =
+          serializeProject();
+
+        const {
+          error
+        } = await supabaseClient
+          .from(PROJECT_TABLE)
+          .upsert(
+            {
+              user_id: state.user.id,
+              project_data: projectData,
+              updated_at:
+                new Date().toISOString()
+            },
+            {
+              onConflict: "user_id"
+            }
+          );
+
+        if (error) {
+          throw error;
+        }
+
+        setSaveState(
+          `Saved ${new Date().toLocaleTimeString()}.`,
+          "saved"
+        );
+      } catch (error) {
+        console.error(error);
+
+        setSaveState(
+          `Cloud save failed: ${error.message}`,
+          "error"
+        );
+      } finally {
+        state.saveInProgress = false;
+
+        if (state.saveAgainAfterCurrent) {
+          state.saveAgainAfterCurrent = false;
+          queueSave();
+        }
+      }
+    }
+
+    async function loadProjectFromCloud() {
+      if (!state.user) {
+        return;
+      }
+
+      setSaveState(
+        "Loading saved project…",
+        "saving"
+      );
+
+      try {
+        const {
+          data,
+          error
+        } = await supabaseClient
+          .from(PROJECT_TABLE)
+          .select("project_data, updated_at")
+          .eq("user_id", state.user.id)
+          .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
+
+        if (
+          data?.project_data &&
+          Array.isArray(data.project_data.words)
+        ) {
+          restoreProject(
+            data.project_data,
+            {
+              saveAfterRestore: false
+            }
+          );
+
+          setSaveState(
+            data.updated_at
+              ? `Loaded save from ${new Date(
+                  data.updated_at
+                ).toLocaleString()}.`
+              : "Loaded saved project.",
+            "saved"
+          );
+
+          setAuthStatus(
+            "Your saved project has been restored.",
+            "success"
+          );
+        } else {
+          /*
+            If the cloud is empty but this browser has work, upload it.
+          */
+          const local =
+            readLocalProject();
+
+          if (
+            local &&
+            Array.isArray(local.words) &&
+            local.words.length
+          ) {
+            restoreProject(
+              local,
+              {
+                saveAfterRestore: false
+              }
+            );
+
+            await saveProjectToCloud();
+
+            setAuthStatus(
+              "Your browser project was attached to this account.",
+              "success"
+            );
+          } else {
+            clearProjectState();
+
+            setSaveState(
+              "No saved project was found. A new project is ready.",
+              "saved"
+            );
+          }
+        }
+
+        state.cloudProjectLoaded = true;
+
+        renderAll();
+
+        if (state.currentWord) {
+          loadDefinitions(state.currentWord);
+        }
+      } catch (error) {
+        console.error(error);
+
+        setSaveState(
+          `Could not load cloud project: ${error.message}`,
+          "error"
+        );
+      }
+    }
+
+    function saveProjectLocally() {
+      try {
+        localStorage.setItem(
+          LOCAL_STORAGE_KEY,
+          JSON.stringify(
+            serializeProject()
+          )
+        );
+      } catch (error) {
+        console.warn(
+          "Local save failed:",
+          error
+        );
+      }
+    }
+
+    function readLocalProject() {
+      const raw =
+        localStorage.getItem(
+          LOCAL_STORAGE_KEY
+        );
+
+      if (!raw) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function loadLocalProject() {
+      const project =
+        readLocalProject();
+
+      if (
+        project &&
+        Array.isArray(project.words)
+      ) {
+        restoreProject(
+          project,
+          {
+            saveAfterRestore: false
+          }
+        );
+
+        setStatus(
+          "Restored the project saved in this browser.",
+          "success"
+        );
+      } else {
+        renderAll();
+      }
+
+      if (state.currentWord) {
+        loadDefinitions(state.currentWord);
+      }
+    }
+
+    /*
+      ============================================================
+      WORD IMPORTS
+      ============================================================
+    */
+
+    function addWords(
+      words,
+      origin = "manual text"
+    ) {
       let added = 0;
 
       for (const rawWord of words) {
-        const word = normalizeWord(rawWord);
+        const word =
+          normalizeWord(rawWord);
 
         if (!word) {
           continue;
         }
 
-        const existed = state.words.has(word);
-        const item = createWord(word, { origin });
+        const existed =
+          state.words.has(word);
+
+        const item =
+          createWord(word, {
+            origin
+          });
 
         if (!item) {
           continue;
@@ -1026,8 +1681,8 @@
       }
 
       chooseNextWord();
-      saveProject();
       renderAll();
+      queueSave();
 
       return added;
     }
@@ -1045,15 +1700,20 @@
         return;
       }
 
-      const words = tokenizeText(text);
-      const added = addWords(words, "pasted text");
-
-      setStatus(
-        `Added ${added} new unique word${added === 1 ? "" : "s"}.`,
-        "success"
-      );
+      const added =
+        addWords(
+          tokenizeText(text),
+          "pasted text"
+        );
 
       elements.wordTextInput.value = "";
+
+      setStatus(
+        `Added ${added} new unique word${
+          added === 1 ? "" : "s"
+        }.`,
+        "success"
+      );
     }
 
     async function readTxtFile(file) {
@@ -1062,16 +1722,19 @@
       }
 
       try {
-        const text = await file.text();
-        const words = tokenizeText(text);
-        const added = addWords(
-          words,
-          `file: ${file.name}`
-        );
+        const text =
+          await file.text();
+
+        const added =
+          addWords(
+            tokenizeText(text),
+            `file: ${file.name}`
+          );
 
         setStatus(
-          `Added ${added} new unique word${added === 1 ? "" : "s"} ` +
-          `from ${file.name}.`,
+          `Added ${added} new unique word${
+            added === 1 ? "" : "s"
+          } from ${file.name}.`,
           "success"
         );
       } catch (error) {
@@ -1100,12 +1763,10 @@
       }
 
       try {
-        validateConfiguration();
-
         new URL(sourceUrl);
-      } catch (error) {
+      } catch {
         setStatus(
-          error.message || "Enter a valid webpage URL.",
+          "Enter a valid webpage URL.",
           "error"
         );
 
@@ -1115,34 +1776,33 @@
       elements.importUrlButton.disabled = true;
 
       setStatus(
-        "Extracting readable text from the webpage…"
+        "Extracting readable webpage text…"
       );
 
       try {
-        const response = await fetch(
-          EXTRACT_TEXT_FUNCTION_URL,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json"
-            },
-            body: JSON.stringify({
-              url: sourceUrl
-            })
-          }
-        );
-
-        let data;
-
-        try {
-          data = await response.json();
-        } catch {
-          throw new Error(
-            `The extract-text function returned non-JSON ` +
-            `(HTTP ${response.status}).`
+        const response =
+          await fetch(
+            EXTRACT_TEXT_FUNCTION_URL,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type":
+                  "application/json",
+                Accept:
+                  "application/json"
+              },
+              body:
+                JSON.stringify({
+                  url: sourceUrl
+                })
+            }
           );
-        }
+
+        const data =
+          await readJsonResponse(
+            response,
+            "extract-text"
+          );
 
         if (!response.ok) {
           throw new Error(
@@ -1160,26 +1820,26 @@
           );
         }
 
-        const words = tokenizeText(data.text);
-        const added = addWords(
-          words,
-          `link: ${sourceUrl}`
-        );
-
-        setStatus(
-          `Added ${added} new unique word${added === 1 ? "" : "s"} ` +
-          `from the webpage.`,
-          "success"
-        );
+        const added =
+          addWords(
+            tokenizeText(data.text),
+            `link: ${sourceUrl}`
+          );
 
         elements.sourceUrlInput.value = "";
+
+        setStatus(
+          `Added ${added} new unique word${
+            added === 1 ? "" : "s"
+          } from the webpage.`,
+          "success"
+        );
       } catch (error) {
         console.error(error);
 
         setStatus(
-          error instanceof Error
-            ? error.message
-            : "The webpage could not be imported.",
+          error.message ||
+          "The webpage could not be imported.",
           "error"
         );
       } finally {
@@ -1187,155 +1847,426 @@
       }
     }
 
+    /*
+      ============================================================
+      QUEUE CONTROL
+      ============================================================
+    */
+
     function chooseNextWord() {
-      const priority = state.priorityQueue.find(word => {
-        const item = state.words.get(word);
-        return item?.status === "pending";
-      });
+      const priority =
+        state.priorityQueue.find(
+          word =>
+            state.words.get(word)?.status ===
+            "pending"
+        );
 
-      const source = state.sourceQueue.find(word => {
-        const item = state.words.get(word);
-        return item?.status === "pending";
-      });
+      const source =
+        state.sourceQueue.find(
+          word =>
+            state.words.get(word)?.status ===
+            "pending"
+        );
 
-      const next = priority || source || null;
+      const fallback =
+        [...state.words.values()]
+          .find(
+            item =>
+              item.status === "pending"
+          )
+          ?.word || null;
+
+      const next =
+        priority || source || fallback;
 
       if (
         !state.currentWord ||
-        state.words.get(state.currentWord)?.status !== "pending"
+        state.words.get(
+          state.currentWord
+        )?.status !== "pending"
       ) {
         state.currentWord = next;
       }
 
-      if (
-        state.currentWord &&
-        state.words.get(state.currentWord)?.status === "pending"
-      ) {
-        loadDefinitions(state.currentWord);
+      if (state.currentWord) {
+        loadDefinitions(
+          state.currentWord
+        );
       }
     }
 
     function selectQueueWord(word) {
-      const normalized = normalizeWord(word);
-      const item = state.words.get(normalized);
+      const normalized =
+        normalizeWord(word);
 
-      if (!item || item.status !== "pending") {
+      const item =
+        state.words.get(normalized);
+
+      if (
+        !item ||
+        item.status !== "pending"
+      ) {
         return;
       }
 
-      state.currentWord = normalized;
+      state.currentWord =
+        normalized;
+
       renderAll();
+      queueSave();
       loadDefinitions(normalized);
     }
 
+    function removeFromQueues(word) {
+      state.sourceQueue =
+        state.sourceQueue.filter(
+          value => value !== word
+        );
+
+      state.priorityQueue =
+        state.priorityQueue.filter(
+          value => value !== word
+        );
+    }
+
+    function moveToPriorityFront(word) {
+      state.priorityQueue =
+        state.priorityQueue.filter(
+          value => value !== word
+        );
+
+      state.priorityQueue.unshift(word);
+    }
+
+    /*
+      ============================================================
+      ASSIGN, SKIP, AND POST
+      ============================================================
+    */
+
+    function assignParent(
+      childWord,
+      parentWord
+    ) {
+      const childName =
+        normalizeWord(childWord);
+
+      const parentName =
+        normalizeWord(parentWord);
+
+      const child =
+        state.words.get(childName);
+
+      if (!child || !parentName) {
+        return;
+      }
+
+      if (childName === parentName) {
+        setStatus(
+          "A word cannot be its own parent.",
+          "warning"
+        );
+
+        return;
+      }
+
+      let parent =
+        state.words.get(parentName);
+
+      if (!parent) {
+        parent =
+          createWord(parentName, {
+            origin:
+              `parent selected for ${childName}`
+          });
+      }
+
+      if (
+        wouldCreateLoop(
+          childName,
+          parentName
+        )
+      ) {
+        setStatus(
+          `The relationship ${childName} → ${parentName} would create a loop.`,
+          "error"
+        );
+
+        return;
+      }
+
+      if (child.parent) {
+        state.words
+          .get(child.parent)
+          ?.children.delete(childName);
+      }
+
+      child.parent = parentName;
+      child.status = "assigned";
+
+      parent.children.add(childName);
+
+      removeFromQueues(childName);
+
+      if (parent.status === "pending") {
+        moveToPriorityFront(parentName);
+        state.currentWord = parentName;
+      } else {
+        state.currentWord = null;
+        chooseNextWord();
+      }
+
+      renderAll();
+      queueSave();
+
+      setStatus(
+        `Placed “${childName}” under “${parentName}”.`,
+        "success"
+      );
+    }
+
+    function wouldCreateLoop(
+      childWord,
+      parentWord
+    ) {
+      let current =
+        parentWord;
+
+      const visited =
+        new Set();
+
+      while (current) {
+        if (current === childWord) {
+          return true;
+        }
+
+        if (visited.has(current)) {
+          return true;
+        }
+
+        visited.add(current);
+
+        current =
+          state.words.get(current)
+            ?.parent || null;
+      }
+
+      return false;
+    }
+
+    function skipCurrentWord() {
+      changeCurrentWordStatus(
+        "skipped"
+      );
+    }
+
+    function postCurrentWord() {
+      changeCurrentWordStatus(
+        "posted"
+      );
+    }
+
+    function changeCurrentWordStatus(
+      newStatus
+    ) {
+      const item =
+        state.words.get(
+          state.currentWord
+        );
+
+      if (!item) {
+        return;
+      }
+
+      if (item.parent) {
+        state.words
+          .get(item.parent)
+          ?.children.delete(
+            item.word
+          );
+      }
+
+      item.parent = null;
+      item.status = newStatus;
+
+      removeFromQueues(
+        item.word
+      );
+
+      const word =
+        item.word;
+
+      state.currentWord = null;
+
+      chooseNextWord();
+      renderAll();
+      queueSave();
+
+      setStatus(
+        newStatus === "posted"
+          ? `Posted “${word}” outside the sorting queue.`
+          : `Skipped “${word}”.`,
+        newStatus === "posted"
+          ? "success"
+          : "warning"
+      );
+    }
+
+    function restoreWord(word) {
+      const item =
+        state.words.get(
+          normalizeWord(word)
+        );
+
+      if (!item) {
+        return;
+      }
+
+      if (item.parent) {
+        state.words
+          .get(item.parent)
+          ?.children.delete(
+            item.word
+          );
+      }
+
+      item.parent = null;
+      item.status = "pending";
+
+      moveToPriorityFront(item.word);
+
+      state.currentWord =
+        item.word;
+
+      renderAll();
+      queueSave();
+      loadDefinitions(item.word);
+    }
+
+    /*
+      ============================================================
+      DICTIONARY DATA
+      ============================================================
+    */
+
     async function loadDefinitions(word) {
-      const normalized = normalizeWord(word);
-      const item = state.words.get(normalized);
+      const normalized =
+        normalizeWord(word);
+
+      const item =
+        state.words.get(normalized);
 
       if (!item) {
         return;
       }
 
       if (
-        item.dictionaryStatus === "loaded" ||
-        item.dictionaryStatus === "loading"
+        item.dictionaryStatus ===
+          "loaded" ||
+        item.dictionaryStatus ===
+          "loading"
       ) {
         return;
       }
 
-      try {
-        validateConfiguration();
-      } catch (error) {
-        item.dictionaryStatus = "error";
-        item.dictionaryError = error.message;
-        renderAll();
-        return;
-      }
+      item.dictionaryStatus =
+        "loading";
 
-      item.dictionaryStatus = "loading";
       item.dictionaryError = "";
-      state.loadingWord = normalized;
+
+      state.loadingWord =
+        normalized;
 
       renderAll();
 
       try {
         const apiResults =
-          await fetchDictionaryEntries(normalized);
+          await fetchDictionaryEntries(
+            normalized
+          );
 
         if (
           apiResults.length &&
           apiResults.every(
-            value => typeof value === "string"
+            value =>
+              typeof value === "string"
           )
         ) {
-          item.dictionaryStatus = "missing";
-          item.suggestions = apiResults.slice(0, 10);
+          item.dictionaryStatus =
+            "missing";
+
+          item.suggestions =
+            apiResults.slice(0, 10);
+
           item.definitions = [];
+
           return;
         }
 
-        const definitions =
-          extractAllDefinitions(apiResults, normalized);
+        /*
+          No part-of-speech filter is applied.
+        */
+        item.definitions =
+          extractAllDefinitions(
+            apiResults,
+            normalized
+          );
 
-        if (!definitions.length) {
-          item.dictionaryStatus = "empty";
+        if (!item.definitions.length) {
+          item.dictionaryStatus =
+            "empty";
+
           item.dictionaryError =
-            "No readable noun or adjective definitions were returned.";
-          return;
+            "No readable definitions were returned.";
+        } else {
+          item.dictionaryStatus =
+            "loaded";
         }
-
-        item.definitions = definitions;
-        item.dictionaryStatus = "loaded";
       } catch (error) {
         console.error(error);
 
-        item.dictionaryStatus = "error";
+        item.dictionaryStatus =
+          "error";
+
         item.dictionaryError =
-          error instanceof Error
-            ? error.message
-            : "The dictionary request failed.";
+          error.message ||
+          "The dictionary request failed.";
       } finally {
         state.loadingWord = null;
-        saveProject();
         renderAll();
+        queueSave();
       }
     }
 
-    async function fetchDictionaryEntries(word) {
-      if (state.dictionaryCache.has(word)) {
-        return state.dictionaryCache.get(word);
+    async function fetchDictionaryEntries(
+      word
+    ) {
+      if (
+        state.dictionaryCache.has(word)
+      ) {
+        return state.dictionaryCache.get(
+          word
+        );
       }
 
-      const url =
-        `${DICTIONARY_FUNCTION_URL}?word=${encodeURIComponent(word)}`;
-
-      let response;
-
-      try {
-        response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Accept: "application/json"
+      const response =
+        await fetch(
+          `${DICTIONARY_FUNCTION_URL}?word=${
+            encodeURIComponent(word)
+          }`,
+          {
+            headers: {
+              Accept:
+                "application/json"
+            }
           }
-        });
-      } catch (error) {
-        throw new Error(
-          "The Merriam-Webster Supabase function could not be reached. " +
-          "Confirm the project URL, function deployment, CORS settings, " +
-          "and JWT configuration."
         );
-      }
 
-      let data;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error(
-          `The dictionary function returned non-JSON ` +
-          `(HTTP ${response.status}).`
+      const data =
+        await readJsonResponse(
+          response,
+          "dictionary"
         );
-      }
 
       if (!response.ok) {
         throw new Error(
@@ -1346,13 +2277,30 @@
 
       if (!Array.isArray(data)) {
         throw new Error(
-          "The dictionary function returned an unexpected response."
+          "The dictionary returned an unexpected response."
         );
       }
 
-      state.dictionaryCache.set(word, data);
+      state.dictionaryCache.set(
+        word,
+        data
+      );
 
       return data;
+    }
+
+    async function readJsonResponse(
+      response,
+      sourceName
+    ) {
+      try {
+        return await response.json();
+      } catch {
+        throw new Error(
+          `${sourceName} returned a non-JSON response ` +
+          `(HTTP ${response.status}).`
+        );
+      }
     }
 
     function isDictionaryEntry(value) {
@@ -1360,23 +2308,18 @@
         value &&
         typeof value === "object" &&
         value.meta &&
-        typeof value.meta.id === "string"
+        typeof value.meta.id ===
+          "string"
       );
     }
 
     function normalizePartOfSpeech(value) {
-      const part =
-        String(value || "").toLowerCase();
-
-      if (part.includes("noun")) {
-        return "noun";
-      }
-
-      if (part.includes("adjective")) {
-        return "adjective";
-      }
-
-      return part;
+      return (
+        String(value || "")
+          .trim()
+          .toLowerCase() ||
+        "unlabelled"
+      );
     }
 
     function normalizeHeadword(value) {
@@ -1387,101 +2330,151 @@
         .trim();
     }
 
-    function extractAllDefinitions(entries, searchedWord) {
+    /*
+      This examines every dictionary entry regardless of part of speech.
+    */
+    function extractAllDefinitions(
+      entries,
+      searchedWord
+    ) {
       const results = [];
-      const searched = normalizeWord(searchedWord);
+      const searched =
+        normalizeWord(searchedWord);
 
       entries
         .filter(isDictionaryEntry)
-        .forEach((entry, entryIndex) => {
-          const partOfSpeech =
-            normalizePartOfSpeech(entry.fl);
+        .forEach(
+          (entry, entryIndex) => {
+            const partOfSpeech =
+              normalizePartOfSpeech(
+                entry.fl
+              );
 
-          if (
-            partOfSpeech !== "noun" &&
-            partOfSpeech !== "adjective"
-          ) {
-            return;
+            const headword =
+              normalizeHeadword(
+                entry.hwi?.hw ||
+                entry.meta?.id
+                  ?.split(":")[0] ||
+                searched
+              );
+
+            const entryInfo = {
+              entryId:
+                entry.meta?.id || "",
+
+              headword,
+
+              homograph:
+                entry.hom || null,
+
+              partOfSpeech,
+
+              entryIndex,
+
+              exactHeadword:
+                headword === searched
+            };
+
+            const senses =
+              extractSensesFromDefinitionStructure(
+                entry.def
+              );
+
+            if (senses.length) {
+              senses.forEach(
+                (
+                  sense,
+                  senseIndex
+                ) => {
+                  const text =
+                    cleanDictionaryText(
+                      sense.text
+                    );
+
+                  if (!text) {
+                    return;
+                  }
+
+                  results.push({
+                    ...entryInfo,
+
+                    id:
+                      `${entryInfo.entryId}-${senseIndex}-${results.length}`,
+
+                    senseNumber:
+                      sense.number ||
+                      String(
+                        senseIndex + 1
+                      ),
+
+                    labels:
+                      [
+                        ...new Set(
+                          sense.labels
+                        )
+                      ],
+
+                    text
+                  });
+                }
+              );
+            } else if (
+              Array.isArray(
+                entry.shortdef
+              )
+            ) {
+              entry.shortdef.forEach(
+                (
+                  definition,
+                  senseIndex
+                ) => {
+                  const text =
+                    cleanDictionaryText(
+                      definition
+                    );
+
+                  if (!text) {
+                    return;
+                  }
+
+                  results.push({
+                    ...entryInfo,
+
+                    id:
+                      `${entryInfo.entryId}-short-${senseIndex}`,
+
+                    senseNumber:
+                      String(
+                        senseIndex + 1
+                      ),
+
+                    labels: [],
+
+                    text
+                  });
+                }
+              );
+            }
           }
-
-          const headword = normalizeHeadword(
-            entry.hwi?.hw ||
-            entry.meta?.id?.split(":")[0] ||
-            searched
-          );
-
-          const entryInfo = {
-            entryId: entry.meta?.id || "",
-            headword,
-            homograph: entry.hom || null,
-            partOfSpeech,
-            entryIndex
-          };
-
-          const senses =
-            extractSensesFromDefinitionStructure(entry.def);
-
-          if (senses.length) {
-            senses.forEach((sense, senseIndex) => {
-              const text =
-                cleanDictionaryText(sense.text);
-
-              if (!text) {
-                return;
-              }
-
-              results.push({
-                ...entryInfo,
-                id:
-                  `${entryInfo.entryId}-${senseIndex}-${results.length}`,
-
-                senseNumber:
-                  sense.number || String(senseIndex + 1),
-
-                labels:
-                  [...new Set(sense.labels)],
-
-                text,
-                exactHeadword:
-                  headword === searched
-              });
-            });
-          } else if (Array.isArray(entry.shortdef)) {
-            entry.shortdef.forEach((definition, senseIndex) => {
-              const text =
-                cleanDictionaryText(definition);
-
-              if (!text) {
-                return;
-              }
-
-              results.push({
-                ...entryInfo,
-                id:
-                  `${entryInfo.entryId}-short-${senseIndex}`,
-
-                senseNumber:
-                  String(senseIndex + 1),
-
-                labels: [],
-                text,
-                exactHeadword:
-                  headword === searched
-              });
-            });
-          }
-        });
+        );
 
       const unique = [];
-      const seen = new Set();
+      const seen =
+        new Set();
 
-      for (const definition of results) {
+      for (
+        const definition of
+        results
+      ) {
         const key = [
           definition.entryId,
           definition.partOfSpeech,
           definition.text
             .toLowerCase()
-            .replace(/[^a-z0-9]+/g, " ")
+            .replace(
+              /[^a-z0-9]+/g,
+              " "
+            )
             .trim()
         ].join("|");
 
@@ -1491,35 +2484,51 @@
         }
       }
 
-      return unique.sort((a, b) => {
-        if (a.exactHeadword !== b.exactHeadword) {
-          return Number(b.exactHeadword) -
-            Number(a.exactHeadword);
-        }
+      return unique.sort(
+        (a, b) => {
+          if (
+            a.exactHeadword !==
+            b.exactHeadword
+          ) {
+            return (
+              Number(
+                b.exactHeadword
+              ) -
+              Number(
+                a.exactHeadword
+              )
+            );
+          }
 
-        if (a.entryIndex !== b.entryIndex) {
-          return a.entryIndex - b.entryIndex;
-        }
+          if (
+            a.entryIndex !==
+            b.entryIndex
+          ) {
+            return (
+              a.entryIndex -
+              b.entryIndex
+            );
+          }
 
-        return compareSenseNumbers(
-          a.senseNumber,
-          b.senseNumber
-        );
-      });
-    }
-
-    function compareSenseNumbers(a, b) {
-      return String(a).localeCompare(
-        String(b),
-        undefined,
-        {
-          numeric: true,
-          sensitivity: "base"
+          return String(
+            a.senseNumber
+          ).localeCompare(
+            String(
+              b.senseNumber
+            ),
+            undefined,
+            {
+              numeric: true,
+              sensitivity: "base"
+            }
+          );
         }
       );
     }
 
-    function extractSensesFromDefinitionStructure(definitions) {
+    function extractSensesFromDefinitionStructure(
+      definitions
+    ) {
       const senses = [];
 
       walkDictionaryStructure(
@@ -1534,21 +2543,34 @@
       return senses;
     }
 
-    function walkDictionaryStructure(value, context, senses) {
+    function walkDictionaryStructure(
+      value,
+      context,
+      senses
+    ) {
       if (Array.isArray(value)) {
         if (
           value.length === 2 &&
-          typeof value[0] === "string"
+          typeof value[0] ===
+            "string"
         ) {
-          const type = value[0];
-          const content = value[1];
+          const type =
+            value[0];
+
+          const content =
+            value[1];
 
           if (
             type === "sense" ||
             type === "sen" ||
             type === "sdsense"
           ) {
-            processSenseObject(content, context, senses);
+            processSenseObject(
+              content,
+              context,
+              senses
+            );
+
             return;
           }
 
@@ -1562,11 +2584,14 @@
               context,
               senses
             );
+
             return;
           }
         }
 
-        for (const item of value) {
+        for (
+          const item of value
+        ) {
           walkDictionaryStructure(
             item,
             context,
@@ -1591,12 +2616,16 @@
 
       if (value.dt) {
         const text =
-          extractDefinitionTextFromDt(value.dt);
+          extractDefinitionTextFromDt(
+            value.dt
+          );
 
         if (text) {
           senses.push({
             text,
-            labels: localLabels,
+            labels:
+              localLabels,
+
             number:
               value.sn ||
               context.senseNumber ||
@@ -1605,7 +2634,10 @@
         }
       }
 
-      for (const [key, child] of Object.entries(value)) {
+      for (
+        const [key, child] of
+        Object.entries(value)
+      ) {
         if (
           key === "dt" ||
           key === "vis" ||
@@ -1617,7 +2649,9 @@
         walkDictionaryStructure(
           child,
           {
-            labels: localLabels,
+            labels:
+              localLabels,
+
             senseNumber:
               value.sn ||
               context.senseNumber ||
@@ -1628,7 +2662,11 @@
       }
     }
 
-    function processSenseObject(value, context, senses) {
+    function processSenseObject(
+      value,
+      context,
+      senses
+    ) {
       if (
         !value ||
         typeof value !== "object"
@@ -1642,12 +2680,15 @@
       ];
 
       const text =
-        extractDefinitionTextFromDt(value.dt);
+        extractDefinitionTextFromDt(
+          value.dt
+        );
 
       if (text) {
         senses.push({
           text,
           labels,
+
           number:
             value.sn ||
             context.senseNumber ||
@@ -1660,6 +2701,7 @@
           value.sdsense,
           {
             labels,
+
             senseNumber:
               value.sn ||
               context.senseNumber ||
@@ -1674,6 +2716,7 @@
           value.bs,
           {
             labels,
+
             senseNumber:
               value.sn ||
               context.senseNumber ||
@@ -1687,11 +2730,18 @@
     function collectLabels(value) {
       const labels = [];
 
-      if (Array.isArray(value?.lbs)) {
-        labels.push(...value.lbs);
+      if (
+        Array.isArray(value?.lbs)
+      ) {
+        labels.push(
+          ...value.lbs
+        );
       }
 
-      if (typeof value?.sl === "string") {
+      if (
+        typeof value?.sl ===
+        "string"
+      ) {
         labels.push(value.sl);
       }
 
@@ -1700,7 +2750,9 @@
         .filter(Boolean);
     }
 
-    function extractDefinitionTextFromDt(dt) {
+    function extractDefinitionTextFromDt(
+      dt
+    ) {
       if (!Array.isArray(dt)) {
         return "";
       }
@@ -1711,10 +2763,13 @@
         if (
           Array.isArray(item) &&
           item[0] === "text" &&
-          typeof item[1] === "string"
+          typeof item[1] ===
+            "string"
         ) {
           const text =
-            cleanDictionaryText(item[1]);
+            cleanDictionaryText(
+              item[1]
+            );
 
           if (text) {
             parts.push(text);
@@ -1722,199 +2777,70 @@
         }
       }
 
-      return parts.join(" ").trim();
+      return parts
+        .join(" ")
+        .trim();
     }
 
     function cleanDictionaryText(value) {
       return String(value || "")
         .replace(/\{bc\}/g, "")
-        .replace(/\{b\}|\{\/b\}/g, "")
-        .replace(/\{it\}|\{\/it\}/g, "")
-        .replace(/\{wi\}|\{\/wi\}/g, "")
-        .replace(/\{sc\}|\{\/sc\}/g, "")
-        .replace(/\{sup\}|\{\/sup\}/g, "")
-        .replace(/\{inf\}|\{\/inf\}/g, "")
-        .replace(/\{phrase\}|\{\/phrase\}/g, "")
-        .replace(/\{dx\}.*?\{\/dx\}/g, "")
+        .replace(
+          /\{b\}|\{\/b\}/g,
+          ""
+        )
+        .replace(
+          /\{it\}|\{\/it\}/g,
+          ""
+        )
+        .replace(
+          /\{wi\}|\{\/wi\}/g,
+          ""
+        )
+        .replace(
+          /\{sc\}|\{\/sc\}/g,
+          ""
+        )
+        .replace(
+          /\{sup\}|\{\/sup\}/g,
+          ""
+        )
+        .replace(
+          /\{inf\}|\{\/inf\}/g,
+          ""
+        )
+        .replace(
+          /\{phrase\}|\{\/phrase\}/g,
+          ""
+        )
+        .replace(
+          /\{dx\}.*?\{\/dx\}/g,
+          ""
+        )
         .replace(
           /\{(?:sx|dxt|a_link|d_link|mat)\|([^|}]+).*?\}/g,
           "$1"
         )
-        .replace(/\{[^{}]+\}/g, "")
-        .replace(/^\s*:\s*/, "")
-        .replace(/\s+/g, " ")
+        .replace(
+          /\{[^{}]+\}/g,
+          ""
+        )
+        .replace(
+          /^\s*:\s*/,
+          ""
+        )
+        .replace(
+          /\s+/g,
+          " "
+        )
         .trim();
     }
 
-    function assignParent(childWord, parentWord) {
-      const childName = normalizeWord(childWord);
-      const parentName = normalizeWord(parentWord);
-
-      const child = state.words.get(childName);
-
-      if (!child || !parentName) {
-        return;
-      }
-
-      if (childName === parentName) {
-        setStatus(
-          "A word cannot be its own parent.",
-          "warning"
-        );
-
-        return;
-      }
-
-      let parent = state.words.get(parentName);
-
-      if (!parent) {
-        parent = createWord(parentName, {
-          origin: `parent selected for ${childName}`
-        });
-      }
-
-      if (wouldCreateLoop(childName, parentName)) {
-        setStatus(
-          `The relationship ${childName} → ${parentName} ` +
-          "would create a loop.",
-          "error"
-        );
-
-        return;
-      }
-
-      if (child.parent) {
-        const formerParent =
-          state.words.get(child.parent);
-
-        formerParent?.children.delete(childName);
-      }
-
-      child.parent = parentName;
-      child.status = "assigned";
-      parent.children.add(childName);
-
-      removeFromQueues(childName);
-
-      /*
-        Newly introduced parent goes next unless it has already been
-        assigned or skipped.
-      */
-      if (parent.status === "pending") {
-        moveToPriorityFront(parentName);
-        state.currentWord = parentName;
-      } else {
-        state.currentWord = null;
-        chooseNextWord();
-      }
-
-      saveProject();
-      renderAll();
-
-      if (state.currentWord) {
-        loadDefinitions(state.currentWord);
-      }
-
-      setStatus(
-        `Placed “${childName}” under “${parentName}”.`,
-        "success"
-      );
-    }
-
-    function wouldCreateLoop(childWord, parentWord) {
-      let current = parentWord;
-      const visited = new Set();
-
-      while (current) {
-        if (current === childWord) {
-          return true;
-        }
-
-        if (visited.has(current)) {
-          return true;
-        }
-
-        visited.add(current);
-
-        const item = state.words.get(current);
-        current = item?.parent || null;
-      }
-
-      return false;
-    }
-
-    function skipCurrentWord() {
-      const item =
-        state.words.get(state.currentWord);
-
-      if (!item) {
-        return;
-      }
-
-      if (item.parent) {
-        const parent =
-          state.words.get(item.parent);
-
-        parent?.children.delete(item.word);
-      }
-
-      item.parent = null;
-      item.status = "skipped";
-
-      removeFromQueues(item.word);
-
-      state.currentWord = null;
-      chooseNextWord();
-
-      saveProject();
-      renderAll();
-
-      setStatus(
-        `Skipped “${item.word}”.`,
-        "warning"
-      );
-    }
-
-    function restoreWord(word) {
-      const item =
-        state.words.get(normalizeWord(word));
-
-      if (!item) {
-        return;
-      }
-
-      if (item.parent) {
-        const parent =
-          state.words.get(item.parent);
-
-        parent?.children.delete(item.word);
-      }
-
-      item.parent = null;
-      item.status = "pending";
-
-      moveToPriorityFront(item.word);
-      state.currentWord = item.word;
-
-      saveProject();
-      renderAll();
-      loadDefinitions(item.word);
-    }
-
-    function removeFromQueues(word) {
-      state.sourceQueue =
-        state.sourceQueue.filter(item => item !== word);
-
-      state.priorityQueue =
-        state.priorityQueue.filter(item => item !== word);
-    }
-
-    function moveToPriorityFront(word) {
-      state.priorityQueue =
-        state.priorityQueue.filter(item => item !== word);
-
-      state.priorityQueue.unshift(word);
-    }
+    /*
+      ============================================================
+      RENDERING
+      ============================================================
+    */
 
     function renderAll() {
       renderQueue();
@@ -1923,8 +2849,37 @@
       renderCounts();
     }
 
+    function getPendingWordsInOrder() {
+      const ordered = [];
+      const seen =
+        new Set();
+
+      for (
+        const word of [
+          ...state.priorityQueue,
+          ...state.sourceQueue,
+          ...state.words.keys()
+        ]
+      ) {
+        const item =
+          state.words.get(word);
+
+        if (
+          item?.status ===
+            "pending" &&
+          !seen.has(word)
+        ) {
+          seen.add(word);
+          ordered.push(word);
+        }
+      }
+
+      return ordered;
+    }
+
     function renderQueue() {
-      const pending = getPendingWordsInOrder();
+      const pending =
+        getPendingWordsInOrder();
 
       if (!pending.length) {
         elements.queueList.innerHTML = `
@@ -1939,82 +2894,80 @@
       const fragment =
         document.createDocumentFragment();
 
-      for (const word of pending) {
-        const item = state.words.get(word);
-
-        if (!item) {
-          continue;
-        }
-
+      for (
+        const word of pending
+      ) {
         const button =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
-        button.type = "button";
-        button.className = "queue-item";
+        button.type =
+          "button";
 
-        if (word === state.currentWord) {
-          button.classList.add("active");
+        button.className =
+          "queue-item";
+
+        if (
+          word ===
+          state.currentWord
+        ) {
+          button.classList.add(
+            "active"
+          );
         }
 
         const label =
-          document.createElement("span");
+          document.createElement(
+            "span"
+          );
 
-        label.className = "queue-word";
-        label.textContent = word;
+        label.className =
+          "queue-word";
 
-        const badge =
-          makeBadge("pending", "pending-badge");
+        label.textContent =
+          word;
 
-        button.append(label, badge);
+        button.append(
+          label,
+          makeBadge(
+            "pending",
+            "pending-badge"
+          )
+        );
 
         button.addEventListener(
           "click",
-          () => selectQueueWord(word)
+          () =>
+            selectQueueWord(
+              word
+            )
         );
 
-        fragment.appendChild(button);
+        fragment.appendChild(
+          button
+        );
       }
 
-      elements.queueList.replaceChildren(fragment);
-    }
-
-    function getPendingWordsInOrder() {
-      const ordered = [];
-      const seen = new Set();
-
-      for (const word of [
-        ...state.priorityQueue,
-        ...state.sourceQueue,
-        ...state.words.keys()
-      ]) {
-        const item = state.words.get(word);
-
-        if (
-          item?.status === "pending" &&
-          !seen.has(word)
-        ) {
-          seen.add(word);
-          ordered.push(word);
-        }
-      }
-
-      return ordered;
+      elements.queueList.replaceChildren(
+        fragment
+      );
     }
 
     function renderCurrentWord() {
       const item =
-        state.words.get(state.currentWord);
+        state.words.get(
+          state.currentWord
+        );
 
       if (!item) {
-        const pending =
-          getPendingWordsInOrder();
-
         elements.currentWordPanel.innerHTML = `
           <div class="empty">
             ${
-              pending.length
+              getPendingWordsInOrder()
+                .length
                 ? "Select a pending word."
-                : "All words have been assigned or skipped."
+                : "All words have been assigned, skipped, or posted."
             }
           </div>
         `;
@@ -2023,107 +2976,148 @@
       }
 
       const wrapper =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       const heading =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
-      heading.className = "current-heading";
+      heading.className =
+        "current-heading";
 
       const title =
-        document.createElement("h2");
+        document.createElement(
+          "h2"
+        );
 
-      title.textContent = item.word;
+      title.textContent =
+        item.word;
 
-      heading.appendChild(title);
+      heading.appendChild(
+        title
+      );
 
       if (item.origins.size) {
         const origin =
-          document.createElement("span");
+          document.createElement(
+            "span"
+          );
 
-        origin.className = "current-origin";
+        origin.className =
+          "current-origin";
+
         origin.textContent =
-          [...item.origins].join(" • ");
+          [...item.origins]
+            .join(" • ");
 
-        heading.appendChild(origin);
+        heading.appendChild(
+          origin
+        );
       }
 
-      wrapper.appendChild(heading);
+      wrapper.appendChild(
+        heading
+      );
 
       const instruction =
-        document.createElement("p");
+        document.createElement(
+          "p"
+        );
 
       instruction.className =
         "current-instruction";
 
       instruction.textContent =
         "Click any word in any definition to make it the parent. " +
-        "You may also type a parent manually or skip this word.";
+        "You may also enter a parent manually, skip the word, " +
+        "or post it outside the queue.";
 
-      wrapper.appendChild(instruction);
+      wrapper.appendChild(
+        instruction
+      );
 
-      if (item.dictionaryStatus === "loading") {
+      if (
+        item.dictionaryStatus ===
+        "loading"
+      ) {
         const loading =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
-        loading.className = "loading";
+        loading.className =
+          "loading";
+
         loading.innerHTML =
           `<span class="spinner"></span>` +
-          `<span>Loading all definitions…</span>`;
+          `<span>Loading all definitions and parts of speech…</span>`;
 
-        wrapper.appendChild(loading);
-      } else if (item.dictionaryStatus === "loaded") {
+        wrapper.appendChild(
+          loading
+        );
+      } else if (
+        item.dictionaryStatus ===
+        "loaded"
+      ) {
         wrapper.appendChild(
           renderDefinitions(item)
         );
-      } else if (item.dictionaryStatus === "missing") {
+      } else if (
+        item.dictionaryStatus ===
+        "missing"
+      ) {
         wrapper.appendChild(
           renderMissingEntry(item)
         );
       } else if (
-        item.dictionaryStatus === "error" ||
-        item.dictionaryStatus === "empty"
+        item.dictionaryStatus ===
+          "error" ||
+        item.dictionaryStatus ===
+          "empty"
       ) {
         const error =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
-        error.className = "empty";
+        error.className =
+          "empty";
+
         error.textContent =
           item.dictionaryError ||
           "No definitions were available.";
 
-        wrapper.appendChild(error);
-
-        const retry =
-          document.createElement("button");
-
-        retry.className = "button primary";
-        retry.textContent = "Retry";
-        retry.addEventListener(
-          "click",
-          () => {
-            item.dictionaryStatus = "not-loaded";
-            loadDefinitions(item.word);
-          }
+        wrapper.appendChild(
+          error
         );
-
-        wrapper.appendChild(retry);
       }
 
       const controls =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
-      controls.className = "parent-controls";
+      controls.className =
+        "parent-controls";
 
       const parentInput =
-        document.createElement("input");
+        document.createElement(
+          "input"
+        );
 
-      parentInput.type = "text";
+      parentInput.type =
+        "text";
+
       parentInput.placeholder =
         "Type a parent word manually";
 
       const assignButton =
-        document.createElement("button");
+        document.createElement(
+          "button"
+        );
 
       assignButton.className =
         "button purple-button";
@@ -2133,7 +3127,9 @@
 
       const submitParent = () => {
         const parent =
-          normalizeWord(parentInput.value);
+          normalizeWord(
+            parentInput.value
+          );
 
         if (!parent) {
           setStatus(
@@ -2144,7 +3140,10 @@
           return;
         }
 
-        assignParent(item.word, parent);
+        assignParent(
+          item.word,
+          parent
+        );
       };
 
       assignButton.addEventListener(
@@ -2155,7 +3154,9 @@
       parentInput.addEventListener(
         "keydown",
         event => {
-          if (event.key === "Enter") {
+          if (
+            event.key === "Enter"
+          ) {
             submitParent();
           }
         }
@@ -2166,27 +3167,57 @@
         assignButton
       );
 
-      wrapper.appendChild(controls);
+      wrapper.appendChild(
+        controls
+      );
 
-      const bottomButtons =
-        document.createElement("div");
+      const actions =
+        document.createElement(
+          "div"
+        );
 
-      bottomButtons.className = "button-row";
+      actions.className =
+        "button-row";
 
       const skipButton =
-        document.createElement("button");
+        document.createElement(
+          "button"
+        );
 
       skipButton.className =
         "button warning-button";
 
-      skipButton.textContent = "Skip";
+      skipButton.textContent =
+        "Skip";
+
       skipButton.addEventListener(
         "click",
         skipCurrentWord
       );
 
+      const postButton =
+        document.createElement(
+          "button"
+        );
+
+      postButton.className =
+        "button post-button";
+
+      postButton.textContent =
+        "Post";
+
+      postButton.title =
+        "Remove this word from the queue without placing it in a branch or the Skipped section.";
+
+      postButton.addEventListener(
+        "click",
+        postCurrentWord
+      );
+
       const reloadButton =
-        document.createElement("button");
+        document.createElement(
+          "button"
+        );
 
       reloadButton.className =
         "button secondary";
@@ -2197,58 +3228,93 @@
       reloadButton.addEventListener(
         "click",
         () => {
-          state.dictionaryCache.delete(item.word);
-          item.dictionaryStatus = "not-loaded";
+          state.dictionaryCache.delete(
+            item.word
+          );
+
+          item.dictionaryStatus =
+            "not-loaded";
+
           item.definitions = [];
-          loadDefinitions(item.word);
+
+          loadDefinitions(
+            item.word
+          );
         }
       );
 
-      bottomButtons.append(
+      actions.append(
         skipButton,
+        postButton,
         reloadButton
       );
 
-      wrapper.appendChild(bottomButtons);
+      wrapper.appendChild(
+        actions
+      );
 
-      elements.currentWordPanel.replaceChildren(wrapper);
+      elements.currentWordPanel.replaceChildren(
+        wrapper
+      );
     }
 
     function renderDefinitions(item) {
       const list =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
-      list.className = "definition-list";
+      list.className =
+        "definition-list";
 
-      let previousEntryKey = "";
+      let previousEntryKey =
+        "";
 
-      for (const definition of item.definitions) {
+      for (
+        const definition of
+        item.definitions
+      ) {
         const entryKey =
           `${definition.entryId}|${definition.partOfSpeech}`;
 
-        if (entryKey !== previousEntryKey) {
-          previousEntryKey = entryKey;
+        if (
+          entryKey !==
+          previousEntryKey
+        ) {
+          previousEntryKey =
+            entryKey;
 
-          const entryHeading =
-            document.createElement("div");
+          const heading =
+            document.createElement(
+              "div"
+            );
 
-          entryHeading.className =
+          heading.className =
             "entry-heading";
 
           const headword =
-            document.createElement("span");
+            document.createElement(
+              "span"
+            );
 
           headword.className =
             "entry-headword";
 
           headword.textContent =
-            definition.headword || item.word;
+            definition.headword ||
+            item.word;
 
-          entryHeading.appendChild(headword);
+          heading.appendChild(
+            headword
+          );
 
-          if (definition.homograph) {
+          if (
+            definition.homograph
+          ) {
             const homograph =
-              document.createElement("span");
+              document.createElement(
+                "span"
+              );
 
             homograph.className =
               "homograph";
@@ -2256,62 +3322,88 @@
             homograph.textContent =
               `homograph ${definition.homograph}`;
 
-            entryHeading.appendChild(homograph);
+            heading.appendChild(
+              homograph
+            );
           }
 
-          entryHeading.appendChild(
+          heading.appendChild(
             makeBadge(
               definition.partOfSpeech,
               "part-badge"
             )
           );
 
-          list.appendChild(entryHeading);
+          list.appendChild(
+            heading
+          );
         }
 
         const card =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
         card.className =
           "definition-card";
 
         const number =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
         number.className =
           "sense-number";
 
         number.textContent =
-          definition.senseNumber || "•";
+          definition.senseNumber ||
+          "•";
 
         const content =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
-        content.className =
-          "definition-content";
-
-        if (definition.labels.length) {
+        if (
+          definition.labels.length
+        ) {
           const labels =
-            document.createElement("div");
+            document.createElement(
+              "div"
+            );
 
-          labels.className = "labels";
+          labels.className =
+            "labels";
 
-          for (const label of definition.labels) {
+          for (
+            const label of
+            definition.labels
+          ) {
             const labelElement =
-              document.createElement("span");
+              document.createElement(
+                "span"
+              );
 
             labelElement.className =
               "usage-label";
 
-            labelElement.textContent = label;
-            labels.appendChild(labelElement);
+            labelElement.textContent =
+              label;
+
+            labels.appendChild(
+              labelElement
+            );
           }
 
-          content.appendChild(labels);
+          content.appendChild(
+            labels
+          );
         }
 
         const text =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
         text.className =
           "definition-text";
@@ -2322,9 +3414,18 @@
           item.word
         );
 
-        content.appendChild(text);
-        card.append(number, content);
-        list.appendChild(card);
+        content.appendChild(
+          text
+        );
+
+        card.append(
+          number,
+          content
+        );
+
+        list.appendChild(
+          card
+        );
       }
 
       return list;
@@ -2339,171 +3440,287 @@
         /([A-Za-z]+(?:[-’'][A-Za-z]+)*)|([^A-Za-z]+)/g;
 
       const tokens =
-        String(definition).match(tokenPattern) || [];
+        String(definition).match(
+          tokenPattern
+        ) || [];
 
-      for (const token of tokens) {
+      for (
+        const token of tokens
+      ) {
         if (
-          /^[A-Za-z]+(?:[-’'][A-Za-z]+)*$/.test(token)
+          /^[A-Za-z]+(?:[-’'][A-Za-z]+)*$/.test(
+            token
+          )
         ) {
           const normalized =
             normalizeWord(token);
 
           const button =
-            document.createElement("button");
+            document.createElement(
+              "button"
+            );
 
-          button.type = "button";
+          button.type =
+            "button";
+
           button.className =
             "definition-word";
 
-          button.textContent = token;
+          button.textContent =
+            token;
 
           if (
             !normalized ||
             normalized === childWord
           ) {
-            button.classList.add("same-word");
+            button.classList.add(
+              "same-word"
+            );
+
             button.disabled = true;
           } else {
-            button.title =
-              `Make “${normalized}” the parent of “${childWord}”`;
-
             button.addEventListener(
               "click",
-              () => assignParent(
-                childWord,
-                normalized
-              )
+              () =>
+                assignParent(
+                  childWord,
+                  normalized
+                )
             );
           }
 
-          container.appendChild(button);
+          container.appendChild(
+            button
+          );
         } else {
           const punctuation =
-            document.createElement("span");
+            document.createElement(
+              "span"
+            );
 
           punctuation.className =
             "punctuation";
 
-          punctuation.textContent = token;
+          punctuation.textContent =
+            token;
 
-          container.appendChild(punctuation);
+          container.appendChild(
+            punctuation
+          );
         }
       }
     }
 
     function renderMissingEntry(item) {
       const wrapper =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       const message =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
-      message.className = "empty";
+      message.className =
+        "empty";
+
       message.textContent =
         "No exact dictionary entry was found.";
 
-      wrapper.appendChild(message);
+      wrapper.appendChild(
+        message
+      );
 
-      if (item.suggestions.length) {
+      if (
+        item.suggestions.length
+      ) {
         const row =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
-        row.className = "button-row";
+        row.className =
+          "button-row";
 
-        for (const suggestion of item.suggestions) {
+        for (
+          const suggestion of
+          item.suggestions
+        ) {
           const button =
-            document.createElement("button");
+            document.createElement(
+              "button"
+            );
 
           button.className =
             "button secondary small-button";
 
-          button.textContent = suggestion;
+          button.textContent =
+            suggestion;
 
           button.addEventListener(
             "click",
-            () => replaceWord(
-              item.word,
-              suggestion
-            )
+            () =>
+              replaceWord(
+                item.word,
+                suggestion
+              )
           );
 
-          row.appendChild(button);
+          row.appendChild(
+            button
+          );
         }
 
-        wrapper.appendChild(row);
+        wrapper.appendChild(
+          row
+        );
       }
 
       return wrapper;
     }
 
-    function replaceWord(oldWord, newWord) {
-      const oldItem = state.words.get(oldWord);
-      const normalized = normalizeWord(newWord);
+    function replaceWord(
+      oldWord,
+      newWord
+    ) {
+      const oldItem =
+        state.words.get(
+          oldWord
+        );
 
-      if (!oldItem || !normalized) {
+      const normalized =
+        normalizeWord(newWord);
+
+      if (
+        !oldItem ||
+        !normalized
+      ) {
         return;
       }
 
       const replacement =
-        createWord(normalized, {
-          origin: `spelling replacement for ${oldWord}`
-        });
+        createWord(
+          normalized,
+          {
+            origin:
+              `spelling replacement for ${oldWord}`
+          }
+        );
 
-      for (const childName of oldItem.children) {
-        const child = state.words.get(childName);
+      for (
+        const childName of
+        oldItem.children
+      ) {
+        const child =
+          state.words.get(
+            childName
+          );
 
         if (child) {
-          child.parent = normalized;
-          replacement.children.add(childName);
+          child.parent =
+            normalized;
+
+          replacement.children.add(
+            childName
+          );
         }
       }
 
       if (oldItem.parent) {
         const parent =
-          state.words.get(oldItem.parent);
+          state.words.get(
+            oldItem.parent
+          );
 
-        parent?.children.delete(oldWord);
-        parent?.children.add(normalized);
-        replacement.parent = oldItem.parent;
+        parent?.children.delete(
+          oldWord
+        );
+
+        parent?.children.add(
+          normalized
+        );
+
+        replacement.parent =
+          oldItem.parent;
       }
 
-      replacement.status = oldItem.status;
+      replacement.status =
+        oldItem.status;
 
       state.sourceQueue =
         state.sourceQueue.map(
-          word => word === oldWord
-            ? normalized
-            : word
+          word =>
+            word === oldWord
+              ? normalized
+              : word
         );
 
       state.priorityQueue =
         state.priorityQueue.map(
-          word => word === oldWord
-            ? normalized
-            : word
+          word =>
+            word === oldWord
+              ? normalized
+              : word
         );
 
-      state.words.delete(oldWord);
-      state.currentWord = normalized;
+      state.words.delete(
+        oldWord
+      );
 
-      saveProject();
+      state.currentWord =
+        normalized;
+
       renderAll();
+      queueSave();
       loadDefinitions(normalized);
     }
 
     function renderBranches() {
-      const roots = getBranchRoots();
+      const roots =
+        [...state.words.values()]
+          .filter(
+            item =>
+              (
+                item.children.size >
+                  0 ||
+                item.status ===
+                  "assigned"
+              ) &&
+              !item.parent
+          )
+          .sort(
+            (a, b) =>
+              a.word.localeCompare(
+                b.word
+              )
+          );
 
-      const skipped = [...state.words.values()]
-        .filter(item => item.status === "skipped")
-        .sort((a, b) =>
-          a.word.localeCompare(b.word)
-        );
+      const skipped =
+        [...state.words.values()]
+          .filter(
+            item =>
+              item.status ===
+              "skipped"
+          )
+          .sort(
+            (a, b) =>
+              a.word.localeCompare(
+                b.word
+              )
+          );
 
-      if (!roots.length && !skipped.length) {
+      /*
+        Posted words are deliberately not rendered here.
+      */
+
+      if (
+        !roots.length &&
+        !skipped.length
+      ) {
         elements.branchList.innerHTML = `
           <div class="empty">
-            Assign a parent to create the first branch.
+            Assign a parent to create a branch.
           </div>
         `;
 
@@ -2511,146 +3728,216 @@
       }
 
       const wrapper =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       if (roots.length) {
         const tree =
-          document.createElement("ul");
+          document.createElement(
+            "ul"
+          );
 
-        tree.className = "branch-tree";
+        tree.className =
+          "branch-tree";
 
-        for (const root of roots) {
+        for (
+          const root of roots
+        ) {
           tree.appendChild(
-            renderBranchNode(root, new Set())
+            renderBranchNode(
+              root,
+              new Set()
+            )
           );
         }
 
-        wrapper.appendChild(tree);
+        wrapper.appendChild(
+          tree
+        );
       }
 
       if (skipped.length) {
-        const skippedHeading =
-          document.createElement("div");
+        const heading =
+          document.createElement(
+            "div"
+          );
 
-        skippedHeading.className =
+        heading.className =
           "entry-heading";
 
-        skippedHeading.textContent =
+        heading.textContent =
           "Skipped";
 
-        wrapper.appendChild(skippedHeading);
+        wrapper.appendChild(
+          heading
+        );
 
-        for (const item of skipped) {
+        for (
+          const item of skipped
+        ) {
           const button =
-            document.createElement("button");
+            document.createElement(
+              "button"
+            );
 
           button.className =
             "branch-node";
 
           button.append(
-            document.createTextNode(item.word),
-            makeBadge("skipped", "skipped-badge")
+            document.createTextNode(
+              item.word
+            ),
+            makeBadge(
+              "skipped",
+              "skipped-badge"
+            )
           );
 
           button.addEventListener(
             "click",
-            () => restoreWord(item.word)
+            () =>
+              restoreWord(
+                item.word
+              )
           );
 
-          wrapper.appendChild(button);
+          wrapper.appendChild(
+            button
+          );
         }
       }
 
-      elements.branchList.replaceChildren(wrapper);
+      elements.branchList.replaceChildren(
+        wrapper
+      );
     }
 
-    function getBranchRoots() {
-      return [...state.words.values()]
-        .filter(item => {
-          const hasBranchRole =
-            item.children.size > 0 ||
-            item.status === "assigned";
-
-          return hasBranchRole && !item.parent;
-        })
-        .sort((a, b) =>
-          a.word.localeCompare(b.word)
-        );
-    }
-
-    function renderBranchNode(item, visited) {
+    function renderBranchNode(
+      item,
+      visited
+    ) {
       const li =
-        document.createElement("li");
+        document.createElement(
+          "li"
+        );
 
       const button =
-        document.createElement("button");
+        document.createElement(
+          "button"
+        );
 
-      button.type = "button";
+      button.type =
+        "button";
+
       button.className =
         "branch-node";
 
-      if (item.word === state.currentWord) {
-        button.classList.add("active");
+      if (
+        item.word ===
+        state.currentWord
+      ) {
+        button.classList.add(
+          "active"
+        );
       }
 
       button.appendChild(
-        document.createTextNode(item.word)
+        document.createTextNode(
+          item.word
+        )
       );
 
-      if (item.status === "pending") {
+      if (
+        item.status ===
+        "pending"
+      ) {
         button.appendChild(
-          makeBadge("pending", "pending-badge")
+          makeBadge(
+            "pending",
+            "pending-badge"
+          )
         );
-      } else if (item.status === "assigned") {
+      } else {
         button.appendChild(
-          makeBadge("assigned", "assigned-badge")
+          makeBadge(
+            "assigned",
+            "assigned-badge"
+          )
         );
       }
 
       button.addEventListener(
         "click",
         () => {
-          if (item.status === "pending") {
-            selectQueueWord(item.word);
+          if (
+            item.status ===
+            "pending"
+          ) {
+            selectQueueWord(
+              item.word
+            );
           } else {
-            restoreWord(item.word);
+            restoreWord(
+              item.word
+            );
           }
         }
       );
 
-      li.appendChild(button);
+      li.appendChild(
+        button
+      );
 
       const nextVisited =
         new Set(visited);
 
-      nextVisited.add(item.word);
+      nextVisited.add(
+        item.word
+      );
 
-      const childItems =
+      const children =
         [...item.children]
-          .map(word => state.words.get(word))
+          .map(
+            word =>
+              state.words.get(
+                word
+              )
+          )
           .filter(Boolean)
-          .sort((a, b) =>
-            a.word.localeCompare(b.word)
+          .sort(
+            (a, b) =>
+              a.word.localeCompare(
+                b.word
+              )
           );
 
-      if (childItems.length) {
+      if (children.length) {
         const ul =
-          document.createElement("ul");
-
-        for (const child of childItems) {
-          if (nextVisited.has(child.word)) {
-            continue;
-          }
-
-          ul.appendChild(
-            renderBranchNode(
-              child,
-              nextVisited
-            )
+          document.createElement(
+            "ul"
           );
+
+        for (
+          const child of children
+        ) {
+          if (
+            !nextVisited.has(
+              child.word
+            )
+          ) {
+            ul.appendChild(
+              renderBranchNode(
+                child,
+                nextVisited
+              )
+            );
+          }
         }
 
-        li.appendChild(ul);
+        li.appendChild(
+          ul
+        );
       }
 
       return li;
@@ -2660,55 +3947,48 @@
       const values =
         [...state.words.values()];
 
-      const pending =
-        values.filter(
-          item => item.status === "pending"
-        ).length;
-
-      const assigned =
-        values.filter(
-          item => item.status === "assigned"
-        ).length;
-
-      const skipped =
-        values.filter(
-          item => item.status === "skipped"
-        ).length;
+      const countStatus =
+        status =>
+          values.filter(
+            item =>
+              item.status ===
+              status
+          ).length;
 
       elements.totalCount.textContent =
         String(values.length);
 
       elements.pendingCount.textContent =
-        String(pending);
+        String(
+          countStatus("pending")
+        );
 
       elements.assignedCount.textContent =
-        String(assigned);
+        String(
+          countStatus("assigned")
+        );
 
       elements.skippedCount.textContent =
-        String(skipped);
+        String(
+          countStatus("skipped")
+        );
+
+      elements.postedCount.textContent =
+        String(
+          countStatus("posted")
+        );
     }
 
-    function makeBadge(text, className) {
-      const badge =
-        document.createElement("span");
-
-      badge.className =
-        `badge ${className}`;
-
-      badge.textContent = text;
-
-      return badge;
-    }
-
-    function setStatus(message, type = "") {
-      elements.status.textContent = message;
-      elements.status.className =
-        `status${type ? ` ${type}` : ""}`;
-    }
+    /*
+      ============================================================
+      PROJECT SERIALIZATION
+      ============================================================
+    */
 
     function serializeProject() {
       return {
-        version: 1,
+        version: 2,
+
         exportedAt:
           new Date().toISOString(),
 
@@ -2722,98 +4002,103 @@
           state.currentWord,
 
         words:
-          [...state.words.values()].map(item => ({
-            word: item.word,
-            status: item.status,
-            parent: item.parent,
-            children: [...item.children],
-            definitions: item.definitions,
-            dictionaryStatus:
-              item.dictionaryStatus,
-            dictionaryError:
-              item.dictionaryError,
-            suggestions:
-              item.suggestions,
-            origins:
-              [...item.origins],
-            createdAt:
-              item.createdAt
-          }))
+          [...state.words.values()]
+            .map(
+              item => ({
+                word:
+                  item.word,
+
+                status:
+                  item.status,
+
+                parent:
+                  item.parent,
+
+                children:
+                  [...item.children],
+
+                definitions:
+                  item.definitions,
+
+                dictionaryStatus:
+                  item.dictionaryStatus,
+
+                dictionaryError:
+                  item.dictionaryError,
+
+                suggestions:
+                  item.suggestions,
+
+                origins:
+                  [...item.origins],
+
+                createdAt:
+                  item.createdAt
+              })
+            )
       };
     }
 
-    function saveProject() {
-      try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(serializeProject())
-        );
-      } catch (error) {
-        console.warn(
-          "Could not save project locally:",
-          error
-        );
-      }
-    }
-
-    function loadSavedProject() {
-      const raw =
-        localStorage.getItem(STORAGE_KEY);
-
-      if (!raw) {
-        return;
-      }
-
-      try {
-        restoreProject(JSON.parse(raw));
-        setStatus(
-          "Restored the previous project.",
-          "success"
-        );
-      } catch (error) {
-        console.error(error);
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
-
-    function restoreProject(data) {
+    function restoreProject(
+      data,
+      options = {}
+    ) {
       if (
         !data ||
         !Array.isArray(data.words)
       ) {
         throw new Error(
-          "Invalid project file."
+          "Invalid project data."
         );
       }
 
-      state.words.clear();
+      clearProjectState();
+
       state.sourceQueue =
-        Array.isArray(data.sourceQueue)
+        Array.isArray(
+          data.sourceQueue
+        )
           ? [...data.sourceQueue]
           : [];
 
       state.priorityQueue =
-        Array.isArray(data.priorityQueue)
+        Array.isArray(
+          data.priorityQueue
+        )
           ? [...data.priorityQueue]
           : [];
 
       state.currentWord =
         data.currentWord || null;
 
-      for (const raw of data.words) {
-        const item = createWord(raw.word);
+      for (
+        const raw of data.words
+      ) {
+        const item =
+          createWord(raw.word);
 
         item.status =
-          raw.status || "pending";
+          [
+            "pending",
+            "assigned",
+            "skipped",
+            "posted"
+          ].includes(raw.status)
+            ? raw.status
+            : "pending";
 
         item.parent =
           raw.parent || null;
 
         item.children =
-          new Set(raw.children || []);
+          new Set(
+            raw.children || []
+          );
 
         item.definitions =
-          Array.isArray(raw.definitions)
+          Array.isArray(
+            raw.definitions
+          )
             ? raw.definitions
             : [];
 
@@ -2832,15 +4117,33 @@
           raw.suggestions || [];
 
         item.origins =
-          new Set(raw.origins || []);
+          new Set(
+            raw.origins || []
+          );
 
         item.createdAt =
-          raw.createdAt || Date.now();
+          raw.createdAt ||
+          Date.now();
       }
 
       chooseNextWord();
-      saveProject();
       renderAll();
+
+      if (
+        options.saveAfterRestore !==
+        false
+      ) {
+        queueSave();
+      }
+    }
+
+    function clearProjectState() {
+      state.words.clear();
+      state.sourceQueue = [];
+      state.priorityQueue = [];
+      state.currentWord = null;
+      state.dictionaryCache.clear();
+      state.loadingWord = null;
     }
 
     function exportProject() {
@@ -2853,51 +4156,62 @@
         return;
       }
 
-      const blob = new Blob(
-        [
-          JSON.stringify(
-            serializeProject(),
-            null,
-            2
-          )
-        ],
-        {
-          type: "application/json"
-        }
-      );
+      const blob =
+        new Blob(
+          [
+            JSON.stringify(
+              serializeProject(),
+              null,
+              2
+            )
+          ],
+          {
+            type:
+              "application/json"
+          }
+        );
 
       const url =
-        URL.createObjectURL(blob);
+        URL.createObjectURL(
+          blob
+        );
 
       const link =
-        document.createElement("a");
+        document.createElement(
+          "a"
+        );
 
       link.href = url;
+
       link.download =
         "definition-branch-project.json";
 
-      document.body.appendChild(link);
+      document.body.appendChild(
+        link
+      );
+
       link.click();
       link.remove();
 
-      URL.revokeObjectURL(url);
-
-      setStatus(
-        "Exported the project.",
-        "success"
+      URL.revokeObjectURL(
+        url
       );
     }
 
-    async function importProjectFile(file) {
+    async function importProjectFile(
+      file
+    ) {
       if (!file) {
         return;
       }
 
       try {
-        const text = await file.text();
-        const data = JSON.parse(text);
+        const text =
+          await file.text();
 
-        restoreProject(data);
+        restoreProject(
+          JSON.parse(text)
+        );
 
         setStatus(
           `Imported ${file.name}.`,
@@ -2911,34 +4225,161 @@
           "error"
         );
       } finally {
-        elements.projectFileInput.value = "";
+        elements.projectFileInput.value =
+          "";
       }
     }
 
-    function resetProject() {
-      const confirmed = window.confirm(
-        "Delete all words, branches, and saved progress?"
-      );
+    async function resetProject() {
+      const confirmed =
+        window.confirm(
+          "Delete all words, branches, saved progress, skipped words, and posted words?"
+        );
 
       if (!confirmed) {
         return;
       }
 
-      state.words.clear();
-      state.sourceQueue = [];
-      state.priorityQueue = [];
-      state.currentWord = null;
-      state.dictionaryCache.clear();
-      state.loadingWord = null;
+      clearProjectState();
 
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(
+        LOCAL_STORAGE_KEY
+      );
 
       renderAll();
+
+      if (state.user) {
+        try {
+          const {
+            error
+          } = await supabaseClient
+            .from(PROJECT_TABLE)
+            .delete()
+            .eq(
+              "user_id",
+              state.user.id
+            );
+
+          if (error) {
+            throw error;
+          }
+
+          setSaveState(
+            "Cloud project deleted.",
+            "saved"
+          );
+        } catch (error) {
+          setSaveState(
+            `Cloud deletion failed: ${error.message}`,
+            "error"
+          );
+        }
+      }
 
       setStatus(
         "The project was reset."
       );
     }
+
+    function makeBadge(
+      text,
+      className
+    ) {
+      const badge =
+        document.createElement(
+          "span"
+        );
+
+      badge.className =
+        `badge ${className}`;
+
+      badge.textContent =
+        text;
+
+      return badge;
+    }
+
+    function setStatus(
+      message,
+      type = ""
+    ) {
+      elements.status.textContent =
+        message;
+
+      elements.status.className =
+        `status${
+          type
+            ? ` ${type}`
+            : ""
+        }`;
+    }
+
+    function setAuthStatus(
+      message,
+      type = ""
+    ) {
+      elements.authStatus.textContent =
+        message;
+
+      elements.authStatus.className =
+        `status${
+          type
+            ? ` ${type}`
+            : ""
+        }`;
+    }
+
+    function setSaveState(
+      message,
+      type = ""
+    ) {
+      elements.saveState.textContent =
+        message;
+
+      elements.saveState.className =
+        `save-state${
+          type
+            ? ` ${type}`
+            : ""
+        }`;
+    }
+
+    /*
+      ============================================================
+      EVENT LISTENERS
+      ============================================================
+    */
+
+    elements.signInButton.addEventListener(
+      "click",
+      signIn
+    );
+
+    elements.signUpButton.addEventListener(
+      "click",
+      signUp
+    );
+
+    elements.signOutButton.addEventListener(
+      "click",
+      signOut
+    );
+
+    elements.saveNowButton.addEventListener(
+      "click",
+      saveProjectToCloud
+    );
+
+    elements.passwordInput.addEventListener(
+      "keydown",
+      event => {
+        if (
+          event.key === "Enter"
+        ) {
+          signIn();
+        }
+      }
+    );
 
     elements.addTextButton.addEventListener(
       "click",
@@ -2983,19 +4424,30 @@
       event => {
         if (
           event.key === "Enter" &&
-          (event.ctrlKey || event.metaKey)
+          (
+            event.ctrlKey ||
+            event.metaKey
+          )
         ) {
           addTextFromInput();
         }
       }
     );
 
-    loadSavedProject();
-    renderAll();
+    /*
+      Save before the page closes when possible.
+      The debounced save usually occurs before this point.
+    */
 
-    if (state.currentWord) {
-      loadDefinitions(state.currentWord);
-    }
+    window.addEventListener(
+      "pagehide",
+      () => {
+        saveProjectLocally();
+      }
+    );
+
+    renderAll();
+    initializeAuth();
   </script>
 </body>
 </html>
