@@ -8,25 +8,31 @@
     content="width=device-width, initial-scale=1.0"
   />
 
-  <title>Manual Merriam-Webster Word Tree</title>
+  <title>Definition Branch Sorter</title>
 
   <style>
     :root {
       --background: #090b0e;
       --panel: #14181d;
-      --panel-light: #1c2229;
-      --border: #343c46;
-      --text: #f3f5f7;
-      --muted: #9da8b5;
+      --panel-2: #1b2128;
+      --panel-3: #222a33;
+      --border: #343d47;
+      --text: #f4f6f8;
+      --muted: #9ca7b3;
       --accent: #8ab4f8;
-      --success: #75d69c;
-      --warning: #efc66d;
+      --accent-dark: #17273c;
+      --success: #78d89c;
+      --warning: #efc56d;
       --danger: #ee8181;
-      --selected: #c99cff;
+      --purple: #c99cff;
     }
 
     * {
       box-sizing: border-box;
+    }
+
+    html {
+      color-scheme: dark;
     }
 
     body {
@@ -44,7 +50,8 @@
 
     button,
     input,
-    textarea {
+    textarea,
+    select {
       font: inherit;
     }
 
@@ -53,40 +60,39 @@
     }
 
     .page {
-      width: min(1400px, calc(100% - 30px));
+      width: min(1500px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 28px 0 70px;
+      padding: 24px 0 70px;
     }
 
     .header {
-      margin-bottom: 22px;
+      margin-bottom: 20px;
     }
 
     .header h1 {
       margin: 0 0 8px;
-      font-size: clamp(30px, 5vw, 48px);
+      font-size: clamp(30px, 5vw, 50px);
       line-height: 1.05;
     }
 
     .header p {
-      max-width: 900px;
+      max-width: 980px;
       margin: 0;
       color: var(--muted);
       line-height: 1.6;
     }
 
     .panel {
-      padding: 18px;
+      padding: 17px;
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 15px;
     }
 
-    .controls {
+    .input-grid {
       display: grid;
-      grid-template-columns: minmax(260px, 1fr) auto;
-      gap: 12px;
-      align-items: end;
+      grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
+      gap: 14px;
     }
 
     .field {
@@ -97,68 +103,120 @@
 
     .field label {
       color: var(--muted);
-      font-size: 14px;
+      font-size: 13px;
     }
 
     input,
-    textarea {
+    textarea,
+    select {
       width: 100%;
       color: var(--text);
-      background: var(--panel-light);
+      background: var(--panel-2);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 9px;
       outline: none;
     }
 
-    input {
-      height: 44px;
-      padding: 0 12px;
+    input,
+    select {
+      min-height: 43px;
+      padding: 0 11px;
     }
 
     textarea {
-      min-height: 84px;
-      padding: 12px;
+      min-height: 105px;
+      padding: 11px;
       resize: vertical;
+      line-height: 1.5;
     }
 
     input:focus,
-    textarea:focus {
+    textarea:focus,
+    select:focus {
       border-color: var(--accent);
     }
 
-    .button {
-      min-height: 44px;
-      padding: 0 16px;
-      border: 0;
-      border-radius: 10px;
-      font-weight: 700;
-    }
-
-    .primary-button {
-      color: #07101d;
-      background: var(--accent);
-    }
-
-    .secondary-button {
-      color: #10151b;
-      background: var(--muted);
-    }
-
-    .button:disabled {
-      cursor: wait;
-      opacity: 0.55;
-    }
-
+    .inline-row,
     .button-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 13px;
+      gap: 9px;
+      align-items: center;
+    }
+
+    .button-row {
+      margin-top: 12px;
+    }
+
+    .button {
+      min-height: 41px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 9px;
+      font-weight: 750;
+    }
+
+    .button:disabled {
+      cursor: not-allowed;
+      opacity: 0.52;
+    }
+
+    .primary {
+      color: #07101c;
+      background: var(--accent);
+    }
+
+    .secondary {
+      color: #111820;
+      background: var(--muted);
+    }
+
+    .success-button {
+      color: #07150c;
+      background: var(--success);
+    }
+
+    .warning-button {
+      color: #1c1405;
+      background: var(--warning);
+    }
+
+    .danger-button {
+      color: #1d0808;
+      background: var(--danger);
+    }
+
+    .purple-button {
+      color: #160d1d;
+      background: var(--purple);
+    }
+
+    .small-button {
+      min-height: 31px;
+      padding: 0 9px;
+      font-size: 12px;
+    }
+
+    .file-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 41px;
+      padding: 0 14px;
+      color: #111820;
+      background: var(--muted);
+      border-radius: 9px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .file-label input {
+      display: none;
     }
 
     .status {
-      min-height: 24px;
-      margin-top: 13px;
+      min-height: 23px;
+      margin-top: 12px;
       color: var(--muted);
       line-height: 1.5;
     }
@@ -178,110 +236,94 @@
     .workspace {
       display: grid;
       grid-template-columns:
-        minmax(300px, 0.8fr)
-        minmax(500px, 1.5fr);
-      gap: 18px;
-      margin-top: 18px;
+        minmax(270px, 0.72fr)
+        minmax(480px, 1.55fr)
+        minmax(280px, 0.78fr);
+      gap: 16px;
+      margin-top: 16px;
+      align-items: start;
     }
 
     .section-header {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
-      margin-bottom: 14px;
+      margin-bottom: 13px;
     }
 
     .section-header h2 {
       margin: 0;
-      font-size: 20px;
+      font-size: 19px;
     }
 
     .section-header span {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
     }
 
-    .tree-container {
-      min-height: 360px;
-      max-height: 760px;
+    .queue-list,
+    .branch-list {
+      display: grid;
+      gap: 7px;
+      max-height: 750px;
       overflow: auto;
-      padding: 5px;
     }
 
-    .tree,
-    .tree ul {
-      position: relative;
-      margin: 0;
-      padding-left: 24px;
-      list-style: none;
-    }
-
-    .tree {
-      padding-left: 0;
-    }
-
-    .tree ul::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      bottom: 18px;
-      left: 9px;
-      border-left: 1px solid var(--border);
-    }
-
-    .tree li {
-      position: relative;
-      padding: 5px 0 5px 21px;
-    }
-
-    .tree > li {
-      padding-left: 0;
-    }
-
-    .tree ul > li::before {
-      content: "";
-      position: absolute;
-      top: 23px;
-      left: 9px;
-      width: 12px;
-      border-top: 1px solid var(--border);
-    }
-
-    .tree-node {
-      display: inline-flex;
-      flex-wrap: wrap;
+    .queue-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
       gap: 8px;
       align-items: center;
-      min-height: 40px;
-      padding: 7px 11px;
+      width: 100%;
+      padding: 9px 10px;
       color: var(--text);
-      background: var(--panel-light);
+      background: var(--panel-2);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 9px;
       text-align: left;
     }
 
-    .tree-node:hover {
+    .queue-item:hover {
       border-color: var(--accent);
     }
 
-    .tree-node.active {
-      border-color: var(--selected);
-      box-shadow:
-        0 0 0 2px
-        rgb(201 156 255 / 14%);
+    .queue-item.active {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 2px rgb(201 156 255 / 13%);
     }
 
-    .tree-word {
-      font-weight: 750;
+    .queue-word {
+      min-width: 0;
+      overflow: hidden;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .badge {
+      display: inline-flex;
+      align-items: center;
       padding: 2px 7px;
       border-radius: 999px;
       font-size: 11px;
       font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .pending-badge {
+      color: var(--warning);
+      background: rgb(239 197 109 / 12%);
+    }
+
+    .assigned-badge {
+      color: var(--success);
+      background: rgb(120 216 156 / 12%);
+    }
+
+    .skipped-badge {
+      color: var(--muted);
+      background: rgb(156 167 179 / 13%);
     }
 
     .part-badge {
@@ -289,61 +331,112 @@
       background: rgb(138 180 248 / 12%);
     }
 
-    .root-badge {
-      color: var(--success);
-      background: rgb(117 214 156 / 12%);
+    .current-card {
+      min-height: 500px;
     }
 
-    .loop-badge {
-      color: var(--warning);
-      background: rgb(239 198 109 / 12%);
-    }
-
-    .manual-badge {
-      color: var(--selected);
-      background: rgb(201 156 255 / 12%);
-    }
-
-    .definition-panel {
-      min-height: 360px;
-    }
-
-    .selected-word-heading {
-      margin: 0 0 6px;
-      font-size: clamp(25px, 4vw, 38px);
-    }
-
-    .selected-word-meta {
+    .current-heading {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      min-height: 23px;
-      margin-bottom: 20px;
+      gap: 9px;
+      align-items: baseline;
+      margin-bottom: 8px;
     }
 
-    .instruction {
-      margin-bottom: 14px;
+    .current-heading h2 {
+      margin: 0;
+      font-size: clamp(29px, 5vw, 45px);
+    }
+
+    .current-origin {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .current-instruction {
+      margin: 0 0 15px;
       color: var(--muted);
       line-height: 1.55;
     }
 
-    .definition-box {
-      min-height: 130px;
-      padding: 18px;
-      background: var(--panel-light);
+    .definition-list {
+      display: grid;
+      gap: 11px;
+    }
+
+    .entry-heading {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0 2px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .entry-heading:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .entry-headword {
+      font-weight: 800;
+    }
+
+    .homograph {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .definition-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 11px;
+      padding: 12px;
+      background: var(--panel-2);
       border: 1px solid var(--border);
-      border-radius: 13px;
+      border-radius: 11px;
+    }
+
+    .sense-number {
+      min-width: 31px;
+      color: var(--accent);
+      font-weight: 750;
+      text-align: right;
+    }
+
+    .definition-content {
+      min-width: 0;
+    }
+
+    .labels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+
+    .usage-label {
+      padding: 2px 6px;
+      color: var(--warning);
+      background: rgb(239 197 109 / 10%);
+      border-radius: 5px;
+      font-size: 11px;
+      font-style: italic;
+    }
+
+    .definition-text {
       font-family:
         Georgia,
         "Times New Roman",
         serif;
-      font-size: clamp(21px, 3vw, 29px);
-      line-height: 1.75;
+      font-size: clamp(18px, 2.2vw, 23px);
+      line-height: 1.68;
     }
 
     .definition-word {
       display: inline;
-      padding: 2px 3px;
+      padding: 1px 3px;
       color: var(--text);
       background: transparent;
       border: 0;
@@ -354,136 +447,194 @@
     }
 
     .definition-word:hover {
-      color: #07101d;
+      color: #07101c;
       background: var(--accent);
     }
 
-    .definition-word.current-word {
+    .definition-word.same-word {
       color: var(--muted);
       cursor: not-allowed;
       text-decoration: line-through;
     }
 
-    .definition-punctuation {
+    .punctuation {
       white-space: pre-wrap;
     }
 
-    .parent-summary {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-top: 16px;
-      padding: 13px;
-      color: var(--muted);
-      background: var(--panel-light);
-      border: 1px solid var(--border);
-      border-radius: 11px;
-    }
-
-    .parent-summary strong {
-      color: var(--text);
-    }
-
-    .manual-entry {
+    .parent-controls {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 9px;
+      gap: 8px;
       margin-top: 15px;
     }
 
-    .history-panel {
-      margin-top: 18px;
+    .current-relation {
+      margin-top: 13px;
+      padding: 11px;
+      color: var(--muted);
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
     }
 
-    .history-list {
-      display: grid;
-      gap: 8px;
+    .current-relation strong {
+      color: var(--text);
     }
 
-    .history-row {
-      display: grid;
-      grid-template-columns:
-        minmax(100px, auto)
-        auto
-        minmax(100px, auto)
-        1fr
-        auto;
-      gap: 9px;
+    .branch-tree,
+    .branch-tree ul {
+      position: relative;
+      margin: 0;
+      padding-left: 19px;
+      list-style: none;
+    }
+
+    .branch-tree {
+      padding-left: 0;
+    }
+
+    .branch-tree ul::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 17px;
+      left: 6px;
+      border-left: 1px solid var(--border);
+    }
+
+    .branch-tree li {
+      position: relative;
+      padding: 4px 0 4px 14px;
+    }
+
+    .branch-tree > li {
+      padding-left: 0;
+    }
+
+    .branch-tree ul > li::before {
+      content: "";
+      position: absolute;
+      top: 20px;
+      left: 6px;
+      width: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .branch-node {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
       align-items: center;
-      padding: 10px 12px;
-      background: var(--panel-light);
+      min-height: 34px;
+      padding: 5px 8px;
+      color: var(--text);
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    .branch-node:hover {
+      border-color: var(--accent);
+    }
+
+    .branch-node.active {
+      border-color: var(--purple);
+    }
+
+    .progress-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(90px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .progress-card {
+      padding: 11px;
+      background: var(--panel-2);
       border: 1px solid var(--border);
       border-radius: 10px;
     }
 
-    .history-arrow {
-      color: var(--muted);
+    .progress-value {
+      font-size: 24px;
+      font-weight: 800;
     }
 
-    .history-definition {
+    .progress-label {
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.4;
-    }
-
-    .remove-link-button {
-      min-height: 31px;
-      padding: 0 9px;
-      color: #190909;
-      background: var(--danger);
-      border: 0;
-      border-radius: 7px;
       font-size: 12px;
-      font-weight: 700;
     }
 
-    .suggestion-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .empty-state {
-      padding: 40px 15px;
+    .empty {
+      padding: 34px 12px;
       color: var(--muted);
-      line-height: 1.6;
+      line-height: 1.55;
       text-align: center;
     }
 
-    @media (max-width: 950px) {
-      .controls,
+    .loading {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      padding: 28px 10px;
+      color: var(--muted);
+      justify-content: center;
+    }
+
+    .spinner {
+      width: 19px;
+      height: 19px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1150px) {
+      .workspace {
+        grid-template-columns: minmax(240px, 0.7fr) minmax(450px, 1.4fr);
+      }
+
+      .branches-panel {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .input-grid,
       .workspace {
         grid-template-columns: 1fr;
       }
 
-      .tree-container {
-        max-height: none;
+      .branches-panel {
+        grid-column: auto;
+      }
+
+      .progress-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
 
-    @media (max-width: 700px) {
+    @media (max-width: 520px) {
       .page {
-        width: calc(100% - 16px);
-        padding-top: 12px;
+        width: calc(100% - 14px);
+        padding-top: 9px;
       }
 
       .panel {
-        padding: 13px;
-        border-radius: 12px;
+        padding: 12px;
+        border-radius: 11px;
       }
 
-      .history-row {
-        grid-template-columns:
-          minmax(80px, auto)
-          auto
-          minmax(80px, auto)
-          auto;
-      }
-
-      .history-definition {
-        display: none;
+      .parent-controls {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -492,101 +643,161 @@
 <body>
   <main class="page">
     <header class="header">
-      <h1>Manual Word Definition Tree</h1>
+      <h1>Definition Branch Sorter</h1>
 
       <p>
-        Click a word to load its Merriam-Webster definition.
-        Then click a word inside the definition to make it the
-        selected word’s parent and continue upward through the
-        semantic tree.
+        Add words directly, paste text, upload a text file, or import
+        text from a webpage. For each word, choose any word from any
+        Merriam-Webster definition as its parent, enter a parent
+        manually, or skip the word.
       </p>
     </header>
 
     <section class="panel">
-      <div class="controls">
+      <div class="input-grid">
         <div class="field">
-          <label for="startingWordsInput">
-            Starting nouns or adjectives
+          <label for="wordTextInput">
+            Words or text
           </label>
 
           <textarea
-            id="startingWordsInput"
-            placeholder="rabbit, wooden, teacher, courageous"
-          >rabbit, wooden, teacher, courageous</textarea>
+            id="wordTextInput"
+            placeholder="Enter one word, paste a list, or paste a full passage..."
+          ></textarea>
         </div>
 
-        <button
-          id="startButton"
-          class="button primary-button"
-        >
-          Add words
-        </button>
+        <div class="field">
+          <label for="sourceUrlInput">
+            Webpage link
+          </label>
+
+          <input
+            id="sourceUrlInput"
+            type="url"
+            placeholder="https://example.com/article"
+          />
+
+          <div class="inline-row">
+            <button
+              id="importUrlButton"
+              class="button primary"
+              type="button"
+            >
+              Import link
+            </button>
+
+            <span style="color: var(--muted); font-size: 12px;">
+              Requires the optional Supabase extract-text function
+            </span>
+          </div>
+        </div>
       </div>
 
       <div class="button-row">
         <button
-          id="clearButton"
-          class="button secondary-button"
+          id="addTextButton"
+          class="button primary"
+          type="button"
         >
-          Clear project
+          Add words from text
         </button>
+
+        <label class="file-label">
+          Upload TXT
+          <input
+            id="txtFileInput"
+            type="file"
+            accept=".txt,text/plain"
+          />
+        </label>
 
         <button
           id="exportButton"
-          class="button secondary-button"
+          class="button secondary"
+          type="button"
         >
-          Export JSON
+          Export project
+        </button>
+
+        <label class="file-label">
+          Import project
+          <input
+            id="projectFileInput"
+            type="file"
+            accept=".json,application/json"
+          />
+        </label>
+
+        <button
+          id="resetButton"
+          class="button danger-button"
+          type="button"
+        >
+          Reset
         </button>
       </div>
 
       <div id="status" class="status">
-        Add at least one starting word.
+        Add words to begin.
+      </div>
+
+      <div class="progress-grid">
+        <div class="progress-card">
+          <div id="totalCount" class="progress-value">0</div>
+          <div class="progress-label">Total words</div>
+        </div>
+
+        <div class="progress-card">
+          <div id="pendingCount" class="progress-value">0</div>
+          <div class="progress-label">Pending</div>
+        </div>
+
+        <div class="progress-card">
+          <div id="assignedCount" class="progress-value">0</div>
+          <div class="progress-label">Assigned</div>
+        </div>
+
+        <div class="progress-card">
+          <div id="skippedCount" class="progress-value">0</div>
+          <div class="progress-label">Skipped</div>
+        </div>
       </div>
     </section>
 
     <section class="workspace">
       <section class="panel">
         <div class="section-header">
-          <h2>Word chains</h2>
-          <span id="nodeCount">0 words</span>
+          <h2>Sorting queue</h2>
+          <span>Parents are prioritized</span>
         </div>
 
-        <div
-          id="treeContainer"
-          class="tree-container"
-        >
-          <div class="empty-state">
-            No words have been added.
+        <div id="queueList" class="queue-list">
+          <div class="empty">
+            No words are waiting.
           </div>
         </div>
       </section>
 
-      <section class="panel definition-panel">
-        <div id="definitionContent">
-          <div class="empty-state">
-            Click a word in the tree to display its definition.
+      <section class="panel current-card">
+        <div id="currentWordPanel">
+          <div class="empty">
+            Add a word to begin sorting.
           </div>
         </div>
       </section>
-    </section>
 
-    <section class="panel history-panel">
-      <div class="section-header">
-        <h2>Selected parent relationships</h2>
-
-        <span>
-          All links were chosen manually
-        </span>
-      </div>
-
-      <div
-        id="historyList"
-        class="history-list"
-      >
-        <div class="empty-state">
-          No parent relationships have been selected.
+      <section class="panel branches-panel">
+        <div class="section-header">
+          <h2>Branches</h2>
+          <span>Parent above children</span>
         </div>
-      </div>
+
+        <div id="branchList" class="branch-list">
+          <div class="empty">
+            No branches have been created.
+          </div>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -595,130 +806,137 @@
 
     /*
       ============================================================
-      REQUIRED SUPABASE INFORMATION
+      REQUIRED CONFIGURATION
       ============================================================
 
-      Paste your Supabase project URL below.
+      Paste your Supabase project URL here.
 
-      You can find it in:
-
-      Supabase Dashboard
-      → Project Settings
-      → Data API
-      → Project URL
-
-      It should look like:
-
+      Example:
       https://abcdefghijk.supabase.co
-
-      Do not add a slash at the end.
     */
 
     const SUPABASE_PROJECT_URL =
       "https://tyzvxrlimbhmvmjenjxy.supabase.co";
 
     /*
-      This assumes your deployed Edge Function is named exactly:
+      This HTML expects the existing dictionary Edge Function to be
+      named "merriam-webster".
 
-      merriam-webster
+      It should accept:
+      GET ?word=rabbit
 
-      Therefore its complete URL becomes:
-
-      https://YOUR_PROJECT.supabase.co/functions/v1/merriam-webster
-
-      If you used a different function name, change the final
-      "merriam-webster" portion below.
+      and return the unmodified Merriam-Webster Collegiate API JSON.
     */
 
-    const FUNCTION_URL =
+    const DICTIONARY_FUNCTION_URL =
       `${SUPABASE_PROJECT_URL}/functions/v1/merriam-webster`;
 
     /*
-      No Supabase anonymous key is required in this version because
-      JWT verification should be disabled for the Edge Function.
+      OPTIONAL LINK IMPORT FUNCTION
 
-      The Merriam-Webster API key must not be placed in this HTML.
+      To import text from arbitrary webpage links, deploy another
+      Supabase function named "extract-text".
 
-      It must be stored in Supabase as an Edge Function secret named:
+      It should accept:
+      POST { "url": "https://example.com/page" }
 
-      MERRIAM_WEBSTER_API_KEY
+      and return:
+      { "text": "Readable page text..." }
+
+      The rest of the site works without this optional function.
     */
 
+    const EXTRACT_TEXT_FUNCTION_URL =
+      `${SUPABASE_PROJECT_URL}/functions/v1/extract-text`;
+
+    const STORAGE_KEY =
+      "definition-branch-sorter-v1";
+
+    const WORD_PATTERN =
+      /[A-Za-z]+(?:[-'][A-Za-z]+)*/g;
+
     const state = {
-      nodes: new Map(),
-      roots: [],
-      selectedWord: null,
-      requestCache: new Map(),
-      loadingWords: new Set()
+      words: new Map(),
+      sourceQueue: [],
+      priorityQueue: [],
+      currentWord: null,
+      dictionaryCache: new Map(),
+      loadingWord: null
     };
 
     const elements = {
-      startingWordsInput:
-        document.getElementById("startingWordsInput"),
+      wordTextInput:
+        document.getElementById("wordTextInput"),
 
-      startButton:
-        document.getElementById("startButton"),
+      sourceUrlInput:
+        document.getElementById("sourceUrlInput"),
 
-      clearButton:
-        document.getElementById("clearButton"),
+      addTextButton:
+        document.getElementById("addTextButton"),
+
+      importUrlButton:
+        document.getElementById("importUrlButton"),
+
+      txtFileInput:
+        document.getElementById("txtFileInput"),
+
+      projectFileInput:
+        document.getElementById("projectFileInput"),
 
       exportButton:
         document.getElementById("exportButton"),
 
+      resetButton:
+        document.getElementById("resetButton"),
+
       status:
         document.getElementById("status"),
 
-      treeContainer:
-        document.getElementById("treeContainer"),
+      queueList:
+        document.getElementById("queueList"),
 
-      definitionContent:
-        document.getElementById("definitionContent"),
+      currentWordPanel:
+        document.getElementById("currentWordPanel"),
 
-      nodeCount:
-        document.getElementById("nodeCount"),
+      branchList:
+        document.getElementById("branchList"),
 
-      historyList:
-        document.getElementById("historyList")
+      totalCount:
+        document.getElementById("totalCount"),
+
+      pendingCount:
+        document.getElementById("pendingCount"),
+
+      assignedCount:
+        document.getElementById("assignedCount"),
+
+      skippedCount:
+        document.getElementById("skippedCount")
     };
 
     function normalizeWord(value) {
       return String(value || "")
         .toLowerCase()
         .trim()
-        .replace(/[’']/g, "")
-        .replace(/^[^a-z]+|[^a-z-]+$/g, "");
-    }
-
-    function parseStartingWords(text) {
-      return [
-        ...new Set(
-          String(text)
-            .split(/[\n,;]+/)
-            .map(normalizeWord)
-            .filter(Boolean)
-        )
-      ];
+        .replace(/[’]/g, "'")
+        .replace(/^[^a-z]+|[^a-z'-]+$/g, "");
     }
 
     function validateConfiguration() {
       if (
         !SUPABASE_PROJECT_URL ||
-        SUPABASE_PROJECT_URL.includes(
-          "PASTE_YOUR_SUPABASE"
-        )
+        SUPABASE_PROJECT_URL.includes("PASTE_YOUR")
       ) {
         throw new Error(
           "Paste your Supabase Project URL into " +
-          "SUPABASE_PROJECT_URL near the beginning of the script."
+          "SUPABASE_PROJECT_URL near the start of the script."
         );
       }
 
-      let parsedUrl;
+      let url;
 
       try {
-        parsedUrl = new URL(
-          SUPABASE_PROJECT_URL
-        );
+        url = new URL(SUPABASE_PROJECT_URL);
       } catch {
         throw new Error(
           "SUPABASE_PROJECT_URL is not a valid URL."
@@ -726,619 +944,819 @@
       }
 
       if (
-        parsedUrl.protocol !== "https:" ||
-        !parsedUrl.hostname.endsWith(
-          ".supabase.co"
-        )
+        url.protocol !== "https:" ||
+        !url.hostname.endsWith(".supabase.co")
       ) {
         throw new Error(
-          "SUPABASE_PROJECT_URL should resemble " +
+          "The project URL should resemble " +
           "https://abcdefghijk.supabase.co"
         );
       }
     }
 
-    function createNode(
-      word,
-      options = {}
-    ) {
-      const normalized =
-        normalizeWord(word);
+    function tokenizeText(text) {
+      const matches =
+        String(text || "").match(WORD_PATTERN) || [];
+
+      return matches
+        .map(normalizeWord)
+        .filter(Boolean);
+    }
+
+    function createWord(word, options = {}) {
+      const normalized = normalizeWord(word);
 
       if (!normalized) {
         return null;
       }
 
-      const existing =
-        state.nodes.get(normalized);
+      const existing = state.words.get(normalized);
 
       if (existing) {
-        if (options.isRoot) {
-          existing.isRoot = true;
+        if (options.origin) {
+          existing.origins.add(options.origin);
         }
 
         return existing;
       }
 
-      const node = {
+      const item = {
         word: normalized,
-        isRoot: Boolean(options.isRoot),
+        status: "pending",
         parent: null,
         children: new Set(),
-        definition: "",
-        partOfSpeech: "",
-        entryId: "",
-        status: "not-loaded",
-        error: "",
+        definitions: [],
+        dictionaryStatus: "not-loaded",
+        dictionaryError: "",
         suggestions: [],
-        loop: false
+        origins: new Set(
+          options.origin
+            ? [options.origin]
+            : []
+        ),
+        createdAt: Date.now()
       };
 
-      state.nodes.set(
-        normalized,
-        node
-      );
+      state.words.set(normalized, item);
 
-      return node;
+      return item;
     }
 
-    async function addStartingWords() {
-      try {
-        validateConfiguration();
-      } catch (error) {
-        setStatus(
-          error.message,
-          "error"
-        );
+    function addWords(words, origin = "manual text") {
+      let added = 0;
 
-        return;
-      }
+      for (const rawWord of words) {
+        const word = normalizeWord(rawWord);
 
-      const words = parseStartingWords(
-        elements.startingWordsInput.value
-      );
+        if (!word) {
+          continue;
+        }
 
-      if (!words.length) {
-        setStatus(
-          "Enter at least one starting word.",
-          "error"
-        );
+        const existed = state.words.has(word);
+        const item = createWord(word, { origin });
 
-        return;
-      }
+        if (!item) {
+          continue;
+        }
 
-      for (const word of words) {
-        const node = createNode(
-          word,
-          {
-            isRoot: true
-          }
-        );
-
-        if (
-          node &&
-          !state.roots.includes(node.word)
-        ) {
-          state.roots.push(node.word);
+        if (!existed) {
+          state.sourceQueue.push(word);
+          added += 1;
         }
       }
 
+      chooseNextWord();
+      saveProject();
       renderAll();
 
-      if (
-        !state.selectedWord &&
-        words[0]
-      ) {
-        await selectWord(words[0]);
+      return added;
+    }
+
+    function addTextFromInput() {
+      const text =
+        elements.wordTextInput.value.trim();
+
+      if (!text) {
+        setStatus(
+          "Enter a word, list, or passage first.",
+          "warning"
+        );
+
+        return;
       }
+
+      const words = tokenizeText(text);
+      const added = addWords(words, "pasted text");
 
       setStatus(
-        `${words.length} starting word${
-          words.length === 1 ? "" : "s"
-        } added.`,
+        `Added ${added} new unique word${added === 1 ? "" : "s"}.`,
         "success"
       );
+
+      elements.wordTextInput.value = "";
     }
 
-    async function selectWord(word) {
-      const normalized =
-        normalizeWord(word);
-
-      const node =
-        state.nodes.get(normalized);
-
-      if (!node) {
-        return;
-      }
-
-      state.selectedWord =
-        normalized;
-
-      renderAll();
-
-      if (
-        node.status === "not-loaded" ||
-        node.status === "error"
-      ) {
-        await loadDefinition(
-          normalized
-        );
-      } else {
-        renderDefinitionPanel();
-      }
-    }
-
-    async function loadDefinition(word) {
-      const normalized =
-        normalizeWord(word);
-
-      const node =
-        state.nodes.get(normalized);
-
-      if (!node) {
+    async function readTxtFile(file) {
+      if (!file) {
         return;
       }
 
       try {
-        validateConfiguration();
-      } catch (error) {
-        node.status = "error";
-        node.error = error.message;
+        const text = await file.text();
+        const words = tokenizeText(text);
+        const added = addWords(
+          words,
+          `file: ${file.name}`
+        );
 
         setStatus(
-          error.message,
-          "error"
+          `Added ${added} new unique word${added === 1 ? "" : "s"} ` +
+          `from ${file.name}.`,
+          "success"
         );
-
-        renderAll();
-        return;
-      }
-
-      if (
-        state.loadingWords.has(
-          normalized
-        )
-      ) {
-        return;
-      }
-
-      state.loadingWords.add(
-        normalized
-      );
-
-      node.status = "loading";
-      node.error = "";
-
-      renderAll();
-
-      try {
-        const results =
-          await fetchDictionaryEntries(
-            normalized
-          );
-
-        if (
-          results.length &&
-          results.every(
-            item =>
-              typeof item === "string"
-          )
-        ) {
-          node.status = "missing";
-          node.suggestions =
-            results.slice(0, 8);
-
-          node.error =
-            "No exact dictionary entry was found.";
-
-          setStatus(
-            `No exact entry was found for “${normalized}”.`,
-            "warning"
-          );
-
-          return;
-        }
-
-        const selectedEntry =
-          choosePrimaryNounOrAdjective(
-            results
-          );
-
-        if (!selectedEntry) {
-          node.status =
-            "unsupported";
-
-          node.error =
-            "No noun or adjective entry was found.";
-
-          setStatus(
-            `Merriam-Webster did not return a noun or adjective entry for “${normalized}”.`,
-            "warning"
-          );
-
-          return;
-        }
-
-        node.definition =
-          getPrimaryDefinition(
-            selectedEntry.entry
-          );
-
-        node.partOfSpeech =
-          selectedEntry.partOfSpeech;
-
-        node.entryId =
-          selectedEntry.entry.meta?.id ||
-          "";
-
-        if (!node.definition) {
-          node.status =
-            "missing-definition";
-
-          node.error =
-            "The entry did not contain a readable primary definition.";
-        } else {
-          node.status = "loaded";
-          node.error = "";
-
-          setStatus(
-            `Definition loaded for “${normalized}”. Click a word in the definition to choose its parent.`,
-            "success"
-          );
-        }
       } catch (error) {
         console.error(error);
 
-        node.status = "error";
-
-        node.error =
-          error instanceof Error
-            ? error.message
-            : "The dictionary request failed.";
-
         setStatus(
-          node.error,
+          "The text file could not be read.",
           "error"
         );
       } finally {
-        state.loadingWords.delete(
-          normalized
+        elements.txtFileInput.value = "";
+      }
+    }
+
+    async function importWebpage() {
+      const sourceUrl =
+        elements.sourceUrlInput.value.trim();
+
+      if (!sourceUrl) {
+        setStatus(
+          "Paste a webpage URL first.",
+          "warning"
         );
 
+        return;
+      }
+
+      try {
+        validateConfiguration();
+
+        new URL(sourceUrl);
+      } catch (error) {
+        setStatus(
+          error.message || "Enter a valid webpage URL.",
+          "error"
+        );
+
+        return;
+      }
+
+      elements.importUrlButton.disabled = true;
+
+      setStatus(
+        "Extracting readable text from the webpage…"
+      );
+
+      try {
+        const response = await fetch(
+          EXTRACT_TEXT_FUNCTION_URL,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json"
+            },
+            body: JSON.stringify({
+              url: sourceUrl
+            })
+          }
+        );
+
+        let data;
+
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error(
+            `The extract-text function returned non-JSON ` +
+            `(HTTP ${response.status}).`
+          );
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+            `Text extraction failed with HTTP ${response.status}.`
+          );
+        }
+
+        if (
+          typeof data?.text !== "string" ||
+          !data.text.trim()
+        ) {
+          throw new Error(
+            "The extraction function returned no readable text."
+          );
+        }
+
+        const words = tokenizeText(data.text);
+        const added = addWords(
+          words,
+          `link: ${sourceUrl}`
+        );
+
+        setStatus(
+          `Added ${added} new unique word${added === 1 ? "" : "s"} ` +
+          `from the webpage.`,
+          "success"
+        );
+
+        elements.sourceUrlInput.value = "";
+      } catch (error) {
+        console.error(error);
+
+        setStatus(
+          error instanceof Error
+            ? error.message
+            : "The webpage could not be imported.",
+          "error"
+        );
+      } finally {
+        elements.importUrlButton.disabled = false;
+      }
+    }
+
+    function chooseNextWord() {
+      const priority = state.priorityQueue.find(word => {
+        const item = state.words.get(word);
+        return item?.status === "pending";
+      });
+
+      const source = state.sourceQueue.find(word => {
+        const item = state.words.get(word);
+        return item?.status === "pending";
+      });
+
+      const next = priority || source || null;
+
+      if (
+        !state.currentWord ||
+        state.words.get(state.currentWord)?.status !== "pending"
+      ) {
+        state.currentWord = next;
+      }
+
+      if (
+        state.currentWord &&
+        state.words.get(state.currentWord)?.status === "pending"
+      ) {
+        loadDefinitions(state.currentWord);
+      }
+    }
+
+    function selectQueueWord(word) {
+      const normalized = normalizeWord(word);
+      const item = state.words.get(normalized);
+
+      if (!item || item.status !== "pending") {
+        return;
+      }
+
+      state.currentWord = normalized;
+      renderAll();
+      loadDefinitions(normalized);
+    }
+
+    async function loadDefinitions(word) {
+      const normalized = normalizeWord(word);
+      const item = state.words.get(normalized);
+
+      if (!item) {
+        return;
+      }
+
+      if (
+        item.dictionaryStatus === "loaded" ||
+        item.dictionaryStatus === "loading"
+      ) {
+        return;
+      }
+
+      try {
+        validateConfiguration();
+      } catch (error) {
+        item.dictionaryStatus = "error";
+        item.dictionaryError = error.message;
+        renderAll();
+        return;
+      }
+
+      item.dictionaryStatus = "loading";
+      item.dictionaryError = "";
+      state.loadingWord = normalized;
+
+      renderAll();
+
+      try {
+        const apiResults =
+          await fetchDictionaryEntries(normalized);
+
+        if (
+          apiResults.length &&
+          apiResults.every(
+            value => typeof value === "string"
+          )
+        ) {
+          item.dictionaryStatus = "missing";
+          item.suggestions = apiResults.slice(0, 10);
+          item.definitions = [];
+          return;
+        }
+
+        const definitions =
+          extractAllDefinitions(apiResults, normalized);
+
+        if (!definitions.length) {
+          item.dictionaryStatus = "empty";
+          item.dictionaryError =
+            "No readable noun or adjective definitions were returned.";
+          return;
+        }
+
+        item.definitions = definitions;
+        item.dictionaryStatus = "loaded";
+      } catch (error) {
+        console.error(error);
+
+        item.dictionaryStatus = "error";
+        item.dictionaryError =
+          error instanceof Error
+            ? error.message
+            : "The dictionary request failed.";
+      } finally {
+        state.loadingWord = null;
+        saveProject();
         renderAll();
       }
     }
 
-    async function fetchDictionaryEntries(
-      word
-    ) {
-      const normalized =
-        normalizeWord(word);
-
-      if (!normalized) {
-        throw new Error(
-          "No valid word was provided."
-        );
+    async function fetchDictionaryEntries(word) {
+      if (state.dictionaryCache.has(word)) {
+        return state.dictionaryCache.get(word);
       }
 
-      if (
-        state.requestCache.has(
-          normalized
-        )
-      ) {
-        return state.requestCache.get(
-          normalized
-        );
-      }
-
-      const requestUrl =
-        `${FUNCTION_URL}?word=${
-          encodeURIComponent(normalized)
-        }`;
+      const url =
+        `${DICTIONARY_FUNCTION_URL}?word=${encodeURIComponent(word)}`;
 
       let response;
 
       try {
-        response = await fetch(
-          requestUrl,
-          {
-            method: "GET",
-            headers: {
-              Accept:
-                "application/json"
-            }
+        response = await fetch(url, {
+          method: "GET",
+          headers: {
+            Accept: "application/json"
           }
-        );
+        });
       } catch (error) {
-        console.error(
-          "Supabase network error:",
-          error
-        );
-
         throw new Error(
-          "The Supabase function could not be reached. " +
-          "Confirm the Project URL, confirm the function was deployed, " +
-          "and confirm JWT verification is disabled."
+          "The Merriam-Webster Supabase function could not be reached. " +
+          "Confirm the project URL, function deployment, CORS settings, " +
+          "and JWT configuration."
         );
       }
 
       let data;
 
       try {
-        data =
-          await response.json();
+        data = await response.json();
       } catch {
         throw new Error(
-          "The Supabase function returned a response that was not JSON. " +
-          `HTTP status: ${response.status}.`
+          `The dictionary function returned non-JSON ` +
+          `(HTTP ${response.status}).`
         );
       }
 
       if (!response.ok) {
-        const details =
-          typeof data?.details ===
-          "string"
-            ? ` ${data.details}`
-            : "";
-
         throw new Error(
-          (
-            data?.error ||
-            `Definition request failed with HTTP ${response.status}.`
-          ) + details
+          data?.error ||
+          `Dictionary request failed with HTTP ${response.status}.`
         );
       }
 
       if (!Array.isArray(data)) {
         throw new Error(
-          data?.error ||
-          "The dictionary returned an unexpected response."
+          "The dictionary function returned an unexpected response."
         );
       }
 
-      state.requestCache.set(
-        normalized,
-        data
-      );
+      state.dictionaryCache.set(word, data);
 
       return data;
     }
 
-    function choosePrimaryNounOrAdjective(
-      entries
-    ) {
-      const candidates = entries
-        .filter(isDictionaryEntry)
-        .map((entry, index) => {
-          const partOfSpeech =
-            normalizePartOfSpeech(
-              entry.fl
-            );
-
-          let score =
-            1000 - index;
-
-          if (
-            partOfSpeech !== "noun" &&
-            partOfSpeech !==
-              "adjective"
-          ) {
-            score -= 5000;
-          }
-
-          if (
-            Array.isArray(
-              entry.shortdef
-            ) &&
-            entry.shortdef.length
-          ) {
-            score += 100;
-          }
-
-          if (
-            entry.meta?.id &&
-            !entry.meta.id.includes(":")
-          ) {
-            score += 20;
-          }
-
-          return {
-            entry,
-            partOfSpeech,
-            score
-          };
-        })
-        .filter(candidate => {
-          return (
-            candidate.partOfSpeech ===
-              "noun" ||
-            candidate.partOfSpeech ===
-              "adjective"
-          );
-        })
-        .sort(
-          (a, b) =>
-            b.score - a.score
-        );
-
-      return candidates[0] || null;
-    }
-
-    function isDictionaryEntry(
-      value
-    ) {
+    function isDictionaryEntry(value) {
       return Boolean(
         value &&
         typeof value === "object" &&
         value.meta &&
-        typeof value.meta.id ===
-          "string"
+        typeof value.meta.id === "string"
       );
     }
 
-    function normalizePartOfSpeech(
-      value
-    ) {
+    function normalizePartOfSpeech(value) {
       const part =
-        String(value || "")
-          .toLowerCase();
+        String(value || "").toLowerCase();
 
       if (part.includes("noun")) {
         return "noun";
       }
 
-      if (
-        part.includes("adjective")
-      ) {
+      if (part.includes("adjective")) {
         return "adjective";
       }
 
       return part;
     }
 
-    function getPrimaryDefinition(
-      entry
-    ) {
+    function normalizeHeadword(value) {
+      return String(value || "")
+        .replace(/\*/g, "")
+        .replace(/[0-9]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function extractAllDefinitions(entries, searchedWord) {
+      const results = [];
+      const searched = normalizeWord(searchedWord);
+
+      entries
+        .filter(isDictionaryEntry)
+        .forEach((entry, entryIndex) => {
+          const partOfSpeech =
+            normalizePartOfSpeech(entry.fl);
+
+          if (
+            partOfSpeech !== "noun" &&
+            partOfSpeech !== "adjective"
+          ) {
+            return;
+          }
+
+          const headword = normalizeHeadword(
+            entry.hwi?.hw ||
+            entry.meta?.id?.split(":")[0] ||
+            searched
+          );
+
+          const entryInfo = {
+            entryId: entry.meta?.id || "",
+            headword,
+            homograph: entry.hom || null,
+            partOfSpeech,
+            entryIndex
+          };
+
+          const senses =
+            extractSensesFromDefinitionStructure(entry.def);
+
+          if (senses.length) {
+            senses.forEach((sense, senseIndex) => {
+              const text =
+                cleanDictionaryText(sense.text);
+
+              if (!text) {
+                return;
+              }
+
+              results.push({
+                ...entryInfo,
+                id:
+                  `${entryInfo.entryId}-${senseIndex}-${results.length}`,
+
+                senseNumber:
+                  sense.number || String(senseIndex + 1),
+
+                labels:
+                  [...new Set(sense.labels)],
+
+                text,
+                exactHeadword:
+                  headword === searched
+              });
+            });
+          } else if (Array.isArray(entry.shortdef)) {
+            entry.shortdef.forEach((definition, senseIndex) => {
+              const text =
+                cleanDictionaryText(definition);
+
+              if (!text) {
+                return;
+              }
+
+              results.push({
+                ...entryInfo,
+                id:
+                  `${entryInfo.entryId}-short-${senseIndex}`,
+
+                senseNumber:
+                  String(senseIndex + 1),
+
+                labels: [],
+                text,
+                exactHeadword:
+                  headword === searched
+              });
+            });
+          }
+        });
+
+      const unique = [];
+      const seen = new Set();
+
+      for (const definition of results) {
+        const key = [
+          definition.entryId,
+          definition.partOfSpeech,
+          definition.text
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, " ")
+            .trim()
+        ].join("|");
+
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(definition);
+        }
+      }
+
+      return unique.sort((a, b) => {
+        if (a.exactHeadword !== b.exactHeadword) {
+          return Number(b.exactHeadword) -
+            Number(a.exactHeadword);
+        }
+
+        if (a.entryIndex !== b.entryIndex) {
+          return a.entryIndex - b.entryIndex;
+        }
+
+        return compareSenseNumbers(
+          a.senseNumber,
+          b.senseNumber
+        );
+      });
+    }
+
+    function compareSenseNumbers(a, b) {
+      return String(a).localeCompare(
+        String(b),
+        undefined,
+        {
+          numeric: true,
+          sensitivity: "base"
+        }
+      );
+    }
+
+    function extractSensesFromDefinitionStructure(definitions) {
+      const senses = [];
+
+      walkDictionaryStructure(
+        definitions,
+        {
+          labels: [],
+          senseNumber: ""
+        },
+        senses
+      );
+
+      return senses;
+    }
+
+    function walkDictionaryStructure(value, context, senses) {
+      if (Array.isArray(value)) {
+        if (
+          value.length === 2 &&
+          typeof value[0] === "string"
+        ) {
+          const type = value[0];
+          const content = value[1];
+
+          if (
+            type === "sense" ||
+            type === "sen" ||
+            type === "sdsense"
+          ) {
+            processSenseObject(content, context, senses);
+            return;
+          }
+
+          if (
+            type === "pseq" ||
+            type === "sseq" ||
+            type === "bs"
+          ) {
+            walkDictionaryStructure(
+              content,
+              context,
+              senses
+            );
+            return;
+          }
+        }
+
+        for (const item of value) {
+          walkDictionaryStructure(
+            item,
+            context,
+            senses
+          );
+        }
+
+        return;
+      }
+
       if (
-        Array.isArray(entry.shortdef) &&
-        entry.shortdef.length
+        !value ||
+        typeof value !== "object"
       ) {
-        return cleanDefinition(
-          entry.shortdef[0]
+        return;
+      }
+
+      const localLabels = [
+        ...context.labels,
+        ...collectLabels(value)
+      ];
+
+      if (value.dt) {
+        const text =
+          extractDefinitionTextFromDt(value.dt);
+
+        if (text) {
+          senses.push({
+            text,
+            labels: localLabels,
+            number:
+              value.sn ||
+              context.senseNumber ||
+              ""
+          });
+        }
+      }
+
+      for (const [key, child] of Object.entries(value)) {
+        if (
+          key === "dt" ||
+          key === "vis" ||
+          key === "et"
+        ) {
+          continue;
+        }
+
+        walkDictionaryStructure(
+          child,
+          {
+            labels: localLabels,
+            senseNumber:
+              value.sn ||
+              context.senseNumber ||
+              ""
+          },
+          senses
+        );
+      }
+    }
+
+    function processSenseObject(value, context, senses) {
+      if (
+        !value ||
+        typeof value !== "object"
+      ) {
+        return;
+      }
+
+      const labels = [
+        ...context.labels,
+        ...collectLabels(value)
+      ];
+
+      const text =
+        extractDefinitionTextFromDt(value.dt);
+
+      if (text) {
+        senses.push({
+          text,
+          labels,
+          number:
+            value.sn ||
+            context.senseNumber ||
+            ""
+        });
+      }
+
+      if (value.sdsense) {
+        walkDictionaryStructure(
+          value.sdsense,
+          {
+            labels,
+            senseNumber:
+              value.sn ||
+              context.senseNumber ||
+              ""
+          },
+          senses
         );
       }
 
-      const definitions = [];
+      if (value.bs) {
+        walkDictionaryStructure(
+          value.bs,
+          {
+            labels,
+            senseNumber:
+              value.sn ||
+              context.senseNumber ||
+              ""
+          },
+          senses
+        );
+      }
+    }
 
-      walkValues(
-        entry.def,
-        value => {
-          if (
-            typeof value ===
-              "string" &&
-            value.includes("{bc}")
-          ) {
-            definitions.push(
-              cleanDefinition(value)
-            );
+    function collectLabels(value) {
+      const labels = [];
+
+      if (Array.isArray(value?.lbs)) {
+        labels.push(...value.lbs);
+      }
+
+      if (typeof value?.sl === "string") {
+        labels.push(value.sl);
+      }
+
+      return labels
+        .map(cleanDictionaryText)
+        .filter(Boolean);
+    }
+
+    function extractDefinitionTextFromDt(dt) {
+      if (!Array.isArray(dt)) {
+        return "";
+      }
+
+      const parts = [];
+
+      for (const item of dt) {
+        if (
+          Array.isArray(item) &&
+          item[0] === "text" &&
+          typeof item[1] === "string"
+        ) {
+          const text =
+            cleanDictionaryText(item[1]);
+
+          if (text) {
+            parts.push(text);
           }
         }
-      );
-
-      return definitions[0] || "";
-    }
-
-    function walkValues(
-      value,
-      callback
-    ) {
-      if (Array.isArray(value)) {
-        for (const item of value) {
-          walkValues(
-            item,
-            callback
-          );
-        }
-
-        return;
       }
 
-      if (
-        value &&
-        typeof value === "object"
-      ) {
-        for (
-          const child of
-          Object.values(value)
-        ) {
-          walkValues(
-            child,
-            callback
-          );
-        }
-
-        return;
-      }
-
-      callback(value);
+      return parts.join(" ").trim();
     }
 
-    function cleanDefinition(value) {
+    function cleanDictionaryText(value) {
       return String(value || "")
         .replace(/\{bc\}/g, "")
-        .replace(
-          /\{b\}|\{\/b\}/g,
-          ""
-        )
-        .replace(
-          /\{it\}|\{\/it\}/g,
-          ""
-        )
-        .replace(
-          /\{wi\}|\{\/wi\}/g,
-          ""
-        )
-        .replace(
-          /\{sc\}|\{\/sc\}/g,
-          ""
-        )
-        .replace(
-          /\{sup\}|\{\/sup\}/g,
-          ""
-        )
-        .replace(
-          /\{inf\}|\{\/inf\}/g,
-          ""
-        )
-        .replace(
-          /\{phrase\}|\{\/phrase\}/g,
-          ""
-        )
-        .replace(
-          /\{dx\}.*?\{\/dx\}/g,
-          ""
-        )
+        .replace(/\{b\}|\{\/b\}/g, "")
+        .replace(/\{it\}|\{\/it\}/g, "")
+        .replace(/\{wi\}|\{\/wi\}/g, "")
+        .replace(/\{sc\}|\{\/sc\}/g, "")
+        .replace(/\{sup\}|\{\/sup\}/g, "")
+        .replace(/\{inf\}|\{\/inf\}/g, "")
+        .replace(/\{phrase\}|\{\/phrase\}/g, "")
+        .replace(/\{dx\}.*?\{\/dx\}/g, "")
         .replace(
           /\{(?:sx|dxt|a_link|d_link|mat)\|([^|}]+).*?\}/g,
           "$1"
         )
-        .replace(
-          /\{[^{}]+\}/g,
-          ""
-        )
-        .replace(
-          /^\s*:\s*/,
-          ""
-        )
-        .replace(
-          /\s+/g,
-          " "
-        )
+        .replace(/\{[^{}]+\}/g, "")
+        .replace(/^\s*:\s*/, "")
+        .replace(/\s+/g, " ")
         .trim();
     }
 
-    async function chooseParent(
-      childWord,
-      clickedWord
-    ) {
-      const child =
-        state.nodes.get(
-          normalizeWord(childWord)
-        );
+    function assignParent(childWord, parentWord) {
+      const childName = normalizeWord(childWord);
+      const parentName = normalizeWord(parentWord);
 
-      const parentWord =
-        normalizeWord(clickedWord);
+      const child = state.words.get(childName);
 
-      if (
-        !child ||
-        !parentWord
-      ) {
+      if (!child || !parentName) {
         return;
       }
 
-      if (
-        parentWord === child.word
-      ) {
+      if (childName === parentName) {
         setStatus(
           "A word cannot be its own parent.",
           "warning"
@@ -1347,433 +1765,257 @@
         return;
       }
 
-      unlinkExistingParent(child);
-
-      const parent =
-        createNode(parentWord);
+      let parent = state.words.get(parentName);
 
       if (!parent) {
-        return;
+        parent = createWord(parentName, {
+          origin: `parent selected for ${childName}`
+        });
       }
 
-      child.parent =
-        parent.word;
-
-      parent.children.add(
-        child.word
-      );
-
-      const loopPath =
-        findLoopFrom(child.word);
-
-      if (loopPath) {
-        child.loop = true;
-
+      if (wouldCreateLoop(childName, parentName)) {
         setStatus(
-          `Loop detected: ${loopPath.join(
-            " → "
-          )}. The chain stops here.`,
-          "warning"
+          `The relationship ${childName} → ${parentName} ` +
+          "would create a loop.",
+          "error"
         );
 
-        state.selectedWord =
-          parent.word;
-
-        renderAll();
         return;
       }
 
-      child.loop = false;
+      if (child.parent) {
+        const formerParent =
+          state.words.get(child.parent);
 
-      state.selectedWord =
-        parent.word;
+        formerParent?.children.delete(childName);
+      }
 
+      child.parent = parentName;
+      child.status = "assigned";
+      parent.children.add(childName);
+
+      removeFromQueues(childName);
+
+      /*
+        Newly introduced parent goes next unless it has already been
+        assigned or skipped.
+      */
+      if (parent.status === "pending") {
+        moveToPriorityFront(parentName);
+        state.currentWord = parentName;
+      } else {
+        state.currentWord = null;
+        chooseNextWord();
+      }
+
+      saveProject();
       renderAll();
 
+      if (state.currentWord) {
+        loadDefinitions(state.currentWord);
+      }
+
       setStatus(
-        `“${parent.word}” is now the parent of “${child.word}”.`,
+        `Placed “${childName}” under “${parentName}”.`,
         "success"
       );
-
-      if (
-        parent.status ===
-          "not-loaded" ||
-        parent.status === "error"
-      ) {
-        await loadDefinition(
-          parent.word
-        );
-      } else {
-        renderDefinitionPanel();
-      }
     }
 
-    function unlinkExistingParent(
-      child
-    ) {
-      if (!child.parent) {
-        return;
-      }
+    function wouldCreateLoop(childWord, parentWord) {
+      let current = parentWord;
+      const visited = new Set();
 
-      const oldParent =
-        state.nodes.get(
-          child.parent
-        );
-
-      if (oldParent) {
-        oldParent.children.delete(
-          child.word
-        );
-      }
-
-      child.parent = null;
-      child.loop = false;
-    }
-
-    function findLoopFrom(
-      startWord
-    ) {
-      const visitedIndexes =
-        new Map();
-
-      const path = [];
-
-      let currentWord =
-        startWord;
-
-      while (currentWord) {
-        if (
-          visitedIndexes.has(
-            currentWord
-          )
-        ) {
-          const loopStart =
-            visitedIndexes.get(
-              currentWord
-            );
-
-          return [
-            ...path.slice(loopStart),
-            currentWord
-          ];
+      while (current) {
+        if (current === childWord) {
+          return true;
         }
 
-        visitedIndexes.set(
-          currentWord,
-          path.length
-        );
+        if (visited.has(current)) {
+          return true;
+        }
 
-        path.push(currentWord);
+        visited.add(current);
 
-        const currentNode =
-          state.nodes.get(
-            currentWord
-          );
-
-        currentWord =
-          currentNode?.parent ||
-          null;
+        const item = state.words.get(current);
+        current = item?.parent || null;
       }
 
-      return null;
+      return false;
     }
 
-    async function applyTypedParent() {
-      const selectedNode =
-        state.nodes.get(
-          state.selectedWord
-        );
+    function skipCurrentWord() {
+      const item =
+        state.words.get(state.currentWord);
 
-      if (!selectedNode) {
+      if (!item) {
         return;
       }
 
-      const input =
-        document.getElementById(
-          "manualParentInput"
-        );
+      if (item.parent) {
+        const parent =
+          state.words.get(item.parent);
 
-      if (!input) {
-        return;
+        parent?.children.delete(item.word);
       }
 
-      const parent =
-        normalizeWord(input.value);
+      item.parent = null;
+      item.status = "skipped";
 
-      if (!parent) {
-        setStatus(
-          "Enter a parent word.",
-          "warning"
-        );
+      removeFromQueues(item.word);
 
-        return;
-      }
+      state.currentWord = null;
+      chooseNextWord();
 
-      await chooseParent(
-        selectedNode.word,
-        parent
-      );
-    }
-
-    function removeParentLink(
-      childWord
-    ) {
-      const child =
-        state.nodes.get(childWord);
-
-      if (!child) {
-        return;
-      }
-
-      const previousParent =
-        child.parent;
-
-      unlinkExistingParent(child);
+      saveProject();
+      renderAll();
 
       setStatus(
-        previousParent
-          ? `Removed the link ${child.word} → ${previousParent}.`
-          : `“${child.word}” had no parent link.`,
-        "success"
+        `Skipped “${item.word}”.`,
+        "warning"
       );
+    }
 
+    function restoreWord(word) {
+      const item =
+        state.words.get(normalizeWord(word));
+
+      if (!item) {
+        return;
+      }
+
+      if (item.parent) {
+        const parent =
+          state.words.get(item.parent);
+
+        parent?.children.delete(item.word);
+      }
+
+      item.parent = null;
+      item.status = "pending";
+
+      moveToPriorityFront(item.word);
+      state.currentWord = item.word;
+
+      saveProject();
       renderAll();
+      loadDefinitions(item.word);
+    }
+
+    function removeFromQueues(word) {
+      state.sourceQueue =
+        state.sourceQueue.filter(item => item !== word);
+
+      state.priorityQueue =
+        state.priorityQueue.filter(item => item !== word);
+    }
+
+    function moveToPriorityFront(word) {
+      state.priorityQueue =
+        state.priorityQueue.filter(item => item !== word);
+
+      state.priorityQueue.unshift(word);
     }
 
     function renderAll() {
-      renderTree();
-      renderDefinitionPanel();
-      renderHistory();
-
-      const count =
-        state.nodes.size;
-
-      elements.nodeCount.textContent =
-        `${count} word${
-          count === 1 ? "" : "s"
-        }`;
+      renderQueue();
+      renderCurrentWord();
+      renderBranches();
+      renderCounts();
     }
 
-    function renderTree() {
-      if (!state.roots.length) {
-        elements.treeContainer.innerHTML = `
-          <div class="empty-state">
-            No words have been added.
+    function renderQueue() {
+      const pending = getPendingWordsInOrder();
+
+      if (!pending.length) {
+        elements.queueList.innerHTML = `
+          <div class="empty">
+            No uncategorized words remain.
           </div>
         `;
 
         return;
       }
 
-      const tree =
-        document.createElement("ul");
+      const fragment =
+        document.createDocumentFragment();
 
-      tree.className = "tree";
+      for (const word of pending) {
+        const item = state.words.get(word);
 
-      for (
-        const rootWord of
-        state.roots
-      ) {
-        const root =
-          state.nodes.get(rootWord);
-
-        if (!root) {
+        if (!item) {
           continue;
         }
 
-        tree.appendChild(
-          renderChainNode(
-            root,
-            new Set()
-          )
+        const button =
+          document.createElement("button");
+
+        button.type = "button";
+        button.className = "queue-item";
+
+        if (word === state.currentWord) {
+          button.classList.add("active");
+        }
+
+        const label =
+          document.createElement("span");
+
+        label.className = "queue-word";
+        label.textContent = word;
+
+        const badge =
+          makeBadge("pending", "pending-badge");
+
+        button.append(label, badge);
+
+        button.addEventListener(
+          "click",
+          () => selectQueueWord(word)
         );
+
+        fragment.appendChild(button);
       }
 
-      elements.treeContainer.replaceChildren(
-        tree
-      );
+      elements.queueList.replaceChildren(fragment);
     }
 
-    function renderChainNode(
-      node,
-      visited
-    ) {
-      const listItem =
-        document.createElement("li");
+    function getPendingWordsInOrder() {
+      const ordered = [];
+      const seen = new Set();
 
-      const button =
-        document.createElement(
-          "button"
-        );
+      for (const word of [
+        ...state.priorityQueue,
+        ...state.sourceQueue,
+        ...state.words.keys()
+      ]) {
+        const item = state.words.get(word);
 
-      button.type = "button";
-      button.className =
-        "tree-node";
-
-      if (
-        state.selectedWord ===
-        node.word
-      ) {
-        button.classList.add(
-          "active"
-        );
-      }
-
-      const wordLabel =
-        document.createElement(
-          "span"
-        );
-
-      wordLabel.className =
-        "tree-word";
-
-      wordLabel.textContent =
-        node.word;
-
-      button.appendChild(
-        wordLabel
-      );
-
-      if (node.isRoot) {
-        button.appendChild(
-          makeBadge(
-            "root",
-            "root-badge"
-          )
-        );
-      }
-
-      if (node.partOfSpeech) {
-        button.appendChild(
-          makeBadge(
-            node.partOfSpeech,
-            "part-badge"
-          )
-        );
-      }
-
-      if (node.parent) {
-        button.appendChild(
-          makeBadge(
-            "manual",
-            "manual-badge"
-          )
-        );
-      }
-
-      if (node.loop) {
-        button.appendChild(
-          makeBadge(
-            "loop",
-            "loop-badge"
-          )
-        );
-      }
-
-      button.addEventListener(
-        "click",
-        () => selectWord(node.word)
-      );
-
-      listItem.appendChild(
-        button
-      );
-
-      if (!node.parent) {
-        return listItem;
-      }
-
-      const nextVisited =
-        new Set(visited);
-
-      nextVisited.add(
-        node.word
-      );
-
-      const parentList =
-        document.createElement("ul");
-
-      if (
-        nextVisited.has(
-          node.parent
-        )
-      ) {
-        const loopItem =
-          document.createElement("li");
-
-        const loopButton =
-          document.createElement(
-            "button"
-          );
-
-        loopButton.type =
-          "button";
-
-        loopButton.className =
-          "tree-node";
-
-        loopButton.appendChild(
-          makeTextSpan(
-            node.parent,
-            "tree-word"
-          )
-        );
-
-        loopButton.appendChild(
-          makeBadge(
-            "loop",
-            "loop-badge"
-          )
-        );
-
-        loopButton.addEventListener(
-          "click",
-          () =>
-            selectWord(
-              node.parent
-            )
-        );
-
-        loopItem.appendChild(
-          loopButton
-        );
-
-        parentList.appendChild(
-          loopItem
-        );
-      } else {
-        const parentNode =
-          state.nodes.get(
-            node.parent
-          );
-
-        if (parentNode) {
-          parentList.appendChild(
-            renderChainNode(
-              parentNode,
-              nextVisited
-            )
-          );
+        if (
+          item?.status === "pending" &&
+          !seen.has(word)
+        ) {
+          seen.add(word);
+          ordered.push(word);
         }
       }
 
-      listItem.appendChild(
-        parentList
-      );
-
-      return listItem;
+      return ordered;
     }
 
-    function renderDefinitionPanel() {
-      const node =
-        state.nodes.get(
-          state.selectedWord
-        );
+    function renderCurrentWord() {
+      const item =
+        state.words.get(state.currentWord);
 
-      if (!node) {
-        elements.definitionContent.innerHTML = `
-          <div class="empty-state">
-            Click a word in the tree to display its definition.
+      if (!item) {
+        const pending =
+          getPendingWordsInOrder();
+
+        elements.currentWordPanel.innerHTML = `
+          <div class="empty">
+            ${
+              pending.length
+                ? "Select a pending word."
+                : "All words have been assigned or skipped."
+            }
           </div>
         `;
 
@@ -1784,727 +2026,843 @@
         document.createElement("div");
 
       const heading =
-        document.createElement("h2");
-
-      heading.className =
-        "selected-word-heading";
-
-      heading.textContent =
-        node.word;
-
-      wrapper.appendChild(
-        heading
-      );
-
-      const meta =
         document.createElement("div");
 
-      meta.className =
-        "selected-word-meta";
+      heading.className = "current-heading";
 
-      if (node.partOfSpeech) {
-        meta.appendChild(
-          makeBadge(
-            node.partOfSpeech,
-            "part-badge"
-          )
-        );
+      const title =
+        document.createElement("h2");
+
+      title.textContent = item.word;
+
+      heading.appendChild(title);
+
+      if (item.origins.size) {
+        const origin =
+          document.createElement("span");
+
+        origin.className = "current-origin";
+        origin.textContent =
+          [...item.origins].join(" • ");
+
+        heading.appendChild(origin);
       }
 
-      if (node.isRoot) {
-        meta.appendChild(
-          makeBadge(
-            "starting word",
-            "root-badge"
-          )
-        );
-      }
-
-      if (node.parent) {
-        meta.appendChild(
-          makeBadge(
-            `parent: ${node.parent}`,
-            "manual-badge"
-          )
-        );
-      }
-
-      if (node.loop) {
-        meta.appendChild(
-          makeBadge(
-            "loop detected",
-            "loop-badge"
-          )
-        );
-      }
-
-      wrapper.appendChild(meta);
-
-      if (
-        node.status === "loading"
-      ) {
-        wrapper.appendChild(
-          makeEmptyState(
-            `Loading Merriam-Webster’s definition of “${node.word}”…`
-          )
-        );
-
-        elements.definitionContent.replaceChildren(
-          wrapper
-        );
-
-        return;
-      }
-
-      if (
-        node.status === "error" ||
-        node.status ===
-          "unsupported" ||
-        node.status ===
-          "missing-definition"
-      ) {
-        wrapper.appendChild(
-          makeEmptyState(
-            node.error
-          )
-        );
-
-        const retryButton =
-          document.createElement(
-            "button"
-          );
-
-        retryButton.className =
-          "button primary-button";
-
-        retryButton.textContent =
-          "Try loading again";
-
-        retryButton.addEventListener(
-          "click",
-          () =>
-            loadDefinition(
-              node.word
-            )
-        );
-
-        wrapper.appendChild(
-          retryButton
-        );
-
-        elements.definitionContent.replaceChildren(
-          wrapper
-        );
-
-        return;
-      }
-
-      if (
-        node.status === "missing"
-      ) {
-        wrapper.appendChild(
-          makeEmptyState(
-            node.error
-          )
-        );
-
-        if (
-          node.suggestions.length
-        ) {
-          const instruction =
-            document.createElement(
-              "p"
-            );
-
-          instruction.className =
-            "instruction";
-
-          instruction.textContent =
-            "Choose a suggested spelling:";
-
-          wrapper.appendChild(
-            instruction
-          );
-
-          const suggestionRow =
-            document.createElement(
-              "div"
-            );
-
-          suggestionRow.className =
-            "suggestion-row";
-
-          for (
-            const suggestion of
-            node.suggestions
-          ) {
-            const button =
-              document.createElement(
-                "button"
-              );
-
-            button.className =
-              "button secondary-button";
-
-            button.textContent =
-              suggestion;
-
-            button.addEventListener(
-              "click",
-              async () => {
-                await replaceNodeWord(
-                  node.word,
-                  suggestion
-                );
-              }
-            );
-
-            suggestionRow.appendChild(
-              button
-            );
-          }
-
-          wrapper.appendChild(
-            suggestionRow
-          );
-        }
-
-        elements.definitionContent.replaceChildren(
-          wrapper
-        );
-
-        return;
-      }
-
-      if (
-        node.status !== "loaded"
-      ) {
-        const loadButton =
-          document.createElement(
-            "button"
-          );
-
-        loadButton.className =
-          "button primary-button";
-
-        loadButton.textContent =
-          "Load definition";
-
-        loadButton.addEventListener(
-          "click",
-          () =>
-            loadDefinition(
-              node.word
-            )
-        );
-
-        wrapper.appendChild(
-          loadButton
-        );
-
-        elements.definitionContent.replaceChildren(
-          wrapper
-        );
-
-        return;
-      }
+      wrapper.appendChild(heading);
 
       const instruction =
         document.createElement("p");
 
       instruction.className =
-        "instruction";
+        "current-instruction";
 
       instruction.textContent =
-        "Click the noun in the primary definition that should serve as this word’s parent.";
+        "Click any word in any definition to make it the parent. " +
+        "You may also type a parent manually or skip this word.";
 
-      wrapper.appendChild(
-        instruction
-      );
+      wrapper.appendChild(instruction);
 
-      const definitionBox =
-        document.createElement("div");
+      if (item.dictionaryStatus === "loading") {
+        const loading =
+          document.createElement("div");
 
-      definitionBox.className =
-        "definition-box";
+        loading.className = "loading";
+        loading.innerHTML =
+          `<span class="spinner"></span>` +
+          `<span>Loading all definitions…</span>`;
 
-      appendClickableDefinition(
-        definitionBox,
-        node
-      );
-
-      wrapper.appendChild(
-        definitionBox
-      );
-
-      const parentSummary =
-        document.createElement("div");
-
-      parentSummary.className =
-        "parent-summary";
-
-      if (node.parent) {
-        const summaryText =
-          document.createElement(
-            "span"
-          );
-
-        summaryText.append(
-          "Current relationship: "
+        wrapper.appendChild(loading);
+      } else if (item.dictionaryStatus === "loaded") {
+        wrapper.appendChild(
+          renderDefinitions(item)
         );
-
-        const childStrong =
-          document.createElement(
-            "strong"
-          );
-
-        childStrong.textContent =
-          node.word;
-
-        const parentStrong =
-          document.createElement(
-            "strong"
-          );
-
-        parentStrong.textContent =
-          node.parent;
-
-        summaryText.append(
-          childStrong,
-          " → ",
-          parentStrong
+      } else if (item.dictionaryStatus === "missing") {
+        wrapper.appendChild(
+          renderMissingEntry(item)
         );
+      } else if (
+        item.dictionaryStatus === "error" ||
+        item.dictionaryStatus === "empty"
+      ) {
+        const error =
+          document.createElement("div");
 
-        parentSummary.appendChild(
-          summaryText
-        );
+        error.className = "empty";
+        error.textContent =
+          item.dictionaryError ||
+          "No definitions were available.";
 
-        const removeButton =
-          document.createElement(
-            "button"
-          );
+        wrapper.appendChild(error);
 
-        removeButton.className =
-          "remove-link-button";
+        const retry =
+          document.createElement("button");
 
-        removeButton.textContent =
-          "Remove link";
-
-        removeButton.addEventListener(
+        retry.className = "button primary";
+        retry.textContent = "Retry";
+        retry.addEventListener(
           "click",
-          () =>
-            removeParentLink(
-              node.word
-            )
+          () => {
+            item.dictionaryStatus = "not-loaded";
+            loadDefinitions(item.word);
+          }
         );
 
-        parentSummary.appendChild(
-          removeButton
-        );
-      } else {
-        parentSummary.textContent =
-          "No parent has been selected yet.";
+        wrapper.appendChild(retry);
       }
 
-      wrapper.appendChild(
-        parentSummary
-      );
-
-      const manualEntry =
+      const controls =
         document.createElement("div");
 
-      manualEntry.className =
-        "manual-entry";
+      controls.className = "parent-controls";
 
-      const manualInput =
+      const parentInput =
         document.createElement("input");
 
-      manualInput.id =
-        "manualParentInput";
+      parentInput.type = "text";
+      parentInput.placeholder =
+        "Type a parent word manually";
 
-      manualInput.type = "text";
+      const assignButton =
+        document.createElement("button");
 
-      manualInput.placeholder =
-        "Or type a parent not shown in the definition";
+      assignButton.className =
+        "button purple-button";
 
-      const manualButton =
-        document.createElement(
-          "button"
-        );
-
-      manualButton.id =
-        "manualParentButton";
-
-      manualButton.className =
-        "button secondary-button";
-
-      manualButton.textContent =
+      assignButton.textContent =
         "Use parent";
 
-      manualButton.addEventListener(
+      const submitParent = () => {
+        const parent =
+          normalizeWord(parentInput.value);
+
+        if (!parent) {
+          setStatus(
+            "Type a parent word first.",
+            "warning"
+          );
+
+          return;
+        }
+
+        assignParent(item.word, parent);
+      };
+
+      assignButton.addEventListener(
         "click",
-        applyTypedParent
+        submitParent
       );
 
-      manualInput.addEventListener(
+      parentInput.addEventListener(
         "keydown",
         event => {
-          if (
-            event.key === "Enter"
-          ) {
-            applyTypedParent();
+          if (event.key === "Enter") {
+            submitParent();
           }
         }
       );
 
-      manualEntry.append(
-        manualInput,
-        manualButton
+      controls.append(
+        parentInput,
+        assignButton
       );
 
-      wrapper.appendChild(
-        manualEntry
+      wrapper.appendChild(controls);
+
+      const bottomButtons =
+        document.createElement("div");
+
+      bottomButtons.className = "button-row";
+
+      const skipButton =
+        document.createElement("button");
+
+      skipButton.className =
+        "button warning-button";
+
+      skipButton.textContent = "Skip";
+      skipButton.addEventListener(
+        "click",
+        skipCurrentWord
       );
 
-      elements.definitionContent.replaceChildren(
-        wrapper
+      const reloadButton =
+        document.createElement("button");
+
+      reloadButton.className =
+        "button secondary";
+
+      reloadButton.textContent =
+        "Reload definitions";
+
+      reloadButton.addEventListener(
+        "click",
+        () => {
+          state.dictionaryCache.delete(item.word);
+          item.dictionaryStatus = "not-loaded";
+          item.definitions = [];
+          loadDefinitions(item.word);
+        }
       );
+
+      bottomButtons.append(
+        skipButton,
+        reloadButton
+      );
+
+      wrapper.appendChild(bottomButtons);
+
+      elements.currentWordPanel.replaceChildren(wrapper);
+    }
+
+    function renderDefinitions(item) {
+      const list =
+        document.createElement("div");
+
+      list.className = "definition-list";
+
+      let previousEntryKey = "";
+
+      for (const definition of item.definitions) {
+        const entryKey =
+          `${definition.entryId}|${definition.partOfSpeech}`;
+
+        if (entryKey !== previousEntryKey) {
+          previousEntryKey = entryKey;
+
+          const entryHeading =
+            document.createElement("div");
+
+          entryHeading.className =
+            "entry-heading";
+
+          const headword =
+            document.createElement("span");
+
+          headword.className =
+            "entry-headword";
+
+          headword.textContent =
+            definition.headword || item.word;
+
+          entryHeading.appendChild(headword);
+
+          if (definition.homograph) {
+            const homograph =
+              document.createElement("span");
+
+            homograph.className =
+              "homograph";
+
+            homograph.textContent =
+              `homograph ${definition.homograph}`;
+
+            entryHeading.appendChild(homograph);
+          }
+
+          entryHeading.appendChild(
+            makeBadge(
+              definition.partOfSpeech,
+              "part-badge"
+            )
+          );
+
+          list.appendChild(entryHeading);
+        }
+
+        const card =
+          document.createElement("div");
+
+        card.className =
+          "definition-card";
+
+        const number =
+          document.createElement("div");
+
+        number.className =
+          "sense-number";
+
+        number.textContent =
+          definition.senseNumber || "•";
+
+        const content =
+          document.createElement("div");
+
+        content.className =
+          "definition-content";
+
+        if (definition.labels.length) {
+          const labels =
+            document.createElement("div");
+
+          labels.className = "labels";
+
+          for (const label of definition.labels) {
+            const labelElement =
+              document.createElement("span");
+
+            labelElement.className =
+              "usage-label";
+
+            labelElement.textContent = label;
+            labels.appendChild(labelElement);
+          }
+
+          content.appendChild(labels);
+        }
+
+        const text =
+          document.createElement("div");
+
+        text.className =
+          "definition-text";
+
+        appendClickableDefinition(
+          text,
+          definition.text,
+          item.word
+        );
+
+        content.appendChild(text);
+        card.append(number, content);
+        list.appendChild(card);
+      }
+
+      return list;
     }
 
     function appendClickableDefinition(
       container,
-      node
+      definition,
+      childWord
     ) {
       const tokenPattern =
         /([A-Za-z]+(?:[-’'][A-Za-z]+)*)|([^A-Za-z]+)/g;
 
       const tokens =
-        node.definition.match(
-          tokenPattern
-        ) || [];
+        String(definition).match(tokenPattern) || [];
 
-      for (
-        const token of tokens
-      ) {
+      for (const token of tokens) {
         if (
-          /^[A-Za-z]+(?:[-’'][A-Za-z]+)*$/.test(
-            token
-          )
+          /^[A-Za-z]+(?:[-’'][A-Za-z]+)*$/.test(token)
         ) {
           const normalized =
             normalizeWord(token);
 
           const button =
-            document.createElement(
-              "button"
-            );
+            document.createElement("button");
 
           button.type = "button";
-
           button.className =
             "definition-word";
 
-          button.textContent =
-            token;
+          button.textContent = token;
 
           if (
-            normalized ===
-              node.word ||
-            !normalized
+            !normalized ||
+            normalized === childWord
           ) {
-            button.classList.add(
-              "current-word"
-            );
-
+            button.classList.add("same-word");
             button.disabled = true;
           } else {
             button.title =
-              `Make “${normalized}” the parent of “${node.word}”`;
+              `Make “${normalized}” the parent of “${childWord}”`;
 
             button.addEventListener(
               "click",
-              () => {
-                chooseParent(
-                  node.word,
-                  normalized
-                );
-              }
+              () => assignParent(
+                childWord,
+                normalized
+              )
             );
           }
 
-          container.appendChild(
-            button
-          );
+          container.appendChild(button);
         } else {
           const punctuation =
-            document.createElement(
-              "span"
-            );
+            document.createElement("span");
 
           punctuation.className =
-            "definition-punctuation";
+            "punctuation";
 
-          punctuation.textContent =
-            token;
+          punctuation.textContent = token;
 
-          container.appendChild(
-            punctuation
-          );
+          container.appendChild(punctuation);
         }
       }
     }
 
-    function renderHistory() {
-      const linkedNodes =
-        [...state.nodes.values()]
-          .filter(
-            node => node.parent
-          )
-          .sort(
-            (a, b) =>
-              a.word.localeCompare(
-                b.word
-              )
+    function renderMissingEntry(item) {
+      const wrapper =
+        document.createElement("div");
+
+      const message =
+        document.createElement("div");
+
+      message.className = "empty";
+      message.textContent =
+        "No exact dictionary entry was found.";
+
+      wrapper.appendChild(message);
+
+      if (item.suggestions.length) {
+        const row =
+          document.createElement("div");
+
+        row.className = "button-row";
+
+        for (const suggestion of item.suggestions) {
+          const button =
+            document.createElement("button");
+
+          button.className =
+            "button secondary small-button";
+
+          button.textContent = suggestion;
+
+          button.addEventListener(
+            "click",
+            () => replaceWord(
+              item.word,
+              suggestion
+            )
           );
 
-      if (!linkedNodes.length) {
-        elements.historyList.innerHTML = `
-          <div class="empty-state">
-            No parent relationships have been selected.
+          row.appendChild(button);
+        }
+
+        wrapper.appendChild(row);
+      }
+
+      return wrapper;
+    }
+
+    function replaceWord(oldWord, newWord) {
+      const oldItem = state.words.get(oldWord);
+      const normalized = normalizeWord(newWord);
+
+      if (!oldItem || !normalized) {
+        return;
+      }
+
+      const replacement =
+        createWord(normalized, {
+          origin: `spelling replacement for ${oldWord}`
+        });
+
+      for (const childName of oldItem.children) {
+        const child = state.words.get(childName);
+
+        if (child) {
+          child.parent = normalized;
+          replacement.children.add(childName);
+        }
+      }
+
+      if (oldItem.parent) {
+        const parent =
+          state.words.get(oldItem.parent);
+
+        parent?.children.delete(oldWord);
+        parent?.children.add(normalized);
+        replacement.parent = oldItem.parent;
+      }
+
+      replacement.status = oldItem.status;
+
+      state.sourceQueue =
+        state.sourceQueue.map(
+          word => word === oldWord
+            ? normalized
+            : word
+        );
+
+      state.priorityQueue =
+        state.priorityQueue.map(
+          word => word === oldWord
+            ? normalized
+            : word
+        );
+
+      state.words.delete(oldWord);
+      state.currentWord = normalized;
+
+      saveProject();
+      renderAll();
+      loadDefinitions(normalized);
+    }
+
+    function renderBranches() {
+      const roots = getBranchRoots();
+
+      const skipped = [...state.words.values()]
+        .filter(item => item.status === "skipped")
+        .sort((a, b) =>
+          a.word.localeCompare(b.word)
+        );
+
+      if (!roots.length && !skipped.length) {
+        elements.branchList.innerHTML = `
+          <div class="empty">
+            Assign a parent to create the first branch.
           </div>
         `;
 
         return;
       }
 
-      const fragment =
-        document.createDocumentFragment();
+      const wrapper =
+        document.createElement("div");
 
-      for (
-        const node of linkedNodes
-      ) {
-        const row =
-          document.createElement(
-            "div"
+      if (roots.length) {
+        const tree =
+          document.createElement("ul");
+
+        tree.className = "branch-tree";
+
+        for (const root of roots) {
+          tree.appendChild(
+            renderBranchNode(root, new Set())
           );
+        }
 
-        row.className =
-          "history-row";
-
-        const childButton =
-          document.createElement(
-            "button"
-          );
-
-        childButton.className =
-          "tree-node";
-
-        childButton.textContent =
-          node.word;
-
-        childButton.addEventListener(
-          "click",
-          () =>
-            selectWord(node.word)
-        );
-
-        const arrow =
-          document.createElement(
-            "span"
-          );
-
-        arrow.className =
-          "history-arrow";
-
-        arrow.textContent = "→";
-
-        const parentButton =
-          document.createElement(
-            "button"
-          );
-
-        parentButton.className =
-          "tree-node";
-
-        parentButton.textContent =
-          node.parent;
-
-        parentButton.addEventListener(
-          "click",
-          () =>
-            selectWord(
-              node.parent
-            )
-        );
-
-        const details =
-          document.createElement(
-            "div"
-          );
-
-        details.className =
-          "history-definition";
-
-        details.textContent =
-          node.definition || "";
-
-        const removeButton =
-          document.createElement(
-            "button"
-          );
-
-        removeButton.className =
-          "remove-link-button";
-
-        removeButton.textContent =
-          "Remove";
-
-        removeButton.addEventListener(
-          "click",
-          () =>
-            removeParentLink(
-              node.word
-            )
-        );
-
-        row.append(
-          childButton,
-          arrow,
-          parentButton,
-          details,
-          removeButton
-        );
-
-        fragment.appendChild(row);
+        wrapper.appendChild(tree);
       }
 
-      elements.historyList.replaceChildren(
-        fragment
-      );
-    }
+      if (skipped.length) {
+        const skippedHeading =
+          document.createElement("div");
 
-    async function replaceNodeWord(
-      oldWord,
-      newWord
-    ) {
-      const oldNode =
-        state.nodes.get(oldWord);
+        skippedHeading.className =
+          "entry-heading";
 
-      const normalized =
-        normalizeWord(newWord);
+        skippedHeading.textContent =
+          "Skipped";
 
-      if (
-        !oldNode ||
-        !normalized
-      ) {
-        return;
-      }
+        wrapper.appendChild(skippedHeading);
 
-      const replacement =
-        createNode(
-          normalized,
-          {
-            isRoot:
-              oldNode.isRoot
-          }
-        );
+        for (const item of skipped) {
+          const button =
+            document.createElement("button");
 
-      if (!replacement) {
-        return;
-      }
+          button.className =
+            "branch-node";
 
-      if (oldNode.isRoot) {
-        state.roots =
-          state.roots.map(
-            root =>
-              root === oldWord
-                ? normalized
-                : root
-          );
-      }
-
-      for (
-        const childWord of
-        oldNode.children
-      ) {
-        const child =
-          state.nodes.get(
-            childWord
+          button.append(
+            document.createTextNode(item.word),
+            makeBadge("skipped", "skipped-badge")
           );
 
-        if (child) {
-          child.parent =
-            normalized;
-
-          replacement.children.add(
-            child.word
+          button.addEventListener(
+            "click",
+            () => restoreWord(item.word)
           );
+
+          wrapper.appendChild(button);
         }
       }
 
-      state.nodes.delete(
-        oldWord
+      elements.branchList.replaceChildren(wrapper);
+    }
+
+    function getBranchRoots() {
+      return [...state.words.values()]
+        .filter(item => {
+          const hasBranchRole =
+            item.children.size > 0 ||
+            item.status === "assigned";
+
+          return hasBranchRole && !item.parent;
+        })
+        .sort((a, b) =>
+          a.word.localeCompare(b.word)
+        );
+    }
+
+    function renderBranchNode(item, visited) {
+      const li =
+        document.createElement("li");
+
+      const button =
+        document.createElement("button");
+
+      button.type = "button";
+      button.className =
+        "branch-node";
+
+      if (item.word === state.currentWord) {
+        button.classList.add("active");
+      }
+
+      button.appendChild(
+        document.createTextNode(item.word)
       );
 
-      state.selectedWord =
-        normalized;
+      if (item.status === "pending") {
+        button.appendChild(
+          makeBadge("pending", "pending-badge")
+        );
+      } else if (item.status === "assigned") {
+        button.appendChild(
+          makeBadge("assigned", "assigned-badge")
+        );
+      }
 
+      button.addEventListener(
+        "click",
+        () => {
+          if (item.status === "pending") {
+            selectQueueWord(item.word);
+          } else {
+            restoreWord(item.word);
+          }
+        }
+      );
+
+      li.appendChild(button);
+
+      const nextVisited =
+        new Set(visited);
+
+      nextVisited.add(item.word);
+
+      const childItems =
+        [...item.children]
+          .map(word => state.words.get(word))
+          .filter(Boolean)
+          .sort((a, b) =>
+            a.word.localeCompare(b.word)
+          );
+
+      if (childItems.length) {
+        const ul =
+          document.createElement("ul");
+
+        for (const child of childItems) {
+          if (nextVisited.has(child.word)) {
+            continue;
+          }
+
+          ul.appendChild(
+            renderBranchNode(
+              child,
+              nextVisited
+            )
+          );
+        }
+
+        li.appendChild(ul);
+      }
+
+      return li;
+    }
+
+    function renderCounts() {
+      const values =
+        [...state.words.values()];
+
+      const pending =
+        values.filter(
+          item => item.status === "pending"
+        ).length;
+
+      const assigned =
+        values.filter(
+          item => item.status === "assigned"
+        ).length;
+
+      const skipped =
+        values.filter(
+          item => item.status === "skipped"
+        ).length;
+
+      elements.totalCount.textContent =
+        String(values.length);
+
+      elements.pendingCount.textContent =
+        String(pending);
+
+      elements.assignedCount.textContent =
+        String(assigned);
+
+      elements.skippedCount.textContent =
+        String(skipped);
+    }
+
+    function makeBadge(text, className) {
+      const badge =
+        document.createElement("span");
+
+      badge.className =
+        `badge ${className}`;
+
+      badge.textContent = text;
+
+      return badge;
+    }
+
+    function setStatus(message, type = "") {
+      elements.status.textContent = message;
+      elements.status.className =
+        `status${type ? ` ${type}` : ""}`;
+    }
+
+    function serializeProject() {
+      return {
+        version: 1,
+        exportedAt:
+          new Date().toISOString(),
+
+        sourceQueue:
+          [...state.sourceQueue],
+
+        priorityQueue:
+          [...state.priorityQueue],
+
+        currentWord:
+          state.currentWord,
+
+        words:
+          [...state.words.values()].map(item => ({
+            word: item.word,
+            status: item.status,
+            parent: item.parent,
+            children: [...item.children],
+            definitions: item.definitions,
+            dictionaryStatus:
+              item.dictionaryStatus,
+            dictionaryError:
+              item.dictionaryError,
+            suggestions:
+              item.suggestions,
+            origins:
+              [...item.origins],
+            createdAt:
+              item.createdAt
+          }))
+      };
+    }
+
+    function saveProject() {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(serializeProject())
+        );
+      } catch (error) {
+        console.warn(
+          "Could not save project locally:",
+          error
+        );
+      }
+    }
+
+    function loadSavedProject() {
+      const raw =
+        localStorage.getItem(STORAGE_KEY);
+
+      if (!raw) {
+        return;
+      }
+
+      try {
+        restoreProject(JSON.parse(raw));
+        setStatus(
+          "Restored the previous project.",
+          "success"
+        );
+      } catch (error) {
+        console.error(error);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
+    function restoreProject(data) {
+      if (
+        !data ||
+        !Array.isArray(data.words)
+      ) {
+        throw new Error(
+          "Invalid project file."
+        );
+      }
+
+      state.words.clear();
+      state.sourceQueue =
+        Array.isArray(data.sourceQueue)
+          ? [...data.sourceQueue]
+          : [];
+
+      state.priorityQueue =
+        Array.isArray(data.priorityQueue)
+          ? [...data.priorityQueue]
+          : [];
+
+      state.currentWord =
+        data.currentWord || null;
+
+      for (const raw of data.words) {
+        const item = createWord(raw.word);
+
+        item.status =
+          raw.status || "pending";
+
+        item.parent =
+          raw.parent || null;
+
+        item.children =
+          new Set(raw.children || []);
+
+        item.definitions =
+          Array.isArray(raw.definitions)
+            ? raw.definitions
+            : [];
+
+        item.dictionaryStatus =
+          raw.dictionaryStatus ||
+          (
+            item.definitions.length
+              ? "loaded"
+              : "not-loaded"
+          );
+
+        item.dictionaryError =
+          raw.dictionaryError || "";
+
+        item.suggestions =
+          raw.suggestions || [];
+
+        item.origins =
+          new Set(raw.origins || []);
+
+        item.createdAt =
+          raw.createdAt || Date.now();
+      }
+
+      chooseNextWord();
+      saveProject();
       renderAll();
-
-      await loadDefinition(
-        normalized
-      );
     }
 
     function exportProject() {
-      if (!state.nodes.size) {
+      if (!state.words.size) {
         setStatus(
-          "There is no project data to export.",
+          "There is no project to export.",
           "warning"
         );
 
         return;
       }
 
-      const exportData = {
-        exportedAt:
-          new Date().toISOString(),
-
-        roots:
-          [...state.roots],
-
-        nodes:
-          [...state.nodes.values()]
-            .map(node => ({
-              word: node.word,
-              isRoot: node.isRoot,
-              parent: node.parent,
-              children:
-                [...node.children],
-              definition:
-                node.definition,
-              partOfSpeech:
-                node.partOfSpeech,
-              entryId:
-                node.entryId,
-              status:
-                node.status,
-              loop:
-                node.loop
-            }))
-      };
-
       const blob = new Blob(
         [
           JSON.stringify(
-            exportData,
+            serializeProject(),
             null,
             2
           )
         ],
         {
-          type:
-            "application/json"
+          type: "application/json"
         }
       );
 
@@ -2515,115 +2873,99 @@
         document.createElement("a");
 
       link.href = url;
-
       link.download =
-        "manual-word-tree.json";
+        "definition-branch-project.json";
 
-      document.body.appendChild(
-        link
-      );
-
+      document.body.appendChild(link);
       link.click();
       link.remove();
 
       URL.revokeObjectURL(url);
 
       setStatus(
-        "Exported manual-word-tree.json.",
+        "Exported the project.",
         "success"
       );
     }
 
-    function clearProject() {
-      state.nodes.clear();
-      state.roots = [];
-      state.selectedWord = null;
-      state.requestCache.clear();
-      state.loadingWords.clear();
+    async function importProjectFile(file) {
+      if (!file) {
+        return;
+      }
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        restoreProject(data);
+
+        setStatus(
+          `Imported ${file.name}.`,
+          "success"
+        );
+      } catch (error) {
+        console.error(error);
+
+        setStatus(
+          "The project file is invalid.",
+          "error"
+        );
+      } finally {
+        elements.projectFileInput.value = "";
+      }
+    }
+
+    function resetProject() {
+      const confirmed = window.confirm(
+        "Delete all words, branches, and saved progress?"
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      state.words.clear();
+      state.sourceQueue = [];
+      state.priorityQueue = [];
+      state.currentWord = null;
+      state.dictionaryCache.clear();
+      state.loadingWord = null;
+
+      localStorage.removeItem(STORAGE_KEY);
 
       renderAll();
 
       setStatus(
-        "The project was cleared."
+        "The project was reset."
       );
     }
 
-    function makeBadge(
-      text,
-      className
-    ) {
-      const badge =
-        document.createElement(
-          "span"
-        );
-
-      badge.className =
-        `badge ${className}`;
-
-      badge.textContent =
-        text;
-
-      return badge;
-    }
-
-    function makeTextSpan(
-      text,
-      className
-    ) {
-      const span =
-        document.createElement(
-          "span"
-        );
-
-      span.className =
-        className;
-
-      span.textContent =
-        text;
-
-      return span;
-    }
-
-    function makeEmptyState(
-      text
-    ) {
-      const element =
-        document.createElement(
-          "div"
-        );
-
-      element.className =
-        "empty-state";
-
-      element.textContent =
-        text;
-
-      return element;
-    }
-
-    function setStatus(
-      message,
-      type = ""
-    ) {
-      elements.status.textContent =
-        message;
-
-      elements.status.className =
-        `status${
-          type
-            ? ` ${type}`
-            : ""
-        }`;
-    }
-
-    elements.startButton.addEventListener(
+    elements.addTextButton.addEventListener(
       "click",
-      addStartingWords
+      addTextFromInput
     );
 
-    elements.clearButton.addEventListener(
+    elements.importUrlButton.addEventListener(
       "click",
-      clearProject
+      importWebpage
+    );
+
+    elements.txtFileInput.addEventListener(
+      "change",
+      event => {
+        readTxtFile(
+          event.target.files?.[0]
+        );
+      }
+    );
+
+    elements.projectFileInput.addEventListener(
+      "change",
+      event => {
+        importProjectFile(
+          event.target.files?.[0]
+        );
+      }
     );
 
     elements.exportButton.addEventListener(
@@ -2631,22 +2973,29 @@
       exportProject
     );
 
-    elements.startingWordsInput.addEventListener(
+    elements.resetButton.addEventListener(
+      "click",
+      resetProject
+    );
+
+    elements.wordTextInput.addEventListener(
       "keydown",
       event => {
         if (
           event.key === "Enter" &&
-          (
-            event.ctrlKey ||
-            event.metaKey
-          )
+          (event.ctrlKey || event.metaKey)
         ) {
-          addStartingWords();
+          addTextFromInput();
         }
       }
     );
 
+    loadSavedProject();
     renderAll();
+
+    if (state.currentWord) {
+      loadDefinitions(state.currentWord);
+    }
   </script>
 </body>
 </html>
