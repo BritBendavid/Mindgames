@@ -19,7 +19,6 @@
       --text: #f3f5f7;
       --muted: #9da8b5;
       --accent: #8ab4f8;
-      --accent-dark: #192b43;
       --success: #75d69c;
       --warning: #efc66d;
       --danger: #ee8181;
@@ -45,8 +44,7 @@
 
     button,
     input,
-    textarea,
-    select {
+    textarea {
       font: inherit;
     }
 
@@ -86,7 +84,7 @@
 
     .controls {
       display: grid;
-      grid-template-columns: 2fr 2fr auto;
+      grid-template-columns: minmax(260px, 1fr) auto;
       gap: 12px;
       align-items: end;
     }
@@ -103,8 +101,7 @@
     }
 
     input,
-    textarea,
-    select {
+    textarea {
       width: 100%;
       color: var(--text);
       background: var(--panel-light);
@@ -113,8 +110,7 @@
       outline: none;
     }
 
-    input,
-    select {
+    input {
       height: 44px;
       padding: 0 12px;
     }
@@ -126,8 +122,7 @@
     }
 
     input:focus,
-    textarea:focus,
-    select:focus {
+    textarea:focus {
       border-color: var(--accent);
     }
 
@@ -147,11 +142,6 @@
     .secondary-button {
       color: #10151b;
       background: var(--muted);
-    }
-
-    .danger-button {
-      color: #1b0808;
-      background: var(--danger);
     }
 
     .button:disabled {
@@ -187,7 +177,9 @@
 
     .workspace {
       display: grid;
-      grid-template-columns: minmax(300px, 0.8fr) minmax(500px, 1.5fr);
+      grid-template-columns:
+        minmax(300px, 0.8fr)
+        minmax(500px, 1.5fr);
       gap: 18px;
       margin-top: 18px;
     }
@@ -276,7 +268,9 @@
 
     .tree-node.active {
       border-color: var(--selected);
-      box-shadow: 0 0 0 2px rgb(201 156 255 / 14%);
+      box-shadow:
+        0 0 0 2px
+        rgb(201 156 255 / 14%);
     }
 
     .tree-word {
@@ -339,7 +333,10 @@
       background: var(--panel-light);
       border: 1px solid var(--border);
       border-radius: 13px;
-      font-family: Georgia, "Times New Roman", serif;
+      font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
       font-size: clamp(21px, 3vw, 29px);
       line-height: 1.75;
     }
@@ -406,7 +403,12 @@
 
     .history-row {
       display: grid;
-      grid-template-columns: 1fr auto 1fr auto;
+      grid-template-columns:
+        minmax(100px, auto)
+        auto
+        minmax(100px, auto)
+        1fr
+        auto;
       gap: 9px;
       align-items: center;
       padding: 10px 12px;
@@ -436,6 +438,13 @@
       font-weight: 700;
     }
 
+    .suggestion-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
     .empty-state {
       padding: 40px 15px;
       color: var(--muted);
@@ -454,7 +463,7 @@
       }
     }
 
-    @media (max-width: 650px) {
+    @media (max-width: 700px) {
       .page {
         width: calc(100% - 16px);
         padding-top: 12px;
@@ -466,7 +475,11 @@
       }
 
       .history-row {
-        grid-template-columns: 1fr auto 1fr;
+        grid-template-columns:
+          minmax(80px, auto)
+          auto
+          minmax(80px, auto)
+          auto;
       }
 
       .history-definition {
@@ -482,9 +495,10 @@
       <h1>Manual Word Definition Tree</h1>
 
       <p>
-        Click a word to load its Merriam-Webster definition. Then click
-        a word inside the definition to make it the selected word’s
-        parent and continue upward through the semantic tree.
+        Click a word to load its Merriam-Webster definition.
+        Then click a word inside the definition to make it the
+        selected word’s parent and continue upward through the
+        semantic tree.
       </p>
     </header>
 
@@ -499,19 +513,6 @@
             id="startingWordsInput"
             placeholder="rabbit, wooden, teacher, courageous"
           >rabbit, wooden, teacher, courageous</textarea>
-        </div>
-
-        <div class="field">
-          <label for="apiKeyInput">
-            Merriam-Webster Collegiate API key
-          </label>
-
-          <input
-            id="apiKeyInput"
-            type="password"
-            autocomplete="off"
-            placeholder="Paste your API key"
-          />
         </div>
 
         <button
@@ -539,7 +540,7 @@
       </div>
 
       <div id="status" class="status">
-        Enter an API key and add at least one starting word.
+        Add at least one starting word.
       </div>
     </section>
 
@@ -550,7 +551,10 @@
           <span id="nodeCount">0 words</span>
         </div>
 
-        <div id="treeContainer" class="tree-container">
+        <div
+          id="treeContainer"
+          class="tree-container"
+        >
           <div class="empty-state">
             No words have been added.
           </div>
@@ -569,10 +573,16 @@
     <section class="panel history-panel">
       <div class="section-header">
         <h2>Selected parent relationships</h2>
-        <span>All links were chosen manually</span>
+
+        <span>
+          All links were chosen manually
+        </span>
       </div>
 
-      <div id="historyList" class="history-list">
+      <div
+        id="historyList"
+        class="history-list"
+      >
         <div class="empty-state">
           No parent relationships have been selected.
         </div>
@@ -583,8 +593,56 @@
   <script>
     "use strict";
 
-    const API_BASE =
-      "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
+    /*
+      ============================================================
+      REQUIRED SUPABASE INFORMATION
+      ============================================================
+
+      Paste your Supabase project URL below.
+
+      You can find it in:
+
+      Supabase Dashboard
+      → Project Settings
+      → Data API
+      → Project URL
+
+      It should look like:
+
+      https://abcdefghijk.supabase.co
+
+      Do not add a slash at the end.
+    */
+
+    const SUPABASE_PROJECT_URL =
+      "https://tyzvxrlimbhmvmjenjxy.supabase.co";
+
+    /*
+      This assumes your deployed Edge Function is named exactly:
+
+      merriam-webster
+
+      Therefore its complete URL becomes:
+
+      https://YOUR_PROJECT.supabase.co/functions/v1/merriam-webster
+
+      If you used a different function name, change the final
+      "merriam-webster" portion below.
+    */
+
+    const FUNCTION_URL =
+      `${SUPABASE_PROJECT_URL}/functions/v1/merriam-webster`;
+
+    /*
+      No Supabase anonymous key is required in this version because
+      JWT verification should be disabled for the Edge Function.
+
+      The Merriam-Webster API key must not be placed in this HTML.
+
+      It must be stored in Supabase as an Edge Function secret named:
+
+      MERRIAM_WEBSTER_API_KEY
+    */
 
     const state = {
       nodes: new Map(),
@@ -597,9 +655,6 @@
     const elements = {
       startingWordsInput:
         document.getElementById("startingWordsInput"),
-
-      apiKeyInput:
-        document.getElementById("apiKeyInput"),
 
       startButton:
         document.getElementById("startButton"),
@@ -645,14 +700,57 @@
       ];
     }
 
-    function createNode(word, options = {}) {
-      const normalized = normalizeWord(word);
+    function validateConfiguration() {
+      if (
+        !SUPABASE_PROJECT_URL ||
+        SUPABASE_PROJECT_URL.includes(
+          "PASTE_YOUR_SUPABASE"
+        )
+      ) {
+        throw new Error(
+          "Paste your Supabase Project URL into " +
+          "SUPABASE_PROJECT_URL near the beginning of the script."
+        );
+      }
+
+      let parsedUrl;
+
+      try {
+        parsedUrl = new URL(
+          SUPABASE_PROJECT_URL
+        );
+      } catch {
+        throw new Error(
+          "SUPABASE_PROJECT_URL is not a valid URL."
+        );
+      }
+
+      if (
+        parsedUrl.protocol !== "https:" ||
+        !parsedUrl.hostname.endsWith(
+          ".supabase.co"
+        )
+      ) {
+        throw new Error(
+          "SUPABASE_PROJECT_URL should resemble " +
+          "https://abcdefghijk.supabase.co"
+        );
+      }
+    }
+
+    function createNode(
+      word,
+      options = {}
+    ) {
+      const normalized =
+        normalizeWord(word);
 
       if (!normalized) {
         return null;
       }
 
-      const existing = state.nodes.get(normalized);
+      const existing =
+        state.nodes.get(normalized);
 
       if (existing) {
         if (options.isRoot) {
@@ -676,17 +774,20 @@
         loop: false
       };
 
-      state.nodes.set(normalized, node);
+      state.nodes.set(
+        normalized,
+        node
+      );
 
       return node;
     }
 
     async function addStartingWords() {
-      const apiKey = elements.apiKeyInput.value.trim();
-
-      if (!apiKey) {
+      try {
+        validateConfiguration();
+      } catch (error) {
         setStatus(
-          "Paste your Merriam-Webster API key first.",
+          error.message,
           "error"
         );
 
@@ -707,18 +808,27 @@
       }
 
       for (const word of words) {
-        const node = createNode(word, {
-          isRoot: true
-        });
+        const node = createNode(
+          word,
+          {
+            isRoot: true
+          }
+        );
 
-        if (!state.roots.includes(node.word)) {
+        if (
+          node &&
+          !state.roots.includes(node.word)
+        ) {
           state.roots.push(node.word);
         }
       }
 
       renderAll();
 
-      if (!state.selectedWord && words[0]) {
+      if (
+        !state.selectedWord &&
+        words[0]
+      ) {
         await selectWord(words[0]);
       }
 
@@ -731,70 +841,95 @@
     }
 
     async function selectWord(word) {
-      const normalized = normalizeWord(word);
-      const node = state.nodes.get(normalized);
+      const normalized =
+        normalizeWord(word);
+
+      const node =
+        state.nodes.get(normalized);
 
       if (!node) {
         return;
       }
 
-      state.selectedWord = normalized;
+      state.selectedWord =
+        normalized;
+
       renderAll();
 
       if (
         node.status === "not-loaded" ||
         node.status === "error"
       ) {
-        await loadDefinition(normalized);
+        await loadDefinition(
+          normalized
+        );
       } else {
         renderDefinitionPanel();
       }
     }
 
     async function loadDefinition(word) {
-      const normalized = normalizeWord(word);
-      const node = state.nodes.get(normalized);
+      const normalized =
+        normalizeWord(word);
+
+      const node =
+        state.nodes.get(normalized);
 
       if (!node) {
         return;
       }
 
-      const apiKey = elements.apiKeyInput.value.trim();
+      try {
+        validateConfiguration();
+      } catch (error) {
+        node.status = "error";
+        node.error = error.message;
 
-      if (!apiKey) {
         setStatus(
-          "An API key is required to load definitions.",
+          error.message,
           "error"
         );
 
+        renderAll();
         return;
       }
 
-      if (state.loadingWords.has(normalized)) {
+      if (
+        state.loadingWords.has(
+          normalized
+        )
+      ) {
         return;
       }
 
-      state.loadingWords.add(normalized);
+      state.loadingWords.add(
+        normalized
+      );
+
       node.status = "loading";
       node.error = "";
 
       renderAll();
 
       try {
-        const results = await fetchDictionaryEntries(
-          normalized,
-          apiKey
-        );
+        const results =
+          await fetchDictionaryEntries(
+            normalized
+          );
 
         if (
           results.length &&
           results.every(
-            item => typeof item === "string"
+            item =>
+              typeof item === "string"
           )
         ) {
           node.status = "missing";
-          node.suggestions = results.slice(0, 8);
-          node.error = "No exact dictionary entry was found.";
+          node.suggestions =
+            results.slice(0, 8);
+
+          node.error =
+            "No exact dictionary entry was found.";
 
           setStatus(
             `No exact entry was found for “${normalized}”.`,
@@ -804,12 +939,15 @@
           return;
         }
 
-        const selectedEntry = choosePrimaryNounOrAdjective(
-          results
-        );
+        const selectedEntry =
+          choosePrimaryNounOrAdjective(
+            results
+          );
 
         if (!selectedEntry) {
-          node.status = "unsupported";
+          node.status =
+            "unsupported";
+
           node.error =
             "No noun or adjective entry was found.";
 
@@ -821,26 +959,30 @@
           return;
         }
 
-        node.definition = getPrimaryDefinition(
-          selectedEntry.entry
-        );
+        node.definition =
+          getPrimaryDefinition(
+            selectedEntry.entry
+          );
 
         node.partOfSpeech =
           selectedEntry.partOfSpeech;
 
         node.entryId =
-          selectedEntry.entry.meta?.id || "";
+          selectedEntry.entry.meta?.id ||
+          "";
 
         if (!node.definition) {
-          node.status = "missing-definition";
+          node.status =
+            "missing-definition";
+
           node.error =
-            "The entry did not contain a readable short definition.";
+            "The entry did not contain a readable primary definition.";
         } else {
           node.status = "loaded";
           node.error = "";
 
           setStatus(
-            `Definition loaded for “${normalized}”. Click a definition word to select its parent.`,
+            `Definition loaded for “${normalized}”. Click a word in the definition to choose its parent.`,
             "success"
           );
         }
@@ -848,71 +990,146 @@
         console.error(error);
 
         node.status = "error";
+
         node.error =
           error instanceof Error
             ? error.message
             : "The dictionary request failed.";
 
-        setStatus(node.error, "error");
+        setStatus(
+          node.error,
+          "error"
+        );
       } finally {
-        state.loadingWords.delete(normalized);
+        state.loadingWords.delete(
+          normalized
+        );
+
         renderAll();
       }
     }
 
     async function fetchDictionaryEntries(
-      word,
-      apiKey
+      word
     ) {
-      if (state.requestCache.has(word)) {
-        return state.requestCache.get(word);
-      }
+      const normalized =
+        normalizeWord(word);
 
-      const url =
-        API_BASE +
-        encodeURIComponent(word) +
-        "?key=" +
-        encodeURIComponent(apiKey);
-
-      const response = await fetch(url);
-
-      if (!response.ok) {
+      if (!normalized) {
         throw new Error(
-          `Merriam-Webster request failed with HTTP ${response.status}.`
+          "No valid word was provided."
         );
       }
 
-      const data = await response.json();
+      if (
+        state.requestCache.has(
+          normalized
+        )
+      ) {
+        return state.requestCache.get(
+          normalized
+        );
+      }
+
+      const requestUrl =
+        `${FUNCTION_URL}?word=${
+          encodeURIComponent(normalized)
+        }`;
+
+      let response;
+
+      try {
+        response = await fetch(
+          requestUrl,
+          {
+            method: "GET",
+            headers: {
+              Accept:
+                "application/json"
+            }
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Supabase network error:",
+          error
+        );
+
+        throw new Error(
+          "The Supabase function could not be reached. " +
+          "Confirm the Project URL, confirm the function was deployed, " +
+          "and confirm JWT verification is disabled."
+        );
+      }
+
+      let data;
+
+      try {
+        data =
+          await response.json();
+      } catch {
+        throw new Error(
+          "The Supabase function returned a response that was not JSON. " +
+          `HTTP status: ${response.status}.`
+        );
+      }
+
+      if (!response.ok) {
+        const details =
+          typeof data?.details ===
+          "string"
+            ? ` ${data.details}`
+            : "";
+
+        throw new Error(
+          (
+            data?.error ||
+            `Definition request failed with HTTP ${response.status}.`
+          ) + details
+        );
+      }
 
       if (!Array.isArray(data)) {
         throw new Error(
+          data?.error ||
           "The dictionary returned an unexpected response."
         );
       }
 
-      state.requestCache.set(word, data);
+      state.requestCache.set(
+        normalized,
+        data
+      );
 
       return data;
     }
 
-    function choosePrimaryNounOrAdjective(entries) {
+    function choosePrimaryNounOrAdjective(
+      entries
+    ) {
       const candidates = entries
         .filter(isDictionaryEntry)
         .map((entry, index) => {
           const partOfSpeech =
-            normalizePartOfSpeech(entry.fl);
+            normalizePartOfSpeech(
+              entry.fl
+            );
 
-          let score = 1000 - index;
+          let score =
+            1000 - index;
 
           if (
             partOfSpeech !== "noun" &&
-            partOfSpeech !== "adjective"
+            partOfSpeech !==
+              "adjective"
           ) {
             score -= 5000;
           }
 
           if (
-            Array.isArray(entry.shortdef) &&
+            Array.isArray(
+              entry.shortdef
+            ) &&
             entry.shortdef.length
           ) {
             score += 100;
@@ -933,66 +1150,94 @@
         })
         .filter(candidate => {
           return (
-            candidate.partOfSpeech === "noun" ||
-            candidate.partOfSpeech === "adjective"
+            candidate.partOfSpeech ===
+              "noun" ||
+            candidate.partOfSpeech ===
+              "adjective"
           );
         })
-        .sort((a, b) => b.score - a.score);
+        .sort(
+          (a, b) =>
+            b.score - a.score
+        );
 
       return candidates[0] || null;
     }
 
-    function isDictionaryEntry(value) {
+    function isDictionaryEntry(
+      value
+    ) {
       return Boolean(
         value &&
         typeof value === "object" &&
         value.meta &&
-        typeof value.meta.id === "string"
+        typeof value.meta.id ===
+          "string"
       );
     }
 
-    function normalizePartOfSpeech(value) {
-      const part = String(value || "").toLowerCase();
+    function normalizePartOfSpeech(
+      value
+    ) {
+      const part =
+        String(value || "")
+          .toLowerCase();
 
       if (part.includes("noun")) {
         return "noun";
       }
 
-      if (part.includes("adjective")) {
+      if (
+        part.includes("adjective")
+      ) {
         return "adjective";
       }
 
       return part;
     }
 
-    function getPrimaryDefinition(entry) {
+    function getPrimaryDefinition(
+      entry
+    ) {
       if (
         Array.isArray(entry.shortdef) &&
         entry.shortdef.length
       ) {
-        return cleanDefinition(entry.shortdef[0]);
+        return cleanDefinition(
+          entry.shortdef[0]
+        );
       }
 
       const definitions = [];
 
-      walkValues(entry.def, value => {
-        if (
-          typeof value === "string" &&
-          value.includes("{bc}")
-        ) {
-          definitions.push(
-            cleanDefinition(value)
-          );
+      walkValues(
+        entry.def,
+        value => {
+          if (
+            typeof value ===
+              "string" &&
+            value.includes("{bc}")
+          ) {
+            definitions.push(
+              cleanDefinition(value)
+            );
+          }
         }
-      });
+      );
 
       return definitions[0] || "";
     }
 
-    function walkValues(value, callback) {
+    function walkValues(
+      value,
+      callback
+    ) {
       if (Array.isArray(value)) {
         for (const item of value) {
-          walkValues(item, callback);
+          walkValues(
+            item,
+            callback
+          );
         }
 
         return;
@@ -1002,8 +1247,14 @@
         value &&
         typeof value === "object"
       ) {
-        for (const child of Object.values(value)) {
-          walkValues(child, callback);
+        for (
+          const child of
+          Object.values(value)
+        ) {
+          walkValues(
+            child,
+            callback
+          );
         }
 
         return;
@@ -1015,21 +1266,54 @@
     function cleanDefinition(value) {
       return String(value || "")
         .replace(/\{bc\}/g, "")
-        .replace(/\{b\}|\{\/b\}/g, "")
-        .replace(/\{it\}|\{\/it\}/g, "")
-        .replace(/\{wi\}|\{\/wi\}/g, "")
-        .replace(/\{sc\}|\{\/sc\}/g, "")
-        .replace(/\{sup\}|\{\/sup\}/g, "")
-        .replace(/\{inf\}|\{\/inf\}/g, "")
-        .replace(/\{phrase\}|\{\/phrase\}/g, "")
-        .replace(/\{dx\}.*?\{\/dx\}/g, "")
+        .replace(
+          /\{b\}|\{\/b\}/g,
+          ""
+        )
+        .replace(
+          /\{it\}|\{\/it\}/g,
+          ""
+        )
+        .replace(
+          /\{wi\}|\{\/wi\}/g,
+          ""
+        )
+        .replace(
+          /\{sc\}|\{\/sc\}/g,
+          ""
+        )
+        .replace(
+          /\{sup\}|\{\/sup\}/g,
+          ""
+        )
+        .replace(
+          /\{inf\}|\{\/inf\}/g,
+          ""
+        )
+        .replace(
+          /\{phrase\}|\{\/phrase\}/g,
+          ""
+        )
+        .replace(
+          /\{dx\}.*?\{\/dx\}/g,
+          ""
+        )
         .replace(
           /\{(?:sx|dxt|a_link|d_link|mat)\|([^|}]+).*?\}/g,
           "$1"
         )
-        .replace(/\{[^{}]+\}/g, "")
-        .replace(/^\s*:\s*/, "")
-        .replace(/\s+/g, " ")
+        .replace(
+          /\{[^{}]+\}/g,
+          ""
+        )
+        .replace(
+          /^\s*:\s*/,
+          ""
+        )
+        .replace(
+          /\s+/g,
+          " "
+        )
         .trim();
     }
 
@@ -1037,17 +1321,24 @@
       childWord,
       clickedWord
     ) {
-      const child = state.nodes.get(
-        normalizeWord(childWord)
-      );
+      const child =
+        state.nodes.get(
+          normalizeWord(childWord)
+        );
 
-      const parentWord = normalizeWord(clickedWord);
+      const parentWord =
+        normalizeWord(clickedWord);
 
-      if (!child || !parentWord) {
+      if (
+        !child ||
+        !parentWord
+      ) {
         return;
       }
 
-      if (parentWord === child.word) {
+      if (
+        parentWord === child.word
+      ) {
         setStatus(
           "A word cannot be its own parent.",
           "warning"
@@ -1058,28 +1349,44 @@
 
       unlinkExistingParent(child);
 
-      const parent = createNode(parentWord);
+      const parent =
+        createNode(parentWord);
 
-      child.parent = parent.word;
-      parent.children.add(child.word);
+      if (!parent) {
+        return;
+      }
 
-      const loopPath = findLoopFrom(child.word);
+      child.parent =
+        parent.word;
+
+      parent.children.add(
+        child.word
+      );
+
+      const loopPath =
+        findLoopFrom(child.word);
 
       if (loopPath) {
         child.loop = true;
 
         setStatus(
-          `Loop detected: ${loopPath.join(" → ")}. The chain stops here.`,
+          `Loop detected: ${loopPath.join(
+            " → "
+          )}. The chain stops here.`,
           "warning"
         );
 
-        state.selectedWord = parent.word;
+        state.selectedWord =
+          parent.word;
+
         renderAll();
         return;
       }
 
       child.loop = false;
-      state.selectedWord = parent.word;
+
+      state.selectedWord =
+        parent.word;
 
       renderAll();
 
@@ -1089,42 +1396,61 @@
       );
 
       if (
-        parent.status === "not-loaded" ||
+        parent.status ===
+          "not-loaded" ||
         parent.status === "error"
       ) {
-        await loadDefinition(parent.word);
+        await loadDefinition(
+          parent.word
+        );
       } else {
         renderDefinitionPanel();
       }
     }
 
-    function unlinkExistingParent(child) {
+    function unlinkExistingParent(
+      child
+    ) {
       if (!child.parent) {
         return;
       }
 
-      const oldParent = state.nodes.get(
-        child.parent
-      );
+      const oldParent =
+        state.nodes.get(
+          child.parent
+        );
 
       if (oldParent) {
-        oldParent.children.delete(child.word);
+        oldParent.children.delete(
+          child.word
+        );
       }
 
       child.parent = null;
       child.loop = false;
     }
 
-    function findLoopFrom(startWord) {
-      const visitedIndexes = new Map();
+    function findLoopFrom(
+      startWord
+    ) {
+      const visitedIndexes =
+        new Map();
+
       const path = [];
 
-      let currentWord = startWord;
+      let currentWord =
+        startWord;
 
       while (currentWord) {
-        if (visitedIndexes.has(currentWord)) {
+        if (
+          visitedIndexes.has(
+            currentWord
+          )
+        ) {
           const loopStart =
-            visitedIndexes.get(currentWord);
+            visitedIndexes.get(
+              currentWord
+            );
 
           return [
             ...path.slice(loopStart),
@@ -1140,33 +1466,39 @@
         path.push(currentWord);
 
         const currentNode =
-          state.nodes.get(currentWord);
+          state.nodes.get(
+            currentWord
+          );
 
         currentWord =
-          currentNode?.parent || null;
+          currentNode?.parent ||
+          null;
       }
 
       return null;
     }
 
     async function applyTypedParent() {
-      const selectedNode = state.nodes.get(
-        state.selectedWord
-      );
+      const selectedNode =
+        state.nodes.get(
+          state.selectedWord
+        );
 
       if (!selectedNode) {
         return;
       }
 
-      const input = document.getElementById(
-        "manualParentInput"
-      );
+      const input =
+        document.getElementById(
+          "manualParentInput"
+        );
 
       if (!input) {
         return;
       }
 
-      const parent = normalizeWord(input.value);
+      const parent =
+        normalizeWord(input.value);
 
       if (!parent) {
         setStatus(
@@ -1183,14 +1515,18 @@
       );
     }
 
-    function removeParentLink(childWord) {
-      const child = state.nodes.get(childWord);
+    function removeParentLink(
+      childWord
+    ) {
+      const child =
+        state.nodes.get(childWord);
 
       if (!child) {
         return;
       }
 
-      const previousParent = child.parent;
+      const previousParent =
+        child.parent;
 
       unlinkExistingParent(child);
 
@@ -1209,10 +1545,13 @@
       renderDefinitionPanel();
       renderHistory();
 
-      const count = state.nodes.size;
+      const count =
+        state.nodes.size;
 
       elements.nodeCount.textContent =
-        `${count} word${count === 1 ? "" : "s"}`;
+        `${count} word${
+          count === 1 ? "" : "s"
+        }`;
     }
 
     function renderTree() {
@@ -1226,11 +1565,17 @@
         return;
       }
 
-      const tree = document.createElement("ul");
+      const tree =
+        document.createElement("ul");
+
       tree.className = "tree";
 
-      for (const rootWord of state.roots) {
-        const root = state.nodes.get(rootWord);
+      for (
+        const rootWord of
+        state.roots
+      ) {
+        const root =
+          state.nodes.get(rootWord);
 
         if (!root) {
           continue;
@@ -1244,34 +1589,57 @@
         );
       }
 
-      elements.treeContainer.replaceChildren(tree);
+      elements.treeContainer.replaceChildren(
+        tree
+      );
     }
 
-    function renderChainNode(node, visited) {
+    function renderChainNode(
+      node,
+      visited
+    ) {
       const listItem =
         document.createElement("li");
 
       const button =
-        document.createElement("button");
+        document.createElement(
+          "button"
+        );
 
       button.type = "button";
-      button.className = "tree-node";
+      button.className =
+        "tree-node";
 
-      if (state.selectedWord === node.word) {
-        button.classList.add("active");
+      if (
+        state.selectedWord ===
+        node.word
+      ) {
+        button.classList.add(
+          "active"
+        );
       }
 
       const wordLabel =
-        document.createElement("span");
+        document.createElement(
+          "span"
+        );
 
-      wordLabel.className = "tree-word";
-      wordLabel.textContent = node.word;
+      wordLabel.className =
+        "tree-word";
 
-      button.appendChild(wordLabel);
+      wordLabel.textContent =
+        node.word;
+
+      button.appendChild(
+        wordLabel
+      );
 
       if (node.isRoot) {
         button.appendChild(
-          makeBadge("root", "root-badge")
+          makeBadge(
+            "root",
+            "root-badge"
+          )
         );
       }
 
@@ -1286,13 +1654,19 @@
 
       if (node.parent) {
         button.appendChild(
-          makeBadge("manual", "manual-badge")
+          makeBadge(
+            "manual",
+            "manual-badge"
+          )
         );
       }
 
       if (node.loop) {
         button.appendChild(
-          makeBadge("loop", "loop-badge")
+          makeBadge(
+            "loop",
+            "loop-badge"
+          )
         );
       }
 
@@ -1301,27 +1675,42 @@
         () => selectWord(node.word)
       );
 
-      listItem.appendChild(button);
+      listItem.appendChild(
+        button
+      );
 
       if (!node.parent) {
         return listItem;
       }
 
-      const nextVisited = new Set(visited);
-      nextVisited.add(node.word);
+      const nextVisited =
+        new Set(visited);
+
+      nextVisited.add(
+        node.word
+      );
 
       const parentList =
         document.createElement("ul");
 
-      if (nextVisited.has(node.parent)) {
+      if (
+        nextVisited.has(
+          node.parent
+        )
+      ) {
         const loopItem =
           document.createElement("li");
 
         const loopButton =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
-        loopButton.type = "button";
-        loopButton.className = "tree-node";
+        loopButton.type =
+          "button";
+
+        loopButton.className =
+          "tree-node";
 
         loopButton.appendChild(
           makeTextSpan(
@@ -1331,19 +1720,32 @@
         );
 
         loopButton.appendChild(
-          makeBadge("loop", "loop-badge")
+          makeBadge(
+            "loop",
+            "loop-badge"
+          )
         );
 
         loopButton.addEventListener(
           "click",
-          () => selectWord(node.parent)
+          () =>
+            selectWord(
+              node.parent
+            )
         );
 
-        loopItem.appendChild(loopButton);
-        parentList.appendChild(loopItem);
+        loopItem.appendChild(
+          loopButton
+        );
+
+        parentList.appendChild(
+          loopItem
+        );
       } else {
         const parentNode =
-          state.nodes.get(node.parent);
+          state.nodes.get(
+            node.parent
+          );
 
         if (parentNode) {
           parentList.appendChild(
@@ -1355,15 +1757,18 @@
         }
       }
 
-      listItem.appendChild(parentList);
+      listItem.appendChild(
+        parentList
+      );
 
       return listItem;
     }
 
     function renderDefinitionPanel() {
-      const node = state.nodes.get(
-        state.selectedWord
-      );
+      const node =
+        state.nodes.get(
+          state.selectedWord
+        );
 
       if (!node) {
         elements.definitionContent.innerHTML = `
@@ -1384,9 +1789,12 @@
       heading.className =
         "selected-word-heading";
 
-      heading.textContent = node.word;
+      heading.textContent =
+        node.word;
 
-      wrapper.appendChild(heading);
+      wrapper.appendChild(
+        heading
+      );
 
       const meta =
         document.createElement("div");
@@ -1405,7 +1813,10 @@
 
       if (node.isRoot) {
         meta.appendChild(
-          makeBadge("starting word", "root-badge")
+          makeBadge(
+            "starting word",
+            "root-badge"
+          )
         );
       }
 
@@ -1420,13 +1831,18 @@
 
       if (node.loop) {
         meta.appendChild(
-          makeBadge("loop detected", "loop-badge")
+          makeBadge(
+            "loop detected",
+            "loop-badge"
+          )
         );
       }
 
       wrapper.appendChild(meta);
 
-      if (node.status === "loading") {
+      if (
+        node.status === "loading"
+      ) {
         wrapper.appendChild(
           makeEmptyState(
             `Loading Merriam-Webster’s definition of “${node.word}”…`
@@ -1442,15 +1858,21 @@
 
       if (
         node.status === "error" ||
-        node.status === "unsupported" ||
-        node.status === "missing-definition"
+        node.status ===
+          "unsupported" ||
+        node.status ===
+          "missing-definition"
       ) {
         wrapper.appendChild(
-          makeEmptyState(node.error)
+          makeEmptyState(
+            node.error
+          )
         );
 
         const retryButton =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
         retryButton.className =
           "button primary-button";
@@ -1460,10 +1882,15 @@
 
         retryButton.addEventListener(
           "click",
-          () => loadDefinition(node.word)
+          () =>
+            loadDefinition(
+              node.word
+            )
         );
 
-        wrapper.appendChild(retryButton);
+        wrapper.appendChild(
+          retryButton
+        );
 
         elements.definitionContent.replaceChildren(
           wrapper
@@ -1472,36 +1899,55 @@
         return;
       }
 
-      if (node.status === "missing") {
+      if (
+        node.status === "missing"
+      ) {
         wrapper.appendChild(
-          makeEmptyState(node.error)
+          makeEmptyState(
+            node.error
+          )
         );
 
-        if (node.suggestions.length) {
+        if (
+          node.suggestions.length
+        ) {
           const instruction =
-            document.createElement("p");
+            document.createElement(
+              "p"
+            );
 
-          instruction.className = "instruction";
+          instruction.className =
+            "instruction";
+
           instruction.textContent =
             "Choose a suggested spelling:";
 
-          wrapper.appendChild(instruction);
+          wrapper.appendChild(
+            instruction
+          );
 
           const suggestionRow =
-            document.createElement("div");
+            document.createElement(
+              "div"
+            );
 
-          suggestionRow.className = "button-row";
+          suggestionRow.className =
+            "suggestion-row";
 
           for (
-            const suggestion of node.suggestions
+            const suggestion of
+            node.suggestions
           ) {
             const button =
-              document.createElement("button");
+              document.createElement(
+                "button"
+              );
 
             button.className =
               "button secondary-button";
 
-            button.textContent = suggestion;
+            button.textContent =
+              suggestion;
 
             button.addEventListener(
               "click",
@@ -1513,10 +1959,14 @@
               }
             );
 
-            suggestionRow.appendChild(button);
+            suggestionRow.appendChild(
+              button
+            );
           }
 
-          wrapper.appendChild(suggestionRow);
+          wrapper.appendChild(
+            suggestionRow
+          );
         }
 
         elements.definitionContent.replaceChildren(
@@ -1526,9 +1976,13 @@
         return;
       }
 
-      if (node.status !== "loaded") {
+      if (
+        node.status !== "loaded"
+      ) {
         const loadButton =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
         loadButton.className =
           "button primary-button";
@@ -1538,10 +1992,15 @@
 
         loadButton.addEventListener(
           "click",
-          () => loadDefinition(node.word)
+          () =>
+            loadDefinition(
+              node.word
+            )
         );
 
-        wrapper.appendChild(loadButton);
+        wrapper.appendChild(
+          loadButton
+        );
 
         elements.definitionContent.replaceChildren(
           wrapper
@@ -1553,12 +2012,15 @@
       const instruction =
         document.createElement("p");
 
-      instruction.className = "instruction";
+      instruction.className =
+        "instruction";
 
       instruction.textContent =
         "Click the noun in the primary definition that should serve as this word’s parent.";
 
-      wrapper.appendChild(instruction);
+      wrapper.appendChild(
+        instruction
+      );
 
       const definitionBox =
         document.createElement("div");
@@ -1571,7 +2033,9 @@
         node
       );
 
-      wrapper.appendChild(definitionBox);
+      wrapper.appendChild(
+        definitionBox
+      );
 
       const parentSummary =
         document.createElement("div");
@@ -1580,15 +2044,45 @@
         "parent-summary";
 
       if (node.parent) {
-        parentSummary.innerHTML = `
-          Current relationship:
-          <strong>${escapeHtml(node.word)}</strong>
-          →
-          <strong>${escapeHtml(node.parent)}</strong>
-        `;
+        const summaryText =
+          document.createElement(
+            "span"
+          );
+
+        summaryText.append(
+          "Current relationship: "
+        );
+
+        const childStrong =
+          document.createElement(
+            "strong"
+          );
+
+        childStrong.textContent =
+          node.word;
+
+        const parentStrong =
+          document.createElement(
+            "strong"
+          );
+
+        parentStrong.textContent =
+          node.parent;
+
+        summaryText.append(
+          childStrong,
+          " → ",
+          parentStrong
+        );
+
+        parentSummary.appendChild(
+          summaryText
+        );
 
         const removeButton =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
         removeButton.className =
           "remove-link-button";
@@ -1598,16 +2092,23 @@
 
         removeButton.addEventListener(
           "click",
-          () => removeParentLink(node.word)
+          () =>
+            removeParentLink(
+              node.word
+            )
         );
 
-        parentSummary.appendChild(removeButton);
+        parentSummary.appendChild(
+          removeButton
+        );
       } else {
         parentSummary.textContent =
           "No parent has been selected yet.";
       }
 
-      wrapper.appendChild(parentSummary);
+      wrapper.appendChild(
+        parentSummary
+      );
 
       const manualEntry =
         document.createElement("div");
@@ -1615,44 +2116,59 @@
       manualEntry.className =
         "manual-entry";
 
-      manualEntry.innerHTML = `
-        <input
-          id="manualParentInput"
-          type="text"
-          placeholder="Or type a parent not shown in the definition"
-        />
+      const manualInput =
+        document.createElement("input");
 
-        <button
-          id="manualParentButton"
-          class="button secondary-button"
-        >
-          Use parent
-        </button>
-      `;
+      manualInput.id =
+        "manualParentInput";
 
-      wrapper.appendChild(manualEntry);
+      manualInput.type = "text";
+
+      manualInput.placeholder =
+        "Or type a parent not shown in the definition";
+
+      const manualButton =
+        document.createElement(
+          "button"
+        );
+
+      manualButton.id =
+        "manualParentButton";
+
+      manualButton.className =
+        "button secondary-button";
+
+      manualButton.textContent =
+        "Use parent";
+
+      manualButton.addEventListener(
+        "click",
+        applyTypedParent
+      );
+
+      manualInput.addEventListener(
+        "keydown",
+        event => {
+          if (
+            event.key === "Enter"
+          ) {
+            applyTypedParent();
+          }
+        }
+      );
+
+      manualEntry.append(
+        manualInput,
+        manualButton
+      );
+
+      wrapper.appendChild(
+        manualEntry
+      );
 
       elements.definitionContent.replaceChildren(
         wrapper
       );
-
-      document
-        .getElementById("manualParentButton")
-        .addEventListener(
-          "click",
-          applyTypedParent
-        );
-
-      document
-        .getElementById("manualParentInput")
-        .addEventListener(
-          "keydown",
-          event => {
-            if (event.key === "Enter") {
-              applyTypedParent();
-            }
-          }
-        );
     }
 
     function appendClickableDefinition(
@@ -1663,26 +2179,37 @@
         /([A-Za-z]+(?:[-’'][A-Za-z]+)*)|([^A-Za-z]+)/g;
 
       const tokens =
-        node.definition.match(tokenPattern) || [];
+        node.definition.match(
+          tokenPattern
+        ) || [];
 
-      for (const token of tokens) {
+      for (
+        const token of tokens
+      ) {
         if (
-          /^[A-Za-z]+(?:[-’'][A-Za-z]+)*$/.test(token)
+          /^[A-Za-z]+(?:[-’'][A-Za-z]+)*$/.test(
+            token
+          )
         ) {
           const normalized =
             normalizeWord(token);
 
           const button =
-            document.createElement("button");
+            document.createElement(
+              "button"
+            );
 
           button.type = "button";
+
           button.className =
             "definition-word";
 
-          button.textContent = token;
+          button.textContent =
+            token;
 
           if (
-            normalized === node.word ||
+            normalized ===
+              node.word ||
             !normalized
           ) {
             button.classList.add(
@@ -1705,17 +2232,24 @@
             );
           }
 
-          container.appendChild(button);
+          container.appendChild(
+            button
+          );
         } else {
           const punctuation =
-            document.createElement("span");
+            document.createElement(
+              "span"
+            );
 
           punctuation.className =
             "definition-punctuation";
 
-          punctuation.textContent = token;
+          punctuation.textContent =
+            token;
 
-          container.appendChild(punctuation);
+          container.appendChild(
+            punctuation
+          );
         }
       }
     }
@@ -1723,10 +2257,15 @@
     function renderHistory() {
       const linkedNodes =
         [...state.nodes.values()]
-          .filter(node => node.parent)
-          .sort((a, b) => {
-            return a.word.localeCompare(b.word);
-          });
+          .filter(
+            node => node.parent
+          )
+          .sort(
+            (a, b) =>
+              a.word.localeCompare(
+                b.word
+              )
+          );
 
       if (!linkedNodes.length) {
         elements.historyList.innerHTML = `
@@ -1741,14 +2280,21 @@
       const fragment =
         document.createDocumentFragment();
 
-      for (const node of linkedNodes) {
+      for (
+        const node of linkedNodes
+      ) {
         const row =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
-        row.className = "history-row";
+        row.className =
+          "history-row";
 
         const childButton =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
         childButton.className =
           "tree-node";
@@ -1758,11 +2304,14 @@
 
         childButton.addEventListener(
           "click",
-          () => selectWord(node.word)
+          () =>
+            selectWord(node.word)
         );
 
         const arrow =
-          document.createElement("span");
+          document.createElement(
+            "span"
+          );
 
         arrow.className =
           "history-arrow";
@@ -1770,7 +2319,9 @@
         arrow.textContent = "→";
 
         const parentButton =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
         parentButton.className =
           "tree-node";
@@ -1780,11 +2331,16 @@
 
         parentButton.addEventListener(
           "click",
-          () => selectWord(node.parent)
+          () =>
+            selectWord(
+              node.parent
+            )
         );
 
         const details =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
         details.className =
           "history-definition";
@@ -1793,7 +2349,9 @@
           node.definition || "";
 
         const removeButton =
-          document.createElement("button");
+          document.createElement(
+            "button"
+          );
 
         removeButton.className =
           "remove-link-button";
@@ -1803,15 +2361,18 @@
 
         removeButton.addEventListener(
           "click",
-          () => removeParentLink(node.word)
+          () =>
+            removeParentLink(
+              node.word
+            )
         );
 
         row.append(
           childButton,
           arrow,
           parentButton,
-          removeButton,
-          details
+          details,
+          removeButton
         );
 
         fragment.appendChild(row);
@@ -1832,40 +2393,67 @@
       const normalized =
         normalizeWord(newWord);
 
-      if (!oldNode || !normalized) {
+      if (
+        !oldNode ||
+        !normalized
+      ) {
         return;
       }
 
       const replacement =
-        createNode(normalized, {
-          isRoot: oldNode.isRoot
-        });
-
-      if (oldNode.isRoot) {
-        state.roots = state.roots.map(
-          root => {
-            return root === oldWord
-              ? normalized
-              : root;
+        createNode(
+          normalized,
+          {
+            isRoot:
+              oldNode.isRoot
           }
         );
+
+      if (!replacement) {
+        return;
       }
 
-      for (const childWord of oldNode.children) {
+      if (oldNode.isRoot) {
+        state.roots =
+          state.roots.map(
+            root =>
+              root === oldWord
+                ? normalized
+                : root
+          );
+      }
+
+      for (
+        const childWord of
+        oldNode.children
+      ) {
         const child =
-          state.nodes.get(childWord);
+          state.nodes.get(
+            childWord
+          );
 
         if (child) {
-          child.parent = normalized;
-          replacement.children.add(child.word);
+          child.parent =
+            normalized;
+
+          replacement.children.add(
+            child.word
+          );
         }
       }
 
-      state.nodes.delete(oldWord);
-      state.selectedWord = normalized;
+      state.nodes.delete(
+        oldWord
+      );
+
+      state.selectedWord =
+        normalized;
 
       renderAll();
-      await loadDefinition(normalized);
+
+      await loadDefinition(
+        normalized
+      );
     }
 
     function exportProject() {
@@ -1886,20 +2474,24 @@
           [...state.roots],
 
         nodes:
-          [...state.nodes.values()].map(
-            node => ({
+          [...state.nodes.values()]
+            .map(node => ({
               word: node.word,
               isRoot: node.isRoot,
               parent: node.parent,
-              children: [...node.children],
-              definition: node.definition,
+              children:
+                [...node.children],
+              definition:
+                node.definition,
               partOfSpeech:
                 node.partOfSpeech,
-              entryId: node.entryId,
-              status: node.status,
-              loop: node.loop
-            })
-          )
+              entryId:
+                node.entryId,
+              status:
+                node.status,
+              loop:
+                node.loop
+            }))
       };
 
       const blob = new Blob(
@@ -1911,7 +2503,8 @@
           )
         ],
         {
-          type: "application/json"
+          type:
+            "application/json"
         }
       );
 
@@ -1922,10 +2515,14 @@
         document.createElement("a");
 
       link.href = url;
+
       link.download =
         "manual-word-tree.json";
 
-      document.body.appendChild(link);
+      document.body.appendChild(
+        link
+      );
+
       link.click();
       link.remove();
 
@@ -1956,12 +2553,15 @@
       className
     ) {
       const badge =
-        document.createElement("span");
+        document.createElement(
+          "span"
+        );
 
       badge.className =
         `badge ${className}`;
 
-      badge.textContent = text;
+      badge.textContent =
+        text;
 
       return badge;
     }
@@ -1971,22 +2571,32 @@
       className
     ) {
       const span =
-        document.createElement("span");
+        document.createElement(
+          "span"
+        );
 
-      span.className = className;
-      span.textContent = text;
+      span.className =
+        className;
+
+      span.textContent =
+        text;
 
       return span;
     }
 
-    function makeEmptyState(text) {
+    function makeEmptyState(
+      text
+    ) {
       const element =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       element.className =
         "empty-state";
 
-      element.textContent = text;
+      element.textContent =
+        text;
 
       return element;
     }
@@ -1999,16 +2609,11 @@
         message;
 
       elements.status.className =
-        `status${type ? ` ${type}` : ""}`;
-    }
-
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+        `status${
+          type
+            ? ` ${type}`
+            : ""
+        }`;
     }
 
     elements.startButton.addEventListener(
@@ -2031,7 +2636,10 @@
       event => {
         if (
           event.key === "Enter" &&
-          (event.ctrlKey || event.metaKey)
+          (
+            event.ctrlKey ||
+            event.metaKey
+          )
         ) {
           addStartingWords();
         }
