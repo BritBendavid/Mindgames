@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Automatic Word Categorizer</title>
+
+  <title>Contextual Word Categorizer</title>
 
   <style>
     * {
@@ -27,36 +28,37 @@
     }
 
     header p {
+      max-width: 900px;
       margin: 0;
       color: #bbb;
       line-height: 1.5;
     }
 
     main {
-      max-width: 1300px;
+      max-width: 1350px;
       margin: 0 auto;
       padding: 24px;
     }
 
     .panel {
+      margin-bottom: 20px;
+      padding: 20px;
       background: #1a1a1a;
       border: 1px solid #333;
       border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
     }
 
     .settings {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
       gap: 16px;
     }
 
     label {
       display: block;
       margin-bottom: 6px;
-      font-weight: bold;
       color: #ddd;
+      font-weight: bold;
     }
 
     input,
@@ -68,10 +70,10 @@
     input[type="text"] {
       width: 100%;
       padding: 9px;
-      border: 1px solid #555;
-      border-radius: 7px;
       background: #222;
       color: white;
+      border: 1px solid #555;
+      border-radius: 7px;
     }
 
     input[type="file"] {
@@ -83,10 +85,10 @@
       margin-top: 18px;
       margin-right: 8px;
       padding: 10px 16px;
-      border: 0;
-      border-radius: 8px;
       background: white;
       color: black;
+      border: 0;
+      border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
     }
@@ -97,16 +99,41 @@
     }
 
     .status {
-      white-space: pre-wrap;
       color: #9fd3ff;
+      white-space: pre-wrap;
+      line-height: 1.55;
+    }
+
+    .small {
+      color: #aaa;
+      font-size: 13px;
       line-height: 1.5;
     }
 
+    .search-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .search-row input {
+      flex: 1;
+    }
+
+    .search-row button {
+      margin: 0;
+    }
+
+    .summary {
+      margin-bottom: 16px;
+      color: #bbb;
+    }
+
     .category {
-      border: 1px solid #333;
-      border-radius: 10px;
       margin-bottom: 14px;
       overflow: hidden;
+      border: 1px solid #333;
+      border-radius: 10px;
     }
 
     .category-header {
@@ -115,6 +142,7 @@
       padding: 15px;
       display: flex;
       justify-content: space-between;
+      gap: 12px;
       align-items: center;
       background: #222;
       color: white;
@@ -133,20 +161,21 @@
     .category-count {
       color: #aaa;
       font-weight: normal;
+      white-space: nowrap;
     }
 
     .category-body {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
       gap: 8px;
       padding: 14px;
     }
 
     .word-card {
+      padding: 9px 10px;
       background: #242424;
       border: 1px solid #363636;
       border-radius: 7px;
-      padding: 9px 10px;
     }
 
     .word {
@@ -154,7 +183,7 @@
     }
 
     .word-score {
-      margin-top: 3px;
+      margin-top: 4px;
       color: #999;
       font-size: 12px;
     }
@@ -162,41 +191,18 @@
     .hidden {
       display: none;
     }
-
-    .summary {
-      color: #bbb;
-      margin-bottom: 16px;
-    }
-
-    .search-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .search-row input {
-      flex: 1;
-    }
-
-    .search-row button {
-      margin: 0;
-    }
-
-    .small {
-      color: #999;
-      font-size: 13px;
-      line-height: 1.5;
-    }
   </style>
 </head>
 
 <body>
   <header>
-    <h1>Automatic Word Categorizer</h1>
+    <h1>Contextual Word Categorizer</h1>
+
     <p>
-      Upload plain-text books. The app identifies disproportionately strong word
-      relationships, builds a graph, and groups densely related words into categories.
-      No stopwords are removed.
+      This program keeps every word, corrects for general word frequency,
+      measures disproportionately strong co-occurrence, compares words by their
+      wider association patterns, and groups them into automatically detected
+      categories.
     </p>
   </header>
 
@@ -204,68 +210,194 @@
     <section class="panel">
       <h2>Corpus</h2>
 
-      <label for="fileInput">Upload one or more .txt books</label>
-      <input id="fileInput" type="file" accept=".txt,text/plain" multiple />
+      <label for="fileInput">Upload plain-text books</label>
+      <input
+        id="fileInput"
+        type="file"
+        accept=".txt,text/plain"
+        multiple
+      />
 
       <div class="settings">
         <div>
           <label for="sentenceWeight">Sentence weight</label>
-          <input id="sentenceWeight" type="number" value="3" min="0" step="0.5" />
+          <input
+            id="sentenceWeight"
+            type="number"
+            value="3"
+            min="0"
+            step="0.5"
+          />
         </div>
 
         <div>
           <label for="paragraphWeight">Paragraph weight</label>
-          <input id="paragraphWeight" type="number" value="1" min="0" step="0.5" />
-        </div>
-
-        <div>
-          <label for="minPairCount">Minimum pair occurrences</label>
-          <input id="minPairCount" type="number" value="5" min="1" step="1" />
-        </div>
-
-        <div>
-          <label for="minPpmi">Minimum PPMI</label>
-          <input id="minPpmi" type="number" value="1.5" min="0" step="0.25" />
-        </div>
-
-        <div>
-          <label for="minEdgeScore">Minimum edge score</label>
-          <input id="minEdgeScore" type="number" value="5" min="0" step="0.5" />
+          <input
+            id="paragraphWeight"
+            type="number"
+            value="1"
+            min="0"
+            step="0.5"
+          />
         </div>
 
         <div>
           <label for="minimumWordFrequency">Minimum word contexts</label>
-          <input id="minimumWordFrequency" type="number" value="10" min="1" step="1" />
+          <input
+            id="minimumWordFrequency"
+            type="number"
+            value="10"
+            min="1"
+            step="1"
+          />
         </div>
 
         <div>
-          <label for="maxContextWords">Maximum words per context</label>
-          <input id="maxContextWords" type="number" value="80" min="5" step="5" />
+          <label for="minimumPairOccurrences">Minimum pair occurrences</label>
+          <input
+            id="minimumPairOccurrences"
+            type="number"
+            value="4"
+            min="1"
+            step="1"
+          />
         </div>
 
         <div>
-          <label for="minCategorySize">Minimum category size</label>
-          <input id="minCategorySize" type="number" value="4" min="2" step="1" />
+          <label for="minimumPpmi">Minimum PPMI</label>
+          <input
+            id="minimumPpmi"
+            type="number"
+            value="1"
+            min="0"
+            step="0.25"
+          />
         </div>
 
         <div>
-          <label for="maxCategorySize">Maximum displayed words</label>
-          <input id="maxCategorySize" type="number" value="50" min="5" step="5" />
+          <label for="maximumDirectNeighbors">Direct neighbors per word</label>
+          <input
+            id="maximumDirectNeighbors"
+            type="number"
+            value="40"
+            min="5"
+            step="5"
+          />
         </div>
 
         <div>
-          <label for="clusterIterations">Clustering iterations</label>
-          <input id="clusterIterations" type="number" value="20" min="1" step="1" />
+          <label for="minimumSharedNeighbors">Minimum shared neighbors</label>
+          <input
+            id="minimumSharedNeighbors"
+            type="number"
+            value="2"
+            min="1"
+            step="1"
+          />
+        </div>
+
+        <div>
+          <label for="minimumProfileSimilarity">
+            Minimum profile similarity
+          </label>
+          <input
+            id="minimumProfileSimilarity"
+            type="number"
+            value="0.2"
+            min="0"
+            max="1"
+            step="0.05"
+          />
+        </div>
+
+        <div>
+          <label for="directWeight">Direct relationship share</label>
+          <input
+            id="directWeight"
+            type="number"
+            value="0.4"
+            min="0"
+            max="1"
+            step="0.05"
+          />
+        </div>
+
+        <div>
+          <label for="minimumCombinedScore">
+            Minimum combined similarity
+          </label>
+          <input
+            id="minimumCombinedScore"
+            type="number"
+            value="0.2"
+            min="0"
+            max="1"
+            step="0.05"
+          />
+        </div>
+
+        <div>
+          <label for="maximumContextWords">
+            Maximum unique words per context
+          </label>
+          <input
+            id="maximumContextWords"
+            type="number"
+            value="80"
+            min="5"
+            step="5"
+          />
+        </div>
+
+        <div>
+          <label for="minimumCategorySize">
+            Minimum category size
+          </label>
+          <input
+            id="minimumCategorySize"
+            type="number"
+            value="4"
+            min="2"
+            step="1"
+          />
+        </div>
+
+        <div>
+          <label for="maximumCategoryDisplay">
+            Maximum displayed words
+          </label>
+          <input
+            id="maximumCategoryDisplay"
+            type="number"
+            value="50"
+            min="5"
+            step="5"
+          />
+        </div>
+
+        <div>
+          <label for="clusterIterations">
+            Clustering iterations
+          </label>
+          <input
+            id="clusterIterations"
+            type="number"
+            value="25"
+            min="1"
+            step="1"
+          />
         </div>
       </div>
 
       <button id="runButton">Build categories</button>
-      <button id="downloadButton" disabled>Download categories CSV</button>
+
+      <button id="downloadButton" disabled>
+        Download categories CSV
+      </button>
 
       <p class="small">
-        PPMI corrects for ordinary frequency. A common word can remain in the data,
-        but it only receives a strong connection when it appears beside another word
-        more often than chance predicts.
+        No stopwords are removed. Words such as “the” remain available, but
+        their high general frequency lowers their PPMI relationship scores.
       </p>
     </section>
 
@@ -281,8 +413,9 @@
         <input
           id="categorySearch"
           type="text"
-          placeholder="Search for a word or category..."
+          placeholder="Search categories or words"
         />
+
         <button id="clearSearchButton">Clear</button>
       </div>
 
@@ -295,11 +428,19 @@
     const fileInput = document.getElementById("fileInput");
     const runButton = document.getElementById("runButton");
     const downloadButton = document.getElementById("downloadButton");
-    const clearSearchButton = document.getElementById("clearSearchButton");
-    const categorySearch = document.getElementById("categorySearch");
     const statusBox = document.getElementById("status");
-    const categoriesContainer = document.getElementById("categoriesContainer");
-    const categorySummary = document.getElementById("categorySummary");
+
+    const categorySearch =
+      document.getElementById("categorySearch");
+
+    const clearSearchButton =
+      document.getElementById("clearSearchButton");
+
+    const categorySummary =
+      document.getElementById("categorySummary");
+
+    const categoriesContainer =
+      document.getElementById("categoriesContainer");
 
     const TOKEN_REGEX = /[a-z]+(?:'[a-z]+)?/gi;
     const SENTENCE_SPLIT_REGEX = /(?<=[.!?])\s+/g;
@@ -307,12 +448,20 @@
 
     let latestCategories = [];
 
+    function getNumber(id) {
+      return Number(document.getElementById(id).value);
+    }
+
     function updateStatus(message) {
       statusBox.textContent = message;
     }
 
-    function getNumber(id) {
-      return Number(document.getElementById(id).value);
+    function yieldToBrowser() {
+      return new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    function incrementMap(map, key, amount) {
+      map.set(key, (map.get(key) || 0) + amount);
     }
 
     function escapeHtml(value) {
@@ -322,6 +471,16 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+    }
+
+    function makePairKey(wordA, wordB) {
+      return wordA < wordB
+        ? `${wordA}${PAIR_SEPARATOR}${wordB}`
+        : `${wordB}${PAIR_SEPARATOR}${wordA}`;
+    }
+
+    function splitPairKey(key) {
+      return key.split(PAIR_SEPARATOR);
     }
 
     function stripGutenbergBoilerplate(text) {
@@ -347,7 +506,12 @@
 
         if (markerIndex !== -1) {
           const nextLine = text.indexOf("\n", markerIndex);
-          startIndex = nextLine === -1 ? markerIndex : nextLine + 1;
+
+          startIndex =
+            nextLine === -1
+              ? markerIndex
+              : nextLine + 1;
+
           break;
         }
       }
@@ -396,28 +560,17 @@
         .filter(Boolean);
     }
 
-    function getUniqueWords(text, maximumWords) {
+    function getUniqueContextWords(text, maximumWords) {
       const words = Array.from(new Set(tokenize(text)));
 
-      if (words.length < 2 || words.length > maximumWords) {
+      if (
+        words.length < 2 ||
+        words.length > maximumWords
+      ) {
         return null;
       }
 
       return words.sort();
-    }
-
-    function makePairKey(wordA, wordB) {
-      return wordA < wordB
-        ? `${wordA}${PAIR_SEPARATOR}${wordB}`
-        : `${wordB}${PAIR_SEPARATOR}${wordA}`;
-    }
-
-    function splitPairKey(key) {
-      return key.split(PAIR_SEPARATOR);
-    }
-
-    function incrementMap(map, key, amount) {
-      map.set(key, (map.get(key) || 0) + amount);
     }
 
     function addContext(words, weight, corpus) {
@@ -428,31 +581,53 @@
       corpus.totalContextWeight += weight;
 
       for (const word of words) {
-        incrementMap(corpus.wordContextWeights, word, weight);
+        incrementMap(
+          corpus.wordContextWeights,
+          word,
+          weight
+        );
       }
 
       for (let i = 0; i < words.length; i++) {
         for (let j = i + 1; j < words.length; j++) {
-          const key = makePairKey(words[i], words[j]);
+          const pairKey =
+            makePairKey(words[i], words[j]);
 
-          incrementMap(corpus.pairWeights, key, weight);
-          incrementMap(corpus.pairOccurrences, key, 1);
+          incrementMap(
+            corpus.pairWeights,
+            pairKey,
+            weight
+          );
+
+          incrementMap(
+            corpus.pairOccurrences,
+            pairKey,
+            1
+          );
         }
       }
     }
 
     async function processBook(file, settings, corpus) {
       const rawText = await file.text();
-      const text = stripGutenbergBoilerplate(rawText);
+
+      const text =
+        stripGutenbergBoilerplate(rawText);
+
       const paragraphs = splitParagraphs(text);
 
-      for (let paragraphIndex = 0; paragraphIndex < paragraphs.length; paragraphIndex++) {
+      for (
+        let paragraphIndex = 0;
+        paragraphIndex < paragraphs.length;
+        paragraphIndex++
+      ) {
         const paragraph = paragraphs[paragraphIndex];
 
-        const paragraphWords = getUniqueWords(
-          paragraph,
-          settings.maxContextWords
-        );
+        const paragraphWords =
+          getUniqueContextWords(
+            paragraph,
+            settings.maximumContextWords
+          );
 
         addContext(
           paragraphWords,
@@ -463,10 +638,11 @@
         const sentences = splitSentences(paragraph);
 
         for (const sentence of sentences) {
-          const sentenceWords = getUniqueWords(
-            sentence,
-            settings.maxContextWords
-          );
+          const sentenceWords =
+            getUniqueContextWords(
+              sentence,
+              settings.maximumContextWords
+            );
 
           addContext(
             sentenceWords,
@@ -475,127 +651,479 @@
           );
         }
 
-        if (paragraphIndex % 250 === 0) {
+        if (paragraphIndex % 200 === 0) {
+          updateStatus(
+            `Reading ${file.name}\n\n` +
+            `Paragraph ${paragraphIndex.toLocaleString()} ` +
+            `of ${paragraphs.length.toLocaleString()}\n` +
+            `Unique words: ` +
+            `${corpus.wordContextWeights.size.toLocaleString()}\n` +
+            `Candidate pairs: ` +
+            `${corpus.pairWeights.size.toLocaleString()}`
+          );
+
           await yieldToBrowser();
         }
       }
     }
 
-    function calculateEdges(corpus, settings) {
+    function calculateDirectEdges(corpus, settings) {
       const edges = [];
       const totalWeight = corpus.totalContextWeight;
 
-      for (const [pairKey, observedWeight] of corpus.pairWeights.entries()) {
-        const occurrences = corpus.pairOccurrences.get(pairKey) || 0;
-
-        if (occurrences < settings.minPairCount) {
-          continue;
-        }
-
-        const [wordA, wordB] = splitPairKey(pairKey);
-
-        const frequencyA = corpus.wordContextWeights.get(wordA) || 0;
-        const frequencyB = corpus.wordContextWeights.get(wordB) || 0;
+      for (
+        const [pairKey, observedWeight]
+        of corpus.pairWeights.entries()
+      ) {
+        const pairOccurrences =
+          corpus.pairOccurrences.get(pairKey) || 0;
 
         if (
-          frequencyA < settings.minimumWordFrequency ||
-          frequencyB < settings.minimumWordFrequency
+          pairOccurrences <
+          settings.minimumPairOccurrences
         ) {
           continue;
         }
 
-        const probabilityA = frequencyA / totalWeight;
-        const probabilityB = frequencyB / totalWeight;
-        const jointProbability = observedWeight / totalWeight;
-        const expectedProbability = probabilityA * probabilityB;
+        const [wordA, wordB] =
+          splitPairKey(pairKey);
 
-        if (jointProbability <= 0 || expectedProbability <= 0) {
+        const frequencyA =
+          corpus.wordContextWeights.get(wordA) || 0;
+
+        const frequencyB =
+          corpus.wordContextWeights.get(wordB) || 0;
+
+        if (
+          frequencyA <
+            settings.minimumWordFrequency ||
+          frequencyB <
+            settings.minimumWordFrequency
+        ) {
           continue;
         }
 
-        const pmi = Math.log2(jointProbability / expectedProbability);
+        const probabilityA =
+          frequencyA / totalWeight;
+
+        const probabilityB =
+          frequencyB / totalWeight;
+
+        const jointProbability =
+          observedWeight / totalWeight;
+
+        const expectedProbability =
+          probabilityA * probabilityB;
+
+        if (
+          jointProbability <= 0 ||
+          expectedProbability <= 0
+        ) {
+          continue;
+        }
+
+        const pmi = Math.log2(
+          jointProbability / expectedProbability
+        );
+
         const ppmi = Math.max(0, pmi);
 
-        if (ppmi < settings.minPpmi) {
+        if (ppmi < settings.minimumPpmi) {
           continue;
         }
 
-        const score = ppmi * Math.log1p(observedWeight);
+        const confidence =
+          Math.log1p(pairOccurrences);
 
-        if (score < settings.minEdgeScore) {
-          continue;
-        }
+        const rawScore = ppmi * confidence;
 
         edges.push({
           wordA,
           wordB,
-          score,
           ppmi,
+          pairOccurrences,
           observedWeight,
-          occurrences
+          rawScore
         });
       }
 
-      edges.sort((a, b) => b.score - a.score);
+      edges.sort(
+        (edgeA, edgeB) =>
+          edgeB.rawScore - edgeA.rawScore
+      );
 
       return edges;
     }
 
-    function buildGraph(edges) {
+    function buildLimitedProfiles(
+      directEdges,
+      maximumNeighbors
+    ) {
+      const candidateNeighbors = new Map();
+
+      function addCandidate(word, neighbor, edge) {
+        if (!candidateNeighbors.has(word)) {
+          candidateNeighbors.set(word, []);
+        }
+
+        candidateNeighbors
+          .get(word)
+          .push({
+            neighbor,
+            rawScore: edge.rawScore,
+            ppmi: edge.ppmi
+          });
+      }
+
+      for (const edge of directEdges) {
+        addCandidate(edge.wordA, edge.wordB, edge);
+        addCandidate(edge.wordB, edge.wordA, edge);
+      }
+
+      const profiles = new Map();
+
+      for (
+        const [word, neighbors]
+        of candidateNeighbors.entries()
+      ) {
+        neighbors.sort(
+          (a, b) => b.rawScore - a.rawScore
+        );
+
+        const limited =
+          neighbors.slice(0, maximumNeighbors);
+
+        const profile = new Map();
+
+        for (const item of limited) {
+          profile.set(
+            item.neighbor,
+            item.rawScore
+          );
+        }
+
+        profiles.set(word, profile);
+      }
+
+      return profiles;
+    }
+
+    function buildDirectScoreMap(
+      directEdges,
+      profiles
+    ) {
+      const maximumScoreByWord = new Map();
+
+      for (const [word, profile] of profiles) {
+        let maximum = 0;
+
+        for (const score of profile.values()) {
+          maximum = Math.max(maximum, score);
+        }
+
+        maximumScoreByWord.set(word, maximum);
+      }
+
+      const directScoreMap = new Map();
+
+      for (const edge of directEdges) {
+        if (
+          !profiles.has(edge.wordA) ||
+          !profiles.has(edge.wordB)
+        ) {
+          continue;
+        }
+
+        const maximumA =
+          maximumScoreByWord.get(edge.wordA) || 1;
+
+        const maximumB =
+          maximumScoreByWord.get(edge.wordB) || 1;
+
+        const denominator =
+          Math.sqrt(maximumA * maximumB);
+
+        const normalizedDirect =
+          denominator > 0
+            ? Math.min(
+                1,
+                edge.rawScore / denominator
+              )
+            : 0;
+
+        directScoreMap.set(
+          makePairKey(edge.wordA, edge.wordB),
+          normalizedDirect
+        );
+      }
+
+      return directScoreMap;
+    }
+
+    function buildInvertedNeighborIndex(profiles) {
+      const invertedIndex = new Map();
+
+      for (const [word, profile] of profiles) {
+        for (const neighbor of profile.keys()) {
+          if (!invertedIndex.has(neighbor)) {
+            invertedIndex.set(neighbor, []);
+          }
+
+          invertedIndex.get(neighbor).push(word);
+        }
+      }
+
+      return invertedIndex;
+    }
+
+    function buildProfileCandidatePairs(profiles) {
+      const invertedIndex =
+        buildInvertedNeighborIndex(profiles);
+
+      const sharedNeighborCounts = new Map();
+
+      for (
+        const words
+        of invertedIndex.values()
+      ) {
+        for (let i = 0; i < words.length; i++) {
+          for (
+            let j = i + 1;
+            j < words.length;
+            j++
+          ) {
+            const pairKey =
+              makePairKey(words[i], words[j]);
+
+            incrementMap(
+              sharedNeighborCounts,
+              pairKey,
+              1
+            );
+          }
+        }
+      }
+
+      return sharedNeighborCounts;
+    }
+
+    function cosineSimilarity(profileA, profileB) {
+      if (!profileA || !profileB) {
+        return 0;
+      }
+
+      let smallerProfile = profileA;
+      let largerProfile = profileB;
+
+      if (profileA.size > profileB.size) {
+        smallerProfile = profileB;
+        largerProfile = profileA;
+      }
+
+      let dotProduct = 0;
+      let magnitudeA = 0;
+      let magnitudeB = 0;
+
+      for (const value of profileA.values()) {
+        magnitudeA += value * value;
+      }
+
+      for (const value of profileB.values()) {
+        magnitudeB += value * value;
+      }
+
+      for (
+        const [neighbor, value]
+        of smallerProfile.entries()
+      ) {
+        const otherValue =
+          largerProfile.get(neighbor);
+
+        if (otherValue !== undefined) {
+          dotProduct += value * otherValue;
+        }
+      }
+
+      if (
+        magnitudeA === 0 ||
+        magnitudeB === 0
+      ) {
+        return 0;
+      }
+
+      return (
+        dotProduct /
+        Math.sqrt(magnitudeA * magnitudeB)
+      );
+    }
+
+    async function buildCombinedGraph(
+      profiles,
+      directScoreMap,
+      settings
+    ) {
+      const sharedNeighborCounts =
+        buildProfileCandidatePairs(profiles);
+
       const graph = new Map();
 
-      function ensureNode(word) {
+      function ensureWord(word) {
         if (!graph.has(word)) {
           graph.set(word, new Map());
         }
       }
 
-      for (const edge of edges) {
-        ensureNode(edge.wordA);
-        ensureNode(edge.wordB);
+      function addEdge(wordA, wordB, score) {
+        ensureWord(wordA);
+        ensureWord(wordB);
 
-        graph.get(edge.wordA).set(edge.wordB, edge.score);
-        graph.get(edge.wordB).set(edge.wordA, edge.score);
+        graph.get(wordA).set(wordB, score);
+        graph.get(wordB).set(wordA, score);
+      }
+
+      const candidateKeys =
+        new Set([
+          ...sharedNeighborCounts.keys(),
+          ...directScoreMap.keys()
+        ]);
+
+      let checked = 0;
+
+      for (const pairKey of candidateKeys) {
+        checked++;
+
+        const [wordA, wordB] =
+          splitPairKey(pairKey);
+
+        const sharedNeighbors =
+          sharedNeighborCounts.get(pairKey) || 0;
+
+        const directSimilarity =
+          directScoreMap.get(pairKey) || 0;
+
+        let profileSimilarity = 0;
+
+        if (
+          sharedNeighbors >=
+          settings.minimumSharedNeighbors
+        ) {
+          profileSimilarity =
+            cosineSimilarity(
+              profiles.get(wordA),
+              profiles.get(wordB)
+            );
+        }
+
+        if (
+          profileSimilarity <
+          settings.minimumProfileSimilarity
+        ) {
+          profileSimilarity = 0;
+        }
+
+        const combinedScore =
+          settings.directWeight *
+            directSimilarity +
+          (1 - settings.directWeight) *
+            profileSimilarity;
+
+        if (
+          combinedScore >=
+          settings.minimumCombinedScore
+        ) {
+          addEdge(
+            wordA,
+            wordB,
+            combinedScore
+          );
+        }
+
+        if (checked % 10000 === 0) {
+          updateStatus(
+            `Comparing association profiles...\n\n` +
+            `Candidate pairs checked: ` +
+            `${checked.toLocaleString()} ` +
+            `of ${candidateKeys.size.toLocaleString()}\n` +
+            `Words currently in graph: ` +
+            `${graph.size.toLocaleString()}`
+          );
+
+          await yieldToBrowser();
+        }
       }
 
       return graph;
     }
 
-    function shuffledArray(values) {
-      const result = [...values];
+    function shuffledArray(iterable) {
+      const values = [...iterable];
 
-      for (let i = result.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [result[i], result[j]] = [result[j], result[i]];
+      for (
+        let index = values.length - 1;
+        index > 0;
+        index--
+      ) {
+        const randomIndex =
+          Math.floor(
+            Math.random() * (index + 1)
+          );
+
+        [
+          values[index],
+          values[randomIndex]
+        ] = [
+          values[randomIndex],
+          values[index]
+        ];
       }
 
-      return result;
+      return values;
     }
 
-    async function clusterGraph(graph, iterations) {
+    async function clusterGraph(
+      graph,
+      iterationLimit
+    ) {
       const labels = new Map();
 
       for (const word of graph.keys()) {
         labels.set(word, word);
       }
 
-      for (let iteration = 0; iteration < iterations; iteration++) {
+      for (
+        let iteration = 0;
+        iteration < iterationLimit;
+        iteration++
+      ) {
         let changes = 0;
-        const words = shuffledArray(graph.keys());
+
+        const words =
+          shuffledArray(graph.keys());
 
         for (const word of words) {
-          const neighbors = graph.get(word);
           const labelWeights = new Map();
 
-          for (const [neighbor, edgeWeight] of neighbors.entries()) {
-            const neighborLabel = labels.get(neighbor);
-            incrementMap(labelWeights, neighborLabel, edgeWeight);
+          for (
+            const [neighbor, edgeWeight]
+            of graph.get(word).entries()
+          ) {
+            const neighborLabel =
+              labels.get(neighbor);
+
+            incrementMap(
+              labelWeights,
+              neighborLabel,
+              edgeWeight
+            );
           }
 
           let bestLabel = labels.get(word);
           let bestWeight = -Infinity;
 
-          for (const [candidateLabel, totalWeight] of labelWeights.entries()) {
+          for (
+            const [candidateLabel, totalWeight]
+            of labelWeights.entries()
+          ) {
             if (
               totalWeight > bestWeight ||
               (
@@ -615,9 +1143,11 @@
         }
 
         updateStatus(
-          `Clustering words...\n` +
-          `Iteration ${iteration + 1} of ${iterations}\n` +
-          `Words reassigned in this iteration: ${changes.toLocaleString()}`
+          `Detecting categories...\n\n` +
+          `Iteration ${iteration + 1} ` +
+          `of ${iterationLimit}\n` +
+          `Words reassigned: ` +
+          `${changes.toLocaleString()}`
         );
 
         await yieldToBrowser();
@@ -630,195 +1160,253 @@
       return labels;
     }
 
-    function computeWordCentrality(graph, word, labels) {
-      const ownLabel = labels.get(word);
-      let centrality = 0;
+    function calculateInternalCentrality(
+      graph,
+      labels,
+      word
+    ) {
+      const wordLabel = labels.get(word);
+      let score = 0;
 
-      for (const [neighbor, weight] of graph.get(word).entries()) {
-        if (labels.get(neighbor) === ownLabel) {
-          centrality += weight;
+      for (
+        const [neighbor, edgeWeight]
+        of graph.get(word).entries()
+      ) {
+        if (
+          labels.get(neighbor) === wordLabel
+        ) {
+          score += edgeWeight;
         }
       }
 
-      return centrality;
+      return score;
     }
 
-    function createCategories(graph, labels, minimumSize) {
+    function createCategories(
+      graph,
+      labels,
+      minimumCategorySize
+    ) {
       const categoryMap = new Map();
 
-      for (const [word, label] of labels.entries()) {
+      for (const [word, label] of labels) {
         if (!categoryMap.has(label)) {
           categoryMap.set(label, []);
         }
 
         categoryMap.get(label).push({
           word,
-          centrality: computeWordCentrality(graph, word, labels)
+          centrality:
+            calculateInternalCentrality(
+              graph,
+              labels,
+              word
+            )
         });
       }
 
       const categories = [];
 
-      for (const words of categoryMap.values()) {
-        if (words.length < minimumSize) {
+      for (
+        const words
+        of categoryMap.values()
+      ) {
+        if (
+          words.length <
+          minimumCategorySize
+        ) {
           continue;
         }
 
         words.sort((a, b) => {
-          if (b.centrality !== a.centrality) {
-            return b.centrality - a.centrality;
+          if (
+            b.centrality !== a.centrality
+          ) {
+            return (
+              b.centrality -
+              a.centrality
+            );
           }
 
           return a.word.localeCompare(b.word);
         });
 
-        const titleWords = words
+        const title = words
           .slice(0, 3)
-          .map(item => item.word);
+          .map(item => item.word)
+          .join(" / ");
 
         categories.push({
-          title: titleWords.join(" / "),
+          title,
           words,
-          totalCentrality: words.reduce(
-            (sum, item) => sum + item.centrality,
-            0
-          )
+          totalCentrality:
+            words.reduce(
+              (sum, item) =>
+                sum + item.centrality,
+              0
+            )
         });
       }
 
       categories.sort((a, b) => {
-        if (b.words.length !== a.words.length) {
-          return b.words.length - a.words.length;
+        if (
+          b.words.length !== a.words.length
+        ) {
+          return (
+            b.words.length -
+            a.words.length
+          );
         }
 
-        return b.totalCentrality - a.totalCentrality;
+        return (
+          b.totalCentrality -
+          a.totalCentrality
+        );
       });
 
       return categories;
     }
 
-    function renderCategories(categories, maximumDisplayedWords) {
+    function renderCategories(
+      categories,
+      maximumDisplayedWords
+    ) {
       categoriesContainer.innerHTML = "";
 
-      const fragment = document.createDocumentFragment();
+      const fragment =
+        document.createDocumentFragment();
 
-      categories.forEach((category, categoryIndex) => {
-        const categoryElement = document.createElement("article");
-        categoryElement.className = "category";
+      categories.forEach(
+        (category, categoryIndex) => {
+          const article =
+            document.createElement("article");
 
-        const searchableText = [
-          category.title,
-          ...category.words.map(item => item.word)
-        ]
-          .join(" ")
-          .toLowerCase();
+          article.className = "category";
 
-        categoryElement.dataset.searchable = searchableText;
+          article.dataset.searchable = [
+            category.title,
+            ...category.words.map(
+              item => item.word
+            )
+          ]
+            .join(" ")
+            .toLowerCase();
 
-        const header = document.createElement("button");
-        header.className = "category-header";
-        header.type = "button";
+          const header =
+            document.createElement("button");
 
-        header.innerHTML = `
-          <span class="category-title">
-            Category ${categoryIndex + 1}: ${escapeHtml(category.title)}
-          </span>
-          <span class="category-count">
-            ${category.words.length.toLocaleString()} words
-          </span>
-        `;
+          header.type = "button";
+          header.className = "category-header";
 
-        const body = document.createElement("div");
-        body.className = "category-body";
+          header.innerHTML = `
+            <span class="category-title">
+              Category ${categoryIndex + 1}:
+              ${escapeHtml(category.title)}
+            </span>
 
-        const visibleWords = category.words.slice(0, maximumDisplayedWords);
-
-        for (const item of visibleWords) {
-          const wordCard = document.createElement("div");
-          wordCard.className = "word-card";
-
-          wordCard.innerHTML = `
-            <div class="word">${escapeHtml(item.word)}</div>
-            <div class="word-score">
-              centrality ${item.centrality.toFixed(2)}
-            </div>
+            <span class="category-count">
+              ${category.words.length.toLocaleString()}
+              words
+            </span>
           `;
 
-          body.appendChild(wordCard);
+          const body =
+            document.createElement("div");
+
+          body.className = "category-body";
+
+          const visibleWords =
+            category.words.slice(
+              0,
+              maximumDisplayedWords
+            );
+
+          for (const item of visibleWords) {
+            const wordCard =
+              document.createElement("div");
+
+            wordCard.className = "word-card";
+
+            wordCard.innerHTML = `
+              <div class="word">
+                ${escapeHtml(item.word)}
+              </div>
+
+              <div class="word-score">
+                category centrality
+                ${item.centrality.toFixed(3)}
+              </div>
+            `;
+
+            body.appendChild(wordCard);
+          }
+
+          if (
+            category.words.length >
+            maximumDisplayedWords
+          ) {
+            const remaining =
+              document.createElement("div");
+
+            remaining.className = "word-card";
+
+            remaining.innerHTML = `
+              <div class="word">
+                +${
+                  category.words.length -
+                  maximumDisplayedWords
+                } more
+              </div>
+            `;
+
+            body.appendChild(remaining);
+          }
+
+          header.addEventListener(
+            "click",
+            () => {
+              body.classList.toggle("hidden");
+            }
+          );
+
+          article.appendChild(header);
+          article.appendChild(body);
+          fragment.appendChild(article);
         }
-
-        if (category.words.length > maximumDisplayedWords) {
-          const remainingCard = document.createElement("div");
-          remainingCard.className = "word-card";
-
-          remainingCard.innerHTML = `
-            <div class="word">
-              +${category.words.length - maximumDisplayedWords} more
-            </div>
-          `;
-
-          body.appendChild(remainingCard);
-        }
-
-        header.addEventListener("click", () => {
-          body.classList.toggle("hidden");
-        });
-
-        categoryElement.appendChild(header);
-        categoryElement.appendChild(body);
-        fragment.appendChild(categoryElement);
-      });
+      );
 
       categoriesContainer.appendChild(fragment);
 
-      const totalWords = categories.reduce(
-        (sum, category) => sum + category.words.length,
-        0
-      );
+      const categorizedWords =
+        categories.reduce(
+          (sum, category) =>
+            sum + category.words.length,
+          0
+        );
 
       categorySummary.textContent =
-        `${categories.length.toLocaleString()} categories containing ` +
-        `${totalWords.toLocaleString()} categorized words.`;
+        `${categories.length.toLocaleString()} ` +
+        `categories containing ` +
+        `${categorizedWords.toLocaleString()} words.`;
     }
 
     function filterCategories() {
-      const query = categorySearch.value.trim().toLowerCase();
-      const categoryElements = categoriesContainer.querySelectorAll(".category");
+      const query =
+        categorySearch.value
+          .trim()
+          .toLowerCase();
+
+      const categoryElements =
+        categoriesContainer
+          .querySelectorAll(".category");
 
       for (const element of categoryElements) {
         element.style.display =
-          !query || element.dataset.searchable.includes(query)
+          !query ||
+          element.dataset.searchable.includes(query)
             ? ""
             : "none";
       }
-    }
-
-    function categoriesToCsv(categories) {
-      const rows = [
-        [
-          "category_number",
-          "automatic_category_name",
-          "word",
-          "word_rank",
-          "centrality"
-        ]
-      ];
-
-      categories.forEach((category, categoryIndex) => {
-        category.words.forEach((item, wordIndex) => {
-          rows.push([
-            categoryIndex + 1,
-            category.title,
-            item.word,
-            wordIndex + 1,
-            item.centrality.toFixed(6)
-          ]);
-        });
-      });
-
-      return rows
-        .map(row => row.map(csvEscape).join(","))
-        .join("\n");
     }
 
     function csvEscape(value) {
@@ -829,10 +1417,45 @@
         text.includes('"') ||
         text.includes("\n")
       ) {
-        return `"${text.replaceAll('"', '""')}"`;
+        return (
+          `"${text.replaceAll('"', '""')}"`
+        );
       }
 
       return text;
+    }
+
+    function categoriesToCsv(categories) {
+      const rows = [[
+        "category_number",
+        "automatic_category_name",
+        "word",
+        "word_rank",
+        "category_centrality"
+      ]];
+
+      categories.forEach(
+        (category, categoryIndex) => {
+          category.words.forEach(
+            (item, wordIndex) => {
+              rows.push([
+                categoryIndex + 1,
+                category.title,
+                item.word,
+                wordIndex + 1,
+                item.centrality.toFixed(6)
+              ]);
+            }
+          );
+        }
+      );
+
+      return rows
+        .map(
+          row =>
+            row.map(csvEscape).join(",")
+        )
+        .join("\n");
     }
 
     function downloadCategories() {
@@ -840,17 +1463,26 @@
         return;
       }
 
-      const csv = categoriesToCsv(latestCategories);
+      const csv =
+        categoriesToCsv(latestCategories);
+
       const blob = new Blob(
         [csv],
-        { type: "text/csv;charset=utf-8" }
+        {
+          type:
+            "text/csv;charset=utf-8"
+        }
       );
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const url =
+        URL.createObjectURL(blob);
+
+      const link =
+        document.createElement("a");
 
       link.href = url;
-      link.download = "word_categories.csv";
+      link.download =
+        "contextual_word_categories.csv";
 
       document.body.appendChild(link);
       link.click();
@@ -859,29 +1491,80 @@
       URL.revokeObjectURL(url);
     }
 
-    function yieldToBrowser() {
-      return new Promise(resolve => setTimeout(resolve, 0));
-    }
-
     async function runAnalysis() {
-      const files = Array.from(fileInput.files);
+      const files =
+        Array.from(fileInput.files);
 
       if (!files.length) {
-        updateStatus("Upload at least one .txt file.");
+        updateStatus(
+          "Upload at least one .txt file."
+        );
+
         return;
       }
 
       const settings = {
-        sentenceWeight: getNumber("sentenceWeight"),
-        paragraphWeight: getNumber("paragraphWeight"),
-        minPairCount: getNumber("minPairCount"),
-        minPpmi: getNumber("minPpmi"),
-        minEdgeScore: getNumber("minEdgeScore"),
-        minimumWordFrequency: getNumber("minimumWordFrequency"),
-        maxContextWords: getNumber("maxContextWords"),
-        minCategorySize: getNumber("minCategorySize"),
-        maxCategorySize: getNumber("maxCategorySize"),
-        clusterIterations: getNumber("clusterIterations")
+        sentenceWeight:
+          getNumber("sentenceWeight"),
+
+        paragraphWeight:
+          getNumber("paragraphWeight"),
+
+        minimumWordFrequency:
+          getNumber(
+            "minimumWordFrequency"
+          ),
+
+        minimumPairOccurrences:
+          getNumber(
+            "minimumPairOccurrences"
+          ),
+
+        minimumPpmi:
+          getNumber("minimumPpmi"),
+
+        maximumDirectNeighbors:
+          getNumber(
+            "maximumDirectNeighbors"
+          ),
+
+        minimumSharedNeighbors:
+          getNumber(
+            "minimumSharedNeighbors"
+          ),
+
+        minimumProfileSimilarity:
+          getNumber(
+            "minimumProfileSimilarity"
+          ),
+
+        directWeight:
+          getNumber("directWeight"),
+
+        minimumCombinedScore:
+          getNumber(
+            "minimumCombinedScore"
+          ),
+
+        maximumContextWords:
+          getNumber(
+            "maximumContextWords"
+          ),
+
+        minimumCategorySize:
+          getNumber(
+            "minimumCategorySize"
+          ),
+
+        maximumCategoryDisplay:
+          getNumber(
+            "maximumCategoryDisplay"
+          ),
+
+        clusterIterations:
+          getNumber(
+            "clusterIterations"
+          )
       };
 
       const corpus = {
@@ -893,86 +1576,153 @@
 
       runButton.disabled = true;
       downloadButton.disabled = true;
-      categoriesContainer.innerHTML = "";
-      categorySummary.textContent = "";
+
       latestCategories = [];
 
+      categoriesContainer.innerHTML = "";
+      categorySummary.textContent = "";
+
       try {
-        for (let index = 0; index < files.length; index++) {
+        for (
+          let fileIndex = 0;
+          fileIndex < files.length;
+          fileIndex++
+        ) {
           updateStatus(
-            `Processing book ${index + 1} of ${files.length}\n` +
-            `${files[index].name}\n\n` +
-            `Words found: ${corpus.wordContextWeights.size.toLocaleString()}\n` +
-            `Candidate pairs: ${corpus.pairWeights.size.toLocaleString()}`
+            `Processing book ${fileIndex + 1} ` +
+            `of ${files.length}\n` +
+            `${files[fileIndex].name}`
           );
 
-          await processBook(files[index], settings, corpus);
-          await yieldToBrowser();
+          await processBook(
+            files[fileIndex],
+            settings,
+            corpus
+          );
         }
 
         updateStatus(
-          `Calculating disproportionately strong relationships...\n\n` +
-          `Unique words: ${corpus.wordContextWeights.size.toLocaleString()}\n` +
-          `Candidate pairs: ${corpus.pairWeights.size.toLocaleString()}`
+          `Calculating frequency-adjusted ` +
+          `direct relationships...\n\n` +
+          `Unique words: ` +
+          `${corpus.wordContextWeights.size.toLocaleString()}\n` +
+          `Candidate pairs: ` +
+          `${corpus.pairWeights.size.toLocaleString()}`
         );
 
-        const edges = calculateEdges(corpus, settings);
-        const graph = buildGraph(edges);
+        await yieldToBrowser();
+
+        const directEdges =
+          calculateDirectEdges(
+            corpus,
+            settings
+          );
 
         updateStatus(
-          `Relationship graph created.\n\n` +
-          `Words in graph: ${graph.size.toLocaleString()}\n` +
-          `Strong relationships: ${edges.length.toLocaleString()}\n\n` +
+          `Building association profiles...\n\n` +
+          `Frequency-adjusted direct edges: ` +
+          `${directEdges.length.toLocaleString()}`
+        );
+
+        await yieldToBrowser();
+
+        const profiles =
+          buildLimitedProfiles(
+            directEdges,
+            settings.maximumDirectNeighbors
+          );
+
+        const directScoreMap =
+          buildDirectScoreMap(
+            directEdges,
+            profiles
+          );
+
+        const combinedGraph =
+          await buildCombinedGraph(
+            profiles,
+            directScoreMap,
+            settings
+          );
+
+        updateStatus(
+          `Combined semantic graph created.\n\n` +
+          `Words in graph: ` +
+          `${combinedGraph.size.toLocaleString()}\n` +
           `Beginning category detection...`
         );
 
         await yieldToBrowser();
 
-        const labels = await clusterGraph(
-          graph,
-          settings.clusterIterations
-        );
+        const labels =
+          await clusterGraph(
+            combinedGraph,
+            settings.clusterIterations
+          );
 
-        const categories = createCategories(
-          graph,
-          labels,
-          settings.minCategorySize
-        );
+        const categories =
+          createCategories(
+            combinedGraph,
+            labels,
+            settings.minimumCategorySize
+          );
 
         latestCategories = categories;
 
         renderCategories(
           categories,
-          settings.maxCategorySize
+          settings.maximumCategoryDisplay
         );
 
         updateStatus(
           `Finished.\n\n` +
           `Books processed: ${files.length}\n` +
-          `Words encountered: ${corpus.wordContextWeights.size.toLocaleString()}\n` +
-          `Strong graph edges: ${edges.length.toLocaleString()}\n` +
-          `Words included in graph: ${graph.size.toLocaleString()}\n` +
-          `Categories created: ${categories.length.toLocaleString()}`
+          `Words encountered: ` +
+          `${corpus.wordContextWeights.size.toLocaleString()}\n` +
+          `Direct PPMI relationships: ` +
+          `${directEdges.length.toLocaleString()}\n` +
+          `Words in combined graph: ` +
+          `${combinedGraph.size.toLocaleString()}\n` +
+          `Categories created: ` +
+          `${categories.length.toLocaleString()}`
         );
 
-        downloadButton.disabled = categories.length === 0;
+        downloadButton.disabled =
+          categories.length === 0;
       } catch (error) {
         console.error(error);
-        updateStatus(`Error: ${error.message}`);
+
+        updateStatus(
+          `Error: ${error.message}`
+        );
       } finally {
         runButton.disabled = false;
       }
     }
 
-    runButton.addEventListener("click", runAnalysis);
-    downloadButton.addEventListener("click", downloadCategories);
-    categorySearch.addEventListener("input", filterCategories);
+    runButton.addEventListener(
+      "click",
+      runAnalysis
+    );
 
-    clearSearchButton.addEventListener("click", () => {
-      categorySearch.value = "";
-      filterCategories();
-      categorySearch.focus();
-    });
+    downloadButton.addEventListener(
+      "click",
+      downloadCategories
+    );
+
+    categorySearch.addEventListener(
+      "input",
+      filterCategories
+    );
+
+    clearSearchButton.addEventListener(
+      "click",
+      () => {
+        categorySearch.value = "";
+        filterCategories();
+        categorySearch.focus();
+      }
+    );
   </script>
 </body>
 </html>
