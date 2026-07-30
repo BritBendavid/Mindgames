@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Systematic Ranking</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --background: #050505;
+            --panel: #111111;
+            --panel-light: #191919;
+            --border: #323232;
+            --text: #ffffff;
+            --muted: #a8a8a8;
+            --green: #3bd681;
+            --green-dark: #174f31;
+            --red: #ff7373;
+            --blue: #70adff;
+            --yellow: #ffd76a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--background);
+            color: var(--text);
+            font-family:
+                Inter,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
+
+        button,
+        input,
+        textarea {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button:disabled {
+            cursor: default;
+            opacity: 0.55;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .topbar {
+            min-height: 68px;
+            padding: 12px 22px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(5, 5, 5, 0.96);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+        }
+
+        .account-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .account-email {
+            max-width: 260px;
+            overflow: hidden;
+            color: var(--muted);
+            font-size: 0.9rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .main {
+            width: min(1200px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 30px 0 60px;
+        }
+
+        .auth-card {
+            width: min(470px, 100%);
+            margin: 8vh auto 0;
+            padding: 28px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: var(--panel);
+        }
+
+        .auth-card h1 {
+            margin: 0 0 8px;
+            font-size: 2rem;
+        }
+
+        .auth-card p {
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            margin: 16px 0;
+        }
+
+        label {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            outline: none;
+            background: #090909;
+            color: var(--text);
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--blue);
+        }
+
+        textarea {
+            min-height: 240px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .button {
+            padding: 10px 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--panel-light);
+            color: var(--text);
+            transition:
+                transform 120ms ease,
+                background 120ms ease,
+                border-color 120ms ease;
+        }
+
+        .button:hover:not(:disabled) {
+            border-color: #4a4a4a;
+            background: #252525;
+        }
+
+        .button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .button.primary {
+            border-color: var(--green);
+            background: var(--green);
+            color: #00190b;
+            font-weight: 800;
+        }
+
+        .button.primary:hover:not(:disabled) {
+            background: #63e29c;
+        }
+
+        .button.danger {
+            color: #ff9a9a;
+        }
+
+        .button.link-like {
+            padding: 5px 0;
+            border: none;
+            background: transparent;
+            color: var(--blue);
+        }
+
+        .message {
+            min-height: 22px;
+            margin-top: 14px;
+            color: var(--muted);
+        }
+
+        .message.error {
+            color: var(--red);
+        }
+
+        .message.success {
+            color: var(--green);
+        }
+
+        .dashboard-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 26px;
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+        }
+
+        .dashboard-header p {
+            margin-bottom: 0;
+            color: var(--muted);
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .project-card {
+            min-height: 200px;
+            padding: 18px;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            background: var(--panel);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .project-name {
+            font-size: 1.1rem;
+            font-weight: 750;
+            overflow-wrap: anywhere;
+        }
+
+        .project-meta {
+            flex: 1;
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+
+        .status {
+            display: inline-flex;
+            width: max-content;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #282828;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        .status.completed {
+            background: var(--green-dark);
+            color: #b2f3cf;
+        }
+
+        .empty-state {
+            padding: 35px;
+            border: 1px dashed var(--border);
+            border-radius: 15px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .modal-background {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            display: grid;
+            place-items: center;
+        }
+
+        .modal {
+            width: min(680px, 100%);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 17px;
+            background: var(--panel);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .close-button {
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            background: var(--panel-light);
+            color: var(--text);
+            font-size: 1.25rem;
+        }
+
+        .help-text {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+
+        .workspace {
+            width: min(1100px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 24px 0 60px;
+        }
+
+        .workspace-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .workspace-title-area {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .project-title-input {
+            padding: 5px 0;
+            border: none;
+            background: transparent;
+            font-size: clamp(1.3rem, 3vw, 2rem);
+            font-weight: 800;
+        }
+
+        .project-title-input:focus {
+            border: none;
+        }
+
+        .statistics {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        .stat {
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            background: var(--panel);
+        }
+
+        .stat-label {
+            margin-bottom: 5px;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        .stat-value {
+            font-size: 1.15rem;
+            font-weight: 750;
+        }
+
+        .progress-track {
+            height: 11px;
+            margin-bottom: 28px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #242424;
+        }
+
+        .progress-fill {
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: var(--green);
+            transition: width 180ms ease;
+        }
+
+        .comparison-panel {
+            padding: clamp(18px, 4vw, 36px);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: var(--panel);
+        }
+
+        .comparison-prompt {
+            margin: 0 0 22px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: stretch;
+            gap: 20px;
+        }
+
+        .choice {
+            min-height: 220px;
+            padding: 24px;
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            background: #0b0b0b;
+            color: var(--text);
+            display: grid;
+            place-items: center;
+            text-align: center;
+            font-size: clamp(1.25rem, 3vw, 2rem);
+            font-weight: 750;
+            overflow-wrap: anywhere;
+        }
+
+        .choice:hover:not(:disabled) {
+            border-color: var(--green);
+            background: #101b15;
+        }
+
+        .versus {
+            display: grid;
+            place-items: center;
+            color: var(--muted);
+            font-weight: 750;
+        }
+
+        .comparison-footer {
+            margin-top: 22px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .save-indicator {
+            min-height: 22px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .result-panel {
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: var(--panel);
+        }
+
+        .result-panel h2 {
+            margin-top: 0;
+        }
+
+        .ranking-list {
+            margin: 22px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ranking-row {
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            background: #0b0b0b;
+            display: grid;
+            grid-template-columns: 55px 1fr;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .rank-number {
+            color: var(--green);
+            font-weight: 800;
+            text-align: right;
+        }
+
+        .result-label {
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 760px) {
+            .statistics {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .choice {
+                min-height: 145px;
+            }
+
+            .versus {
+                min-height: 20px;
+            }
+
+            .workspace-header,
+            .dashboard-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .account-email {
+                display: none;
+            }
+
+            .topbar {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="brand">Systematic Ranking</div>
+
+        <div id="accountArea" class="account-area hidden">
+            <span id="accountEmail" class="account-email"></span>
+
+            <button id="signOutButton" class="button">
+                Sign out
+            </button>
+        </div>
+    </header>
+
+    <main id="authView" class="main">
+        <section class="auth-card">
+            <h1>Rank any list</h1>
+
+            <p>
+                Sign in to create private ranking projects. Each project
+                is saved to your account and cannot be changed by other
+                users.
+            </p>
+
+            <div class="field">
+                <label for="emailInput">Email</label>
+
+                <input
+                    id="emailInput"
+                    type="email"
+                    autocomplete="email"
+                    placeholder="you@example.com"
+                >
+            </div>
+
+            <div class="field">
+                <label for="passwordInput">Password</label>
+
+                <input
+                    id="passwordInput"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="Password"
+                >
+            </div>
+
+            <div class="button-row">
+                <button id="signInButton" class="button primary">
+                    Sign in
+                </button>
+
+                <button id="signUpButton" class="button">
+                    Create account
+                </button>
+            </div>
+
+            <div id="authMessage" class="message"></div>
+        </section>
+    </main>
+
+    <main id="dashboardView" class="main hidden">
+        <section class="dashboard-header">
+            <div>
+                <h1>Your ranking projects</h1>
+
+                <p>
+                    Rankings are private to your signed-in account.
+                </p>
+            </div>
+
+            <button id="newProjectButton" class="button primary">
+                New ranking
+            </button>
+        </section>
+
+        <div id="projectGrid" class="project-grid"></div>
+    </main>
+
+    <main id="workspaceView" class="workspace hidden">
+        <section class="workspace-header">
+            <div class="workspace-title-area">
+                <button id="backButton" class="button link-like">
+                    ← All projects
+                </button>
+
+                <input
+                    id="projectTitleInput"
+                    class="project-title-input"
+                    maxlength="160"
+                >
+            </div>
+
+            <button id="deleteProjectButton" class="button danger">
+                Delete project
+            </button>
+        </section>
+
+        <section class="statistics">
+            <div class="stat">
+                <div class="stat-label">Items</div>
+                <div id="itemCountStat" class="stat-value">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">Comparisons made</div>
+                <div id="comparisonCountStat" class="stat-value">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">Maximum expected</div>
+                <div id="maximumComparisonsStat" class="stat-value">
+                    0
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">Progress estimate</div>
+                <div id="progressStat" class="stat-value">0%</div>
+            </div>
+        </section>
+
+        <div class="progress-track">
+            <div id="progressFill" class="progress-fill"></div>
+        </div>
+
+        <section id="comparisonPanel" class="comparison-panel hidden">
+            <p class="comparison-prompt">
+                Which item should be ranked higher?
+            </p>
+
+            <div class="comparison-grid">
+                <button id="leftChoice" class="choice"></button>
+
+                <div class="versus">OR</div>
+
+                <button id="rightChoice" class="choice"></button>
+            </div>
+
+            <div class="comparison-footer">
+                <button id="undoButton" class="button">
+                    Undo last choice
+                </button>
+            </div>
+
+            <div id="saveIndicator" class="save-indicator"></div>
+        </section>
+
+        <section id="resultPanel" class="result-panel hidden">
+            <h2>Ranking complete</h2>
+
+            <p class="help-text">
+                The first item is the highest-ranked item.
+            </p>
+
+            <div class="button-row">
+                <button id="copyRankingButton" class="button">
+                    Copy ranking
+                </button>
+
+                <button id="downloadTextButton" class="button">
+                    Download TXT
+                </button>
+
+                <button id="downloadCsvButton" class="button">
+                    Download CSV
+                </button>
+            </div>
+
+            <div id="rankingList" class="ranking-list"></div>
+        </section>
+    </main>
+
+    <div id="newProjectModal" class="modal-background hidden">
+        <section class="modal">
+            <div class="modal-header">
+                <h2>Create ranking</h2>
+
+                <button id="closeModalButton" class="close-button">
+                    ×
+                </button>
+            </div>
+
+            <div class="field">
+                <label for="newProjectName">Project name</label>
+
+                <input
+                    id="newProjectName"
+                    maxlength="160"
+                    placeholder="Favorite books"
+                >
+            </div>
+
+            <div class="field">
+                <label for="listInput">Items</label>
+
+                <textarea
+                    id="listInput"
+                    placeholder="Enter one item per line
+
+The Lord of the Rings
+Crime and Punishment
+Don Quixote
+The Brothers Karamazov"
+                ></textarea>
+            </div>
+
+            <div class="button-row">
+                <label class="button" for="textFileInput">
+                    Upload TXT
+                </label>
+
+                <input
+                    id="textFileInput"
+                    class="hidden"
+                    type="file"
+                    accept=".txt,text/plain"
+                >
+
+                <button id="createProjectButton" class="button primary">
+                    Create and begin
+                </button>
+            </div>
+
+            <p class="help-text">
+                Enter one item per line. Blank lines are ignored.
+                Identical labels are treated as separate items.
+            </p>
+
+            <div id="newProjectMessage" class="message"></div>
+        </section>
+    </div>
+
+    <script>
+        /*
+        ================================================================
+        SUPABASE CONFIGURATION
+        ================================================================
+        */
+
+        const SUPABASE_URL = "https://tyzvxrlimbhmvmjenjxy.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_BdJd1R8Pkbggf5X_oOZL3w_DgoDyhNH";
+
+        const supabaseClient = supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
+
+        /*
+        ================================================================
+        APPLICATION STATE
+        ================================================================
+        */
+
+        let currentUser = null;
+        let currentProject = null;
+        let projectNameSaveTimer = null;
+        let isProcessingComparison = false;
+
+        /*
+        ================================================================
+        DOM REFERENCES
+        ================================================================
+        */
+
+        const authView =
+            document.getElementById("authView");
+
+        const dashboardView =
+            document.getElementById("dashboardView");
+
+        const workspaceView =
+            document.getElementById("workspaceView");
+
+        const accountArea =
+            document.getElementById("accountArea");
+
+        const accountEmail =
+            document.getElementById("accountEmail");
+
+        const emailInput =
+            document.getElementById("emailInput");
+
+        const passwordInput =
+            document.getElementById("passwordInput");
+
+        const authMessage =
+            document.getElementById("authMessage");
+
+        const signInButton =
+            document.getElementById("signInButton");
+
+        const signUpButton =
+            document.getElementById("signUpButton");
+
+        const signOutButton =
+            document.getElementById("signOutButton");
+
+        const projectGrid =
+            document.getElementById("projectGrid");
+
+        const newProjectButton =
+            document.getElementById("newProjectButton");
+
+        const newProjectModal =
+            document.getElementById("newProjectModal");
+
+        const closeModalButton =
+            document.getElementById("closeModalButton");
+
+        const newProjectName =
+            document.getElementById("newProjectName");
+
+        const listInput =
+            document.getElementById("listInput");
+
+        const textFileInput =
+            document.getElementById("textFileInput");
+
+        const createProjectButton =
+            document.getElementById("createProjectButton");
+
+        const newProjectMessage =
+            document.getElementById("newProjectMessage");
+
+        const backButton =
+            document.getElementById("backButton");
+
+        const deleteProjectButton =
+            document.getElementById("deleteProjectButton");
+
+        const projectTitleInput =
+            document.getElementById("projectTitleInput");
+
+        const itemCountStat =
+            document.getElementById("itemCountStat");
+
+        const comparisonCountStat =
+            document.getElementById("comparisonCountStat");
+
+        const maximumComparisonsStat =
+            document.getElementById("maximumComparisonsStat");
+
+        const progressStat =
+            document.getElementById("progressStat");
+
+        const progressFill =
+            document.getElementById("progressFill");
+
+        const comparisonPanel =
+            document.getElementById("comparisonPanel");
+
+        const resultPanel =
+            document.getElementById("resultPanel");
+
+        const leftChoice =
+            document.getElementById("leftChoice");
+
+        const rightChoice =
+            document.getElementById("rightChoice");
+
+        const undoButton =
+            document.getElementById("undoButton");
+
+        const saveIndicator =
+            document.getElementById("saveIndicator");
+
+        const rankingList =
+            document.getElementById("rankingList");
+
+        const copyRankingButton =
+            document.getElementById("copyRankingButton");
+
+        const downloadTextButton =
+            document.getElementById("downloadTextButton");
+
+        const downloadCsvButton =
+            document.getElementById("downloadCsvButton");
+
+        /*
+        ================================================================
+        GENERAL HELPERS
+        ================================================================
+        */
+
+        function showView(viewName) {
+            authView.classList.toggle(
+                "hidden",
+                viewName !== "auth"
+            );
+
+            dashboardView.classList.toggle(
+                "hidden",
+                viewName !== "dashboard"
+            );
+
+            workspaceView.classList.toggle(
+                "hidden",
+                viewName !== "workspace"
+            );
+        }
+
+        function setMessage(element, text, type = "") {
+            element.textContent = text;
+            element.className = "message";
+
+            if (type) {
+                element.classList.add(type);
+            }
+        }
+
+        function deepClone(value) {
+            return JSON.parse(JSON.stringify(value));
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll("\"", "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function formatDate(dateString) {
+            return new Intl.DateTimeFormat("en", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit"
+            }).format(new Date(dateString));
+        }
+
+        function makeItem(label, originalIndex) {
+            return {
+                id: crypto.randomUUID(),
+                label,
+                originalIndex
+            };
+        }
+
+        function parseItems(rawText) {
+            return rawText
+                .split(/\r?\n/)
+                .map(line => line.trim())
+                .filter(Boolean)
+                .map((label, index) => {
+                    return makeItem(label, index);
+                });
+        }
+
+        function maximumMergeSortComparisons(n) {
+            if (n < 2) {
+                return 0;
+            }
+
+            const ceilingLog =
+                Math.ceil(Math.log2(n));
+
+            return (
+                n * ceilingLog
+                - Math.pow(2, ceilingLog)
+                + 1
+            );
+        }
+
+        function shuffledCopy(array) {
+            const result = [...array];
+
+            for (
+                let i = result.length - 1;
+                i > 0;
+                i -= 1
+            ) {
+                const j =
+                    Math.floor(Math.random() * (i + 1));
+
+                [
+                    result[i],
+                    result[j]
+                ] = [
+                    result[j],
+                    result[i]
+                ];
+            }
+
+            return result;
+        }
+
+        /*
+        ================================================================
+        RANDOMIZED INTERLEAVED MERGE SORT
+        ================================================================
+
+        Multiple necessary merge jobs are kept active simultaneously.
+
+        The next comparison is selected from among those active jobs.
+        Jobs involving recently displayed items receive large penalties.
+
+        This gives a more varied experience while preserving the
+        efficiency and correctness of merge sort.
+        */
+
+        function createMergeJob(leftRun, rightRun) {
+            return {
+                id: crypto.randomUUID(),
+
+                leftRun,
+                rightRun,
+
+                leftIndex: 0,
+                rightIndex: 0,
+
+                mergedRun: [],
+                completed: false
+            };
+        }
+
+        function createRoundFromRuns(runs) {
+            const randomizedRuns =
+                shuffledCopy(runs);
+
+            const jobs = [];
+            const carryRuns = [];
+
+            for (
+                let i = 0;
+                i < randomizedRuns.length;
+                i += 2
+            ) {
+                const leftRun =
+                    randomizedRuns[i];
+
+                const rightRun =
+                    randomizedRuns[i + 1];
+
+                if (!rightRun) {
+                    carryRuns.push(leftRun);
+                    continue;
+                }
+
+                jobs.push(
+                    createMergeJob(leftRun, rightRun)
+                );
+            }
+
+            return {
+                jobs,
+                carryRuns
+            };
+        }
+
+        function createInitialAlgorithmState(items) {
+            /*
+            Shuffle once before creating the initial one-item runs so
+            submitted list order does not determine the first pairings.
+            */
+
+            const randomizedItems =
+                shuffledCopy(items);
+
+            const initialRuns =
+                randomizedItems.map(item => [item]);
+
+            const round =
+                createRoundFromRuns(initialRuns);
+
+            return {
+                roundNumber: 1,
+
+                jobs: round.jobs,
+                carryRuns: round.carryRuns,
+
+                currentJobId: null,
+
+                /*
+                Contains the most recently shown item IDs, with the most
+                recent items first.
+                */
+                recentItemIds: [],
+
+                completed: false,
+                finalRanking: null
+            };
+        }
+
+        function getCurrentItemsForJob(job) {
+            if (!job || job.completed) {
+                return null;
+            }
+
+            const leftItem =
+                job.leftRun[job.leftIndex];
+
+            const rightItem =
+                job.rightRun[job.rightIndex];
+
+            if (!leftItem || !rightItem) {
+                return null;
+            }
+
+            return {
+                leftItem,
+                rightItem
+            };
+        }
+
+        function automaticallyFinishExhaustedJob(job) {
+            if (job.completed) {
+                return;
+            }
+
+            if (
+                job.leftIndex >= job.leftRun.length
+            ) {
+                job.mergedRun.push(
+                    ...job.rightRun.slice(
+                        job.rightIndex
+                    )
+                );
+
+                job.rightIndex =
+                    job.rightRun.length;
+
+                job.completed = true;
+                return;
+            }
+
+            if (
+                job.rightIndex >= job.rightRun.length
+            ) {
+                job.mergedRun.push(
+                    ...job.leftRun.slice(
+                        job.leftIndex
+                    )
+                );
+
+                job.leftIndex =
+                    job.leftRun.length;
+
+                job.completed = true;
+            }
+        }
+
+        function normalizeAllJobs(state) {
+            for (const job of state.jobs) {
+                automaticallyFinishExhaustedJob(job);
+            }
+        }
+
+        function allJobsCompleted(state) {
+            return state.jobs.every(job => {
+                return job.completed;
+            });
+        }
+
+        function beginNextRound(state) {
+            const completedRuns = [
+                ...state.jobs.map(job => {
+                    return job.mergedRun;
+                }),
+
+                ...state.carryRuns
+            ];
+
+            if (completedRuns.length === 1) {
+                state.completed = true;
+                state.finalRanking =
+                    completedRuns[0];
+
+                state.currentJobId = null;
+                return;
+            }
+
+            const nextRound =
+                createRoundFromRuns(completedRuns);
+
+            state.roundNumber += 1;
+            state.jobs = nextRound.jobs;
+            state.carryRuns =
+                nextRound.carryRuns;
+
+            state.currentJobId = null;
+        }
+
+        function advanceCompletedRounds(state) {
+            normalizeAllJobs(state);
+
+            while (
+                !state.completed &&
+                allJobsCompleted(state)
+            ) {
+                beginNextRound(state);
+                normalizeAllJobs(state);
+            }
+
+            return state;
+        }
+
+        function recentItemPenalty(
+            itemId,
+            recentItemIds
+        ) {
+            const position =
+                recentItemIds.indexOf(itemId);
+
+            if (position === -1) {
+                return 0;
+            }
+
+            /*
+            The two most recently shown items receive the largest
+            penalties. Older appearances matter progressively less.
+            */
+
+            const penalties = [
+                10000,
+                10000,
+                1800,
+                1800,
+                500,
+                500,
+                150,
+                150
+            ];
+
+            return penalties[position] ?? 50;
+        }
+
+        function scoreJobForSelection(
+            job,
+            recentItemIds
+        ) {
+            const pair =
+                getCurrentItemsForJob(job);
+
+            if (!pair) {
+                return -Infinity;
+            }
+
+            const leftPenalty =
+                recentItemPenalty(
+                    pair.leftItem.id,
+                    recentItemIds
+                );
+
+            const rightPenalty =
+                recentItemPenalty(
+                    pair.rightItem.id,
+                    recentItemIds
+                );
+
+            /*
+            Random variation determines the order among similarly
+            suitable jobs.
+            */
+
+            return (
+                Math.random() * 100
+                - leftPenalty
+                - rightPenalty
+            );
+        }
+
+        function chooseNextJob(state) {
+            advanceCompletedRounds(state);
+
+            if (state.completed) {
+                return null;
+            }
+
+            const availableJobs =
+                state.jobs.filter(job => {
+                    return (
+                        !job.completed &&
+                        Boolean(
+                            getCurrentItemsForJob(job)
+                        )
+                    );
+                });
+
+            if (!availableJobs.length) {
+                advanceCompletedRounds(state);
+
+                if (state.completed) {
+                    return null;
+                }
+
+                return chooseNextJob(state);
+            }
+
+            let bestJob = null;
+            let bestScore = -Infinity;
+
+            for (const job of availableJobs) {
+                const score =
+                    scoreJobForSelection(
+                        job,
+                        state.recentItemIds
+                    );
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestJob = job;
+                }
+            }
+
+            state.currentJobId =
+                bestJob.id;
+
+            return bestJob;
+        }
+
+        function getScheduledComparison(state) {
+            advanceCompletedRounds(state);
+
+            if (state.completed) {
+                return {
+                    completed: true,
+                    finalRanking:
+                        state.finalRanking
+                };
+            }
+
+            let job =
+                state.jobs.find(candidate => {
+                    return (
+                        candidate.id ===
+                        state.currentJobId
+                    );
+                });
+
+            if (
+                !job ||
+                job.completed ||
+                !getCurrentItemsForJob(job)
+            ) {
+                job = chooseNextJob(state);
+            }
+
+            if (!job) {
+                advanceCompletedRounds(state);
+
+                return {
+                    completed: state.completed,
+                    finalRanking:
+                        state.finalRanking
+                };
+            }
+
+            const pair =
+                getCurrentItemsForJob(job);
+
+            return {
+                completed: false,
+                job,
+                leftItem: pair.leftItem,
+                rightItem: pair.rightItem
+            };
+        }
+
+        function addRecentItems(
+            recentItemIds,
+            leftItemId,
+            rightItemId
+        ) {
+            const updated = [
+                leftItemId,
+                rightItemId,
+
+                ...recentItemIds.filter(id => {
+                    return (
+                        id !== leftItemId &&
+                        id !== rightItemId
+                    );
+                })
+            ];
+
+            /*
+            Remember the items from the previous four screens.
+            */
+
+            return updated.slice(0, 8);
+        }
+
+        function applyComparisonChoice(
+            state,
+            choice
+        ) {
+            const scheduled =
+                getScheduledComparison(state);
+
+            if (scheduled.completed) {
+                return {
+                    state,
+                    completed: true,
+                    finalRanking:
+                        scheduled.finalRanking
+                };
+            }
+
+            const job = scheduled.job;
+
+            if (choice === "left") {
+                job.mergedRun.push(
+                    scheduled.leftItem
+                );
+
+                job.leftIndex += 1;
+            } else {
+                job.mergedRun.push(
+                    scheduled.rightItem
+                );
+
+                job.rightIndex += 1;
+            }
+
+            state.recentItemIds =
+                addRecentItems(
+                    state.recentItemIds,
+                    scheduled.leftItem.id,
+                    scheduled.rightItem.id
+                );
+
+            state.currentJobId = null;
+
+            automaticallyFinishExhaustedJob(job);
+            advanceCompletedRounds(state);
+
+            if (state.completed) {
+                return {
+                    state,
+                    completed: true,
+                    finalRanking:
+                        state.finalRanking
+                };
+            }
+
+            /*
+            Select and store the next comparison now. Refreshing the
+            page will therefore show the same next pair.
+            */
+
+            const next =
+                getScheduledComparison(state);
+
+            return {
+                state,
+                completed: next.completed,
+
+                finalRanking:
+                    next.completed
+                        ? next.finalRanking
+                        : null
+            };
+        }
+
+        /*
+        ================================================================
+        AUTHENTICATION
+        ================================================================
+        */
+
+        async function signIn() {
+            setMessage(
+                authMessage,
+                "Signing in..."
+            );
+
+            const email =
+                emailInput.value.trim();
+
+            const password =
+                passwordInput.value;
+
+            if (!email || !password) {
+                setMessage(
+                    authMessage,
+                    "Enter both an email and password.",
+                    "error"
+                );
+
+                return;
+            }
+
+            const { error } =
+                await supabaseClient.auth
+                    .signInWithPassword({
+                        email,
+                        password
+                    });
+
+            if (error) {
+                setMessage(
+                    authMessage,
+                    error.message,
+                    "error"
+                );
+
+                return;
+            }
+
+            passwordInput.value = "";
+            setMessage(authMessage, "");
+        }
+
+        async function signUp() {
+            setMessage(
+                authMessage,
+                "Creating account..."
+            );
+
+            const email =
+                emailInput.value.trim();
+
+            const password =
+                passwordInput.value;
+
+            if (!email || !password) {
+                setMessage(
+                    authMessage,
+                    "Enter both an email and password.",
+                    "error"
+                );
+
+                return;
+            }
+
+            const { data, error } =
+                await supabaseClient.auth.signUp({
+                    email,
+                    password
+                });
+
+            if (error) {
+                setMessage(
+                    authMessage,
+                    error.message,
+                    "error"
+                );
+
+                return;
+            }
+
+            passwordInput.value = "";
+
+            if (data.session) {
+                setMessage(
+                    authMessage,
+                    "Account created.",
+                    "success"
+                );
+            } else {
+                setMessage(
+                    authMessage,
+                    "Account created. Check your email to confirm it.",
+                    "success"
+                );
+            }
+        }
+
+        async function signOut() {
+            await supabaseClient.auth.signOut();
+
+            currentUser = null;
+            currentProject = null;
+
+            accountArea.classList.add("hidden");
+            showView("auth");
+        }
+
+        async function handleAuthChange(session) {
+            currentUser =
+                session?.user ?? null;
+
+            if (!currentUser) {
+                accountArea.classList.add("hidden");
+                showView("auth");
+                return;
+            }
+
+            accountArea.classList.remove("hidden");
+
+            accountEmail.textContent =
+                currentUser.email ?? "";
+
+            showView("dashboard");
+            await loadProjects();
+        }
+
+        /*
+        ================================================================
+        PROJECT DASHBOARD
+        ================================================================
+        */
+
+        async function loadProjects() {
+            projectGrid.innerHTML = `
+                <div class="empty-state">
+                    Loading projects...
+                </div>
+            `;
+
+            const { data, error } =
+                await supabaseClient
+                    .from("ranking_projects")
+                    .select(`
+                        id,
+                        name,
+                        status,
+                        comparison_count,
+                        source_items,
+                        created_at,
+                        updated_at
+                    `)
+                    .order("updated_at", {
+                        ascending: false
+                    });
+
+            if (error) {
+                projectGrid.innerHTML = `
+                    <div class="empty-state">
+                        ${escapeHtml(error.message)}
+                    </div>
+                `;
+
+                return;
+            }
+
+            renderProjects(data ?? []);
+        }
+
+        function renderProjects(projects) {
+            projectGrid.innerHTML = "";
+
+            if (!projects.length) {
+                projectGrid.innerHTML = `
+                    <div class="empty-state">
+                        You do not have any rankings yet.
+                        Create one to begin.
+                    </div>
+                `;
+
+                return;
+            }
+
+            for (const project of projects) {
+                const itemCount =
+                    Array.isArray(
+                        project.source_items
+                    )
+                        ? project.source_items.length
+                        : 0;
+
+                const card =
+                    document.createElement("article");
+
+                card.className =
+                    "project-card";
+
+                const statusClass =
+                    project.status === "completed"
+                        ? "status completed"
+                        : "status";
+
+                const statusText =
+                    project.status === "completed"
+                        ? "Completed"
+                        : "In progress";
+
+                const actionText =
+                    project.status === "completed"
+                        ? "View ranking"
+                        : "Continue ranking";
+
+                card.innerHTML = `
+                    <div class="${statusClass}">
+                        ${statusText}
+                    </div>
+
+                    <div class="project-name">
+                        ${escapeHtml(project.name)}
+                    </div>
+
+                    <div class="project-meta">
+                        ${itemCount} items<br>
+                        ${
+                            project.comparison_count ?? 0
+                        } comparisons<br>
+                        Updated ${
+                            escapeHtml(
+                                formatDate(
+                                    project.updated_at
+                                )
+                            )
+                        }
+                    </div>
+
+                    <button class="button primary">
+                        ${actionText}
+                    </button>
+                `;
+
+                card
+                    .querySelector("button")
+                    .addEventListener(
+                        "click",
+                        () => {
+                            openProject(project.id);
+                        }
+                    );
+
+                projectGrid.appendChild(card);
+            }
+        }
+
+        function openNewProjectModal() {
+            newProjectName.value = "";
+            listInput.value = "";
+            textFileInput.value = "";
+
+            setMessage(newProjectMessage, "");
+
+            newProjectModal.classList.remove(
+                "hidden"
+            );
+
+            newProjectName.focus();
+        }
+
+        function closeNewProjectModal() {
+            newProjectModal.classList.add(
+                "hidden"
+            );
+        }
+
+        async function createProject() {
+            if (!currentUser) {
+                return;
+            }
+
+            setMessage(
+                newProjectMessage,
+                "Creating ranking..."
+            );
+
+            createProjectButton.disabled = true;
+
+            const name =
+                newProjectName.value.trim() ||
+                "Untitled ranking";
+
+            const items =
+                parseItems(listInput.value);
+
+            if (items.length < 2) {
+                setMessage(
+                    newProjectMessage,
+                    "Enter at least two nonblank items.",
+                    "error"
+                );
+
+                createProjectButton.disabled = false;
+                return;
+            }
+
+            const initialState =
+                createInitialAlgorithmState(items);
+
+            /*
+            Select and preserve the first randomized comparison.
+            */
+
+            getScheduledComparison(initialState);
+
+            const { data, error } =
+                await supabaseClient
+                    .from("ranking_projects")
+                    .insert({
+                        user_id: currentUser.id,
+                        name,
+                        source_items: items,
+                        algorithm_state:
+                            initialState,
+
+                        previous_state: null,
+                        final_ranking: null,
+                        status: "sorting",
+                        comparison_count: 0
+                    })
+                    .select()
+                    .single();
+
+            createProjectButton.disabled = false;
+
+            if (error) {
+                setMessage(
+                    newProjectMessage,
+                    error.message,
+                    "error"
+                );
+
+                return;
+            }
+
+            closeNewProjectModal();
+            await openProject(data.id);
+        }
+
+        /*
+        ================================================================
+        OPEN AND RENDER PROJECT
+        ================================================================
+        */
+
+        async function openProject(projectId) {
+            const { data, error } =
+                await supabaseClient
+                    .from("ranking_projects")
+                    .select("*")
+                    .eq("id", projectId)
+                    .single();
+
+            if (error) {
+                alert(error.message);
+                return;
+            }
+
+            currentProject = data;
+
+            if (
+                currentProject.status !==
+                    "completed" &&
+                currentProject.algorithm_state
+            ) {
+                const workingState =
+                    deepClone(
+                        currentProject.algorithm_state
+                    );
+
+                const scheduled =
+                    getScheduledComparison(
+                        workingState
+                    );
+
+                currentProject.algorithm_state =
+                    workingState;
+
+                if (scheduled.completed) {
+                    currentProject.status =
+                        "completed";
+
+                    currentProject.final_ranking =
+                        scheduled.finalRanking;
+                }
+
+                const { data: savedProject, error: saveError } =
+                    await supabaseClient
+                        .from("ranking_projects")
+                        .update({
+                            algorithm_state:
+                                currentProject.algorithm_state,
+
+                            status:
+                                currentProject.status,
+
+                            final_ranking:
+                                currentProject.final_ranking
+                        })
+                        .eq("id", currentProject.id)
+                        .select()
+                        .single();
+
+                if (!saveError && savedProject) {
+                    currentProject =
+                        savedProject;
+                }
+            }
+
+            projectTitleInput.value =
+                currentProject.name;
+
+            showView("workspace");
+            renderCurrentProject();
+        }
+
+        function renderCurrentProject() {
+            if (!currentProject) {
+                return;
+            }
+
+            const itemCount =
+                currentProject.source_items
+                    ?.length ?? 0;
+
+            const maximumComparisons =
+                maximumMergeSortComparisons(
+                    itemCount
+                );
+
+            const comparisonCount =
+                currentProject
+                    .comparison_count ?? 0;
+
+            const percentage =
+                currentProject.status ===
+                    "completed"
+                    ? 100
+                    : maximumComparisons > 0
+                        ? Math.min(
+                            99,
+                            Math.round(
+                                comparisonCount /
+                                maximumComparisons *
+                                100
+                            )
+                        )
+                        : 0;
+
+            itemCountStat.textContent =
+                itemCount.toLocaleString();
+
+            comparisonCountStat.textContent =
+                comparisonCount.toLocaleString();
+
+            maximumComparisonsStat.textContent =
+                maximumComparisons.toLocaleString();
+
+            progressStat.textContent =
+                `${percentage}%`;
+
+            progressFill.style.width =
+                `${percentage}%`;
+
+            undoButton.disabled =
+                !currentProject.previous_state ||
+                isProcessingComparison;
+
+            if (
+                currentProject.status ===
+                "completed"
+            ) {
+                comparisonPanel.classList.add(
+                    "hidden"
+                );
+
+                resultPanel.classList.remove(
+                    "hidden"
+                );
+
+                renderFinalRanking();
+                return;
+            }
+
+            resultPanel.classList.add("hidden");
+            comparisonPanel.classList.remove(
+                "hidden"
+            );
+
+            const workingState =
+                deepClone(
+                    currentProject.algorithm_state
+                );
+
+            const scheduled =
+                getScheduledComparison(
+                    workingState
+                );
+
+            currentProject.algorithm_state =
+                workingState;
+
+            if (scheduled.completed) {
+                finishProject({
+                    state: workingState,
+                    finalRanking:
+                        scheduled.finalRanking
+                });
+
+                return;
+            }
+
+            leftChoice.textContent =
+                scheduled.leftItem.label;
+
+            rightChoice.textContent =
+                scheduled.rightItem.label;
+
+            leftChoice.disabled =
+                isProcessingComparison;
+
+            rightChoice.disabled =
+                isProcessingComparison;
+        }
+
+        /*
+        ================================================================
+        RECORD COMPARISONS
+        ================================================================
+        */
+
+        async function chooseItem(choice) {
+            if (
+                !currentProject ||
+                isProcessingComparison ||
+                currentProject.status ===
+                    "completed"
+            ) {
+                return;
+            }
+
+            isProcessingComparison = true;
+
+            leftChoice.disabled = true;
+            rightChoice.disabled = true;
+            undoButton.disabled = true;
+
+            saveIndicator.textContent =
+                "Saving choice...";
+
+            const stateBeforeChoice =
+                deepClone(
+                    currentProject.algorithm_state
+                );
+
+            const workingState =
+                deepClone(
+                    currentProject.algorithm_state
+                );
+
+            const result =
+                applyComparisonChoice(
+                    workingState,
+                    choice
+                );
+
+            const newComparisonCount =
+                (
+                    currentProject
+                        .comparison_count ?? 0
+                ) + 1;
+
+            const updatePayload = {
+                algorithm_state:
+                    result.state,
+
+                previous_state: {
+                    algorithm_state:
+                        stateBeforeChoice,
+
+                    comparison_count:
+                        currentProject
+                            .comparison_count ?? 0,
+
+                    status:
+                        currentProject.status,
+
+                    final_ranking:
+                        currentProject
+                            .final_ranking ?? null
+                },
+
+                comparison_count:
+                    newComparisonCount
+            };
+
+            if (result.completed) {
+                updatePayload.status =
+                    "completed";
+
+                updatePayload.final_ranking =
+                    result.finalRanking;
+            }
+
+            const { data, error } =
+                await supabaseClient
+                    .from("ranking_projects")
+                    .update(updatePayload)
+                    .eq("id", currentProject.id)
+                    .select()
+                    .single();
+
+            if (error) {
+                saveIndicator.textContent =
+                    `Could not save: ${error.message}`;
+
+                isProcessingComparison = false;
+                renderCurrentProject();
+                return;
+            }
+
+            currentProject = data;
+
+            saveIndicator.textContent =
+                "Saved";
+
+            isProcessingComparison = false;
+            renderCurrentProject();
+        }
+
+        async function undoLastChoice() {
+            if (
+                !currentProject ||
+                !currentProject.previous_state ||
+                isProcessingComparison
+            ) {
+                return;
+            }
+
+            isProcessingComparison = true;
+
+            leftChoice.disabled = true;
+            rightChoice.disabled = true;
+            undoButton.disabled = true;
+
+            saveIndicator.textContent =
+                "Undoing...";
+
+            const previous =
+                currentProject.previous_state;
+
+            const { data, error } =
+                await supabaseClient
+                    .from("ranking_projects")
+                    .update({
+                        algorithm_state:
+                            previous.algorithm_state,
+
+                        comparison_count:
+                            previous.comparison_count,
+
+                        status:
+                            previous.status ??
+                            "sorting",
+
+                        final_ranking:
+                            previous.final_ranking ??
+                            null,
+
+                        previous_state: null
+                    })
+                    .eq("id", currentProject.id)
+                    .select()
+                    .single();
+
+            if (error) {
+                saveIndicator.textContent =
+                    `Could not undo: ${error.message}`;
+
+                isProcessingComparison = false;
+                renderCurrentProject();
+                return;
+            }
+
+            currentProject = data;
+
+            saveIndicator.textContent =
+                "Last choice undone";
+
+            isProcessingComparison = false;
+            renderCurrentProject();
+        }
+
+        async function finishProject(result) {
+            if (!currentProject) {
+                return;
+            }
+
+            const { data, error } =
+                await supabaseClient
+                    .from("ranking_projects")
+                    .update({
+                        algorithm_state:
+                            result.state,
+
+                        final_ranking:
+                            result.finalRanking,
+
+                        status: "completed"
+                    })
+                    .eq("id", currentProject.id)
+                    .select()
+                    .single();
+
+            if (error) {
+                saveIndicator.textContent =
+                    `Could not finish ranking: ${error.message}`;
+
+                return;
+            }
+
+            currentProject = data;
+            renderCurrentProject();
+        }
+
+        /*
+        ================================================================
+        PROJECT NAME AND DELETION
+        ================================================================
+        */
+
+        function scheduleProjectNameSave() {
+            if (!currentProject) {
+                return;
+            }
+
+            clearTimeout(
+                projectNameSaveTimer
+            );
+
+            projectNameSaveTimer =
+                setTimeout(
+                    saveProjectName,
+                    500
+                );
+        }
+
+        async function saveProjectName() {
+            if (!currentProject) {
+                return;
+            }
+
+            const name =
+                projectTitleInput.value.trim() ||
+                "Untitled ranking";
+
+            currentProject.name = name;
+            projectTitleInput.value = name;
+
+            const { error } =
+                await supabaseClient
+                    .from("ranking_projects")
+                    .update({ name })
+                    .eq("id", currentProject.id);
+
+            if (error) {
+                console.error(
+                    "Could not save project name:",
+                    error
+                );
+            }
+        }
+
+        async function deleteCurrentProject() {
+            if (!currentProject) {
+                return;
+            }
+
+            const confirmed = confirm(
+                `Delete “${currentProject.name}”? This cannot be undone.`
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            const { error } =
+                await supabaseClient
+                    .from("ranking_projects")
+                    .delete()
+                    .eq("id", currentProject.id);
+
+            if (error) {
+                alert(error.message);
+                return;
+            }
+
+            currentProject = null;
+
+            showView("dashboard");
+            await loadProjects();
+        }
+
+        /*
+        ================================================================
+        FINAL RANKING AND EXPORT
+        ================================================================
+        */
+
+        function renderFinalRanking() {
+            rankingList.innerHTML = "";
+
+            const ranking =
+                currentProject
+                    .final_ranking ?? [];
+
+            ranking.forEach(
+                (item, index) => {
+                    const row =
+                        document.createElement(
+                            "div"
+                        );
+
+                    row.className =
+                        "ranking-row";
+
+                    row.innerHTML = `
+                        <div class="rank-number">
+                            ${index + 1}.
+                        </div>
+
+                        <div class="result-label">
+                            ${escapeHtml(item.label)}
+                        </div>
+                    `;
+
+                    rankingList.appendChild(row);
+                }
+            );
+        }
+
+        function rankingAsText() {
+            const ranking =
+                currentProject
+                    ?.final_ranking ?? [];
+
+            return ranking
+                .map((item, index) => {
+                    return (
+                        `${index + 1}. ` +
+                        item.label
+                    );
+                })
+                .join("\n");
+        }
+
+        function csvEscape(value) {
+            const text =
+                String(value);
+
+            if (
+                text.includes(",") ||
+                text.includes("\"") ||
+                text.includes("\n")
+            ) {
+                return (
+                    "\"" +
+                    text.replaceAll(
+                        "\"",
+                        "\"\""
+                    ) +
+                    "\""
+                );
+            }
+
+            return text;
+        }
+
+        function rankingAsCsv() {
+            const ranking =
+                currentProject
+                    ?.final_ranking ?? [];
+
+            const rows = [
+                ["Rank", "Item"]
+            ];
+
+            ranking.forEach(
+                (item, index) => {
+                    rows.push([
+                        String(index + 1),
+                        item.label
+                    ]);
+                }
+            );
+
+            return rows
+                .map(row => {
+                    return row
+                        .map(csvEscape)
+                        .join(",");
+                })
+                .join("\n");
+        }
+
+        async function copyRanking() {
+            try {
+                await navigator.clipboard
+                    .writeText(
+                        rankingAsText()
+                    );
+
+                copyRankingButton.textContent =
+                    "Copied";
+
+                setTimeout(() => {
+                    copyRankingButton.textContent =
+                        "Copy ranking";
+                }, 1200);
+            } catch {
+                alert(
+                    "The ranking could not be copied."
+                );
+            }
+        }
+
+        function safeFilename(name) {
+            return (
+                name
+                    .trim()
+                    .replace(
+                        /[<>:"/\\|?*\u0000-\u001F]/g,
+                        "-"
+                    )
+                    .replace(/\s+/g, " ")
+                    .slice(0, 100)
+                ||
+                "ranking"
+            );
+        }
+
+        function downloadFile(
+            content,
+            filename,
+            mimeType
+        ) {
+            const blob =
+                new Blob(
+                    [content],
+                    { type: mimeType }
+                );
+
+            const url =
+                URL.createObjectURL(blob);
+
+            const link =
+                document.createElement("a");
+
+            link.href = url;
+            link.download = filename;
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            URL.revokeObjectURL(url);
+        }
+
+        /*
+        ================================================================
+        EVENT LISTENERS
+        ================================================================
+        */
+
+        signInButton.addEventListener(
+            "click",
+            signIn
+        );
+
+        signUpButton.addEventListener(
+            "click",
+            signUp
+        );
+
+        signOutButton.addEventListener(
+            "click",
+            signOut
+        );
+
+        passwordInput.addEventListener(
+            "keydown",
+            event => {
+                if (event.key === "Enter") {
+                    signIn();
+                }
+            }
+        );
+
+        newProjectButton.addEventListener(
+            "click",
+            openNewProjectModal
+        );
+
+        closeModalButton.addEventListener(
+            "click",
+            closeNewProjectModal
+        );
+
+        newProjectModal.addEventListener(
+            "click",
+            event => {
+                if (
+                    event.target ===
+                    newProjectModal
+                ) {
+                    closeNewProjectModal();
+                }
+            }
+        );
+
+        createProjectButton.addEventListener(
+            "click",
+            createProject
+        );
+
+        textFileInput.addEventListener(
+            "change",
+            async event => {
+                const file =
+                    event.target.files?.[0];
+
+                if (!file) {
+                    return;
+                }
+
+                try {
+                    listInput.value =
+                        await file.text();
+                } catch {
+                    setMessage(
+                        newProjectMessage,
+                        "The text file could not be read.",
+                        "error"
+                    );
+                }
+            }
+        );
+
+        backButton.addEventListener(
+            "click",
+            async () => {
+                await saveProjectName();
+
+                currentProject = null;
+
+                showView("dashboard");
+                await loadProjects();
+            }
+        );
+
+        deleteProjectButton.addEventListener(
+            "click",
+            deleteCurrentProject
+        );
+
+        projectTitleInput.addEventListener(
+            "input",
+            scheduleProjectNameSave
+        );
+
+        leftChoice.addEventListener(
+            "click",
+            () => {
+                chooseItem("left");
+            }
+        );
+
+        rightChoice.addEventListener(
+            "click",
+            () => {
+                chooseItem("right");
+            }
+        );
+
+        undoButton.addEventListener(
+            "click",
+            undoLastChoice
+        );
+
+        copyRankingButton.addEventListener(
+            "click",
+            copyRanking
+        );
+
+        downloadTextButton.addEventListener(
+            "click",
+            () => {
+                downloadFile(
+                    rankingAsText(),
+
+                    `${safeFilename(
+                        currentProject.name
+                    )}.txt`,
+
+                    "text/plain;charset=utf-8"
+                );
+            }
+        );
+
+        downloadCsvButton.addEventListener(
+            "click",
+            () => {
+                downloadFile(
+                    rankingAsCsv(),
+
+                    `${safeFilename(
+                        currentProject.name
+                    )}.csv`,
+
+                    "text/csv;charset=utf-8"
+                );
+            }
+        );
+
+        /*
+        Keyboard controls:
+
+        Left arrow: choose the left item.
+        Right arrow: choose the right item.
+        Control/Command + Z: undo the previous comparison.
+        */
+
+        document.addEventListener(
+            "keydown",
+            event => {
+                if (
+                    workspaceView.classList
+                        .contains("hidden") ||
+                    comparisonPanel.classList
+                        .contains("hidden")
+                ) {
+                    return;
+                }
+
+                const activeTag =
+                    document.activeElement
+                        ?.tagName;
+
+                if (
+                    activeTag === "INPUT" ||
+                    activeTag === "TEXTAREA"
+                ) {
+                    return;
+                }
+
+                if (event.key === "ArrowLeft") {
+                    event.preventDefault();
+                    chooseItem("left");
+                }
+
+                if (event.key === "ArrowRight") {
+                    event.preventDefault();
+                    chooseItem("right");
+                }
+
+                if (
+                    (
+                        event.ctrlKey ||
+                        event.metaKey
+                    ) &&
+                    event.key.toLowerCase() ===
+                        "z"
+                ) {
+                    event.preventDefault();
+                    undoLastChoice();
+                }
+            }
+        );
+
+        /*
+        ================================================================
+        AUTH INITIALIZATION
+        ================================================================
+        */
+
+        supabaseClient.auth.onAuthStateChange(
+            (_event, session) => {
+                handleAuthChange(session);
+            }
+        );
+
+        async function initialize() {
+            const {
+                data: { session }
+            } =
+                await supabaseClient.auth
+                    .getSession();
+
+            await handleAuthChange(session);
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
