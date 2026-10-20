@@ -1,0 +1,2260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Word Frequency Sorter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1F2A37; --graphite:#566170; --faint:#8A939F; --rule:#DCE1E7;
+  --paper:#FFFFFF; --slip:#F1F4F8; --pencil:#2F5BD3;
+  --on-pencil:#FFFFFF; --ok:#2E8A5C; --warn:#B23A3A; --warn-wash:rgba(178,58,58,.07);
+  --amber:#A86A12; --amber-wash:rgba(168,106,18,.08);
+  --serif:"Frank Ruhl Libre","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --sans:"Rubik",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ink:#E4E8EE; --graphite:#A9B2BE; --faint:#7F8995; --rule:#2C3542;
+    --paper:#151A21; --slip:#1C232D; --pencil:#86A2FF;
+    --on-pencil:#0E1524; --ok:#5CC08C; --warn:#F0908F; --warn-wash:rgba(240,144,143,.10);
+    --amber:#E2B05A; --amber-wash:rgba(226,176,90,.10);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--pencil);text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--pencil);outline-offset:2px}
+[hidden]{display:none!important}
+.muted{color:var(--graphite)}
+.small{font-size:13px}
+code{font:12.5px/1.4 var(--mono);background:var(--slip);border:1px solid var(--rule);border-radius:4px;padding:0 4px;overflow-wrap:anywhere}
+
+/* header */
+.top{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.brand{margin:0;font:700 23px/1.1 var(--serif);letter-spacing:-.01em}
+.lang{font-size:13px;color:var(--graphite);border:1px solid var(--rule);border-radius:999px;padding:1px 9px}
+.spacer{flex:1}
+.status{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--graphite);min-width:0}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.status span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status.ok i{background:var(--ok)}
+.status.warn i{background:var(--amber)}
+.status.err i{background:var(--warn)}
+.banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 24px;background:var(--amber-wash);border-bottom:1px solid var(--amber)}
+
+/* controls */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--rule);background:var(--paper);border-radius:7px;padding:7px 13px;font-weight:500;line-height:1.3;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--graphite)}
+.btn.primary{background:var(--pencil);border-color:var(--pencil);color:var(--on-pencil)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.quiet{background:transparent;border-color:transparent;color:var(--graphite)}
+.btn.quiet:hover{color:var(--ink);border-color:var(--rule)}
+.btn.danger{color:var(--warn)}
+.btn.small{padding:3px 9px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.field{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--graphite)}
+.field input,.field select{font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:7px;padding:8px 10px;min-width:0}
+textarea{width:100%;background:var(--paper);border:1px solid var(--rule);border-radius:7px;padding:12px 14px;resize:vertical;color:var(--ink)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.note{margin:0;font-size:13px;color:var(--graphite);max-width:62ch}
+.check-box{display:flex;gap:9px;align-items:flex-start;font-size:14px}
+.check-box input{margin-top:3px}
+
+/* layout */
+.layout{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);min-height:calc(100vh - 58px)}
+.intake-col{background:var(--slip);border-right:1px solid var(--rule)}
+.intake{position:sticky;top:0;max-height:100vh;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.results{padding:22px 32px 64px;min-width:0}
+h2.panel{margin:6px 0 0;font:600 15px/1.3 var(--sans)}
+#paste{min-height:230px;font:16px/1.6 var(--serif)}
+#paste:disabled,#titleIn:disabled{opacity:.6}
+.run{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);font-size:14px}
+.meter{height:4px;background:var(--slip);border-radius:2px;overflow:hidden}
+.meter span{display:block;height:100%;width:0;background:var(--pencil);transition:width .35s ease}
+.result{font-size:14px;line-height:1.5;padding:11px 13px;border-radius:8px;background:var(--paper);border:1px solid var(--rule)}
+.result.error{border-color:var(--warn);background:var(--warn-wash)}
+.result .btn{margin-top:8px}
+.texts{list-style:none;margin:0;padding:0}
+.texts li{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-top:1px solid var(--rule)}
+.texts li:first-child{border-top:0}
+.t-main{flex:1;min-width:0}
+.t-title{display:block;font:16px/1.35 var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-meta{font-size:12.5px;color:var(--graphite)}
+.texts .none{display:block;font-size:13px;color:var(--graphite);padding:2px 0}
+
+/* connecting */
+.connect{max-width:720px;padding:4px 0 0}
+.connect h3{font:500 26px/1.25 var(--serif);margin:0 0 8px}
+.connect > p{margin:0 0 18px;color:var(--graphite);max-width:62ch}
+.connect-form{display:flex;gap:10px;align-items:flex-end}
+.connect-form .field{flex:1;min-width:0}
+.loading{color:var(--graphite);padding:8px 0}
+.check{margin-top:12px;padding:12px 14px;border-radius:8px;border:1px solid var(--rule);background:var(--paper);font-size:14px;line-height:1.5;max-width:68ch}
+.check strong{display:block;font-weight:600}
+.check p{margin:3px 0 0}
+.check.ok{border-color:var(--ok)}
+.check.warn{border-color:var(--amber);background:var(--amber-wash)}
+.check.bad{border-color:var(--warn);background:var(--warn-wash)}
+.check.busy{color:var(--graphite)}
+.help{margin-top:18px;border-top:1px solid var(--rule);padding-top:12px}
+.help summary{cursor:pointer;font-weight:500}
+.steps{margin:12px 0 16px;padding-left:22px;display:flex;flex-direction:column;gap:9px;max-width:68ch}
+.steps strong{font-weight:600}
+.code-head{display:flex;align-items:center;justify-content:space-between;gap:10px;font:12px/1.4 var(--mono);color:var(--graphite)}
+pre.code{font:12px/1.5 var(--mono);background:var(--slip);border:1px solid var(--rule);border-radius:8px;padding:12px;max-height:320px;overflow:auto;white-space:pre;margin:8px 0 0}
+
+/* results */
+.summary{max-width:70ch;margin:0 0 18px}
+.summary p{margin:0 0 6px}
+.summary .lead{font:400 22px/1.35 var(--serif)}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;border-bottom:1px solid var(--rule)}
+.tabs{display:flex;gap:20px}
+.tabs button{background:none;border:0;padding:8px 0 10px;margin-bottom:-1px;border-bottom:2px solid transparent;cursor:pointer;color:var(--graphite);font-weight:500}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--pencil)}
+.tabs .n{color:var(--faint);font-weight:400;margin-left:5px;font-variant-numeric:tabular-nums}
+.tools{display:flex;gap:8px;align-items:center;padding-bottom:9px;flex-wrap:wrap}
+.tools input,.tools select{border:1px solid var(--rule);border-radius:7px;background:var(--paper);padding:6px 10px;font-size:14px}
+.tools input{width:190px}
+.menu{position:relative}
+.menu summary{list-style:none}
+.menu summary::-webkit-details-marker{display:none}
+.menu-list{position:absolute;right:0;top:calc(100% + 6px);z-index:5;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:6px;display:flex;flex-direction:column;min-width:200px;box-shadow:0 10px 30px rgba(15,20,30,.14)}
+.menu-list button{background:none;border:0;text-align:left;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:14px}
+.menu-list button:hover{background:var(--slip)}
+
+.cols,.line{display:grid;grid-template-columns:3em minmax(7em,15em) minmax(40px,1fr) 4.6em 3.6em 4.8em;column-gap:14px;align-items:center}
+.cols{font-size:12px;color:var(--faint);padding:10px 0 4px}
+.cols span:first-child,.cols span:nth-child(n+4){text-align:right}
+.entries{list-style:none;margin:0;padding:0}
+.entry{padding:7px 0 8px}
+.rank{text-align:right;font-size:13px;color:var(--faint);font-variant-numeric:tabular-nums}
+.head{font:700 20px/1.2 var(--serif);overflow-wrap:anywhere}
+.is-proper .head{font-weight:500}
+.bar{height:6px;border-radius:3px;background:var(--slip);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pencil);border-radius:3px}
+.is-proper .bar i{background:var(--graphite)}
+.count{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.spread,.cover{text-align:right;font-size:13px;color:var(--graphite);font-variant-numeric:tabular-nums}
+.forms{display:flex;flex-wrap:wrap;gap:2px 16px;margin:3px 0 0 calc(3em + 14px)}
+.form{background:none;border:0;padding:0;cursor:pointer;font:15px/1.45 var(--serif);color:var(--graphite);text-align:left}
+.form b{font:500 12px/1 var(--sans);color:var(--faint);margin-left:5px;font-variant-numeric:tabular-nums}
+.form:hover{color:var(--pencil);text-decoration:underline;text-underline-offset:3px}
+.more-forms{background:none;border:0;padding:0;cursor:pointer;font-size:13px;color:var(--pencil)}
+.more{padding:18px 0 0}
+.empty{padding:28px 0;max-width:58ch}
+.empty h3{font:500 24px/1.3 var(--serif);margin:0 0 10px}
+.empty p{margin:0 0 10px;color:var(--graphite)}
+
+/* dialogs */
+dialog{border:1px solid var(--rule);border-radius:12px;padding:0;background:var(--paper);color:var(--ink);width:min(680px,calc(100vw - 24px));max-height:calc(100vh - 32px);overflow:auto}
+dialog::backdrop{background:rgba(15,20,30,.45)}
+.dlg{padding:22px 24px;display:flex;flex-direction:column;gap:16px}
+.dlg h2{margin:0;font:700 24px/1.2 var(--serif)}
+.dlg fieldset{border:0;border-top:1px solid var(--rule);margin:0;padding:14px 0 0;display:flex;flex-direction:column;gap:10px;min-width:0}
+.dlg legend{font-weight:600;padding:0 10px 0 0}
+.dlg .check{margin-top:0}
+.dlg .help{margin-top:2px}
+.grid3{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,1fr);gap:10px;align-items:end}
+#sRules{font:13.5px/1.55 var(--sans);min-height:190px}
+.dlg-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:6px}
+#editDlg{width:min(480px,calc(100vw - 24px))}
+
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,16px);opacity:0;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;font-size:14px;pointer-events:none;max-width:calc(100vw - 32px);transition:opacity .2s,transform .2s;z-index:20}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .intake-col{border-right:0;border-bottom:1px solid var(--rule)}
+  .intake{position:static;max-height:none}
+  .results{padding:18px 16px 56px}
+  .top,.banner{padding-left:16px;padding-right:16px}
+  .layout.connecting .results{order:-1}
+  .layout.connecting .intake-col{border-bottom:0;border-top:1px solid var(--rule)}
+}
+@media (max-width:640px){
+  .cols{display:none}
+  .line{grid-template-columns:2.4em minmax(0,1fr) auto;row-gap:5px}
+  .bar{grid-column:2/-1;grid-row:2;height:3px}
+  .spread,.cover{display:none}
+  .forms{margin-left:calc(2.4em + 14px)}
+  .tools{width:100%}
+  .tools input{flex:1;width:auto;min-width:0}
+  .top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 10px;padding-top:12px;padding-bottom:10px}
+  .brand{grid-column:1/3;grid-row:1;font-size:20px}
+  #settingsBtn{grid-column:3;grid-row:1;padding:5px 11px}
+  .lang{grid-column:1;grid-row:2;justify-self:start}
+  .status{grid-column:2/4;grid-row:2}
+  .top .spacer{display:none}
+  .grid3{grid-template-columns:1fr}
+  .connect-form{flex-direction:column;align-items:stretch}
+  .dlg{padding:18px 16px}
+}
+@media (prefers-reduced-motion:reduce){
+  .meter span,.toast{transition:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1 class="brand">Word Frequency Sorter</h1>
+  <span class="lang" title="Corpus language">English</span>
+  <span class="spacer"></span>
+  <span id="status" class="status" role="status"><i></i><span id="statusText">Opening…</span></span>
+  <button id="settingsBtn" class="btn" type="button">Settings</button>
+</header>
+<div id="banner" class="banner" hidden><span id="bannerText"></span><span class="row"><button id="bannerCheck" class="btn small" type="button">Check again</button><button class="btn small" type="button" data-open-settings>Settings</button></span></div>
+
+<main class="layout">
+  <div class="intake-col">
+    <section class="intake" aria-label="Add a text">
+      <h2 class="panel">Add a text</h2>
+      <p id="connectNote" class="note" hidden>Connect your Supabase project to start.</p>
+      <label class="field">Title (optional)<input id="titleIn" type="text" placeholder="Chapter 3, a news article…" autocomplete="off"></label>
+      <textarea id="paste" placeholder="Paste an English text here." spellcheck="false" aria-label="Text to add"></textarea>
+      <div class="row"><span id="pasteCount" class="muted small">No text yet</span><span class="spacer"></span><button id="addBtn" class="btn primary" type="button">Add to corpus</button></div>
+      <div id="run" class="run" hidden>
+        <div class="row"><span id="runText">Reading the text…</span><span class="spacer"></span><button id="cancelBtn" class="btn quiet small" type="button">Cancel</button></div>
+        <div class="meter"><span id="runBar"></span></div>
+      </div>
+      <div id="result" class="result" hidden></div>
+      <h2 class="panel">Texts in the corpus</h2>
+      <ul id="texts" class="texts"></ul>
+    </section>
+  </div>
+
+  <section class="results" aria-label="Frequency list">
+    <p id="loading" class="loading" hidden></p>
+    <div id="connect" class="connect" hidden>
+      <h3>Connect your Supabase project</h3>
+      <p>The corpus and the bot's OpenAI key both live in your Supabase project, so this page only needs the project's address. No keys go in here.</p>
+      <form id="connectForm" class="connect-form" novalidate>
+        <label class="field">Project URL or dashboard link<input id="cUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://abcdefghijklmnopqrst.supabase.co"></label>
+        <button id="cBtn" class="btn primary" type="submit">Connect</button>
+      </form>
+      <div id="cResult" class="check" role="status" aria-live="polite" hidden></div>
+      <details id="cHelp" class="help">
+        <summary>One-time setup in Supabase</summary>
+        <div data-steps></div>
+        <div class="code-head"><span>supabase/functions/word-frequency/index.ts</span><button type="button" class="btn small" data-copy-fn>Copy code</button></div>
+        <pre class="code" data-fn-code></pre>
+      </details>
+    </div>
+    <div id="summary" class="summary" hidden></div>
+    <div id="listArea" hidden>
+      <div class="toolbar">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" data-tab="lemmas" aria-selected="true">Lemmas<span class="n" id="nLemmas"></span></button>
+          <button type="button" role="tab" data-tab="proper" aria-selected="false">Proper nouns<span class="n" id="nProper"></span></button>
+        </div>
+        <div class="tools">
+          <input id="search" type="search" placeholder="Find a word" aria-label="Find a word">
+          <select id="sort" aria-label="Sort order">
+            <option value="freq">Most frequent</option>
+            <option value="spread">In most texts</option>
+            <option value="alpha">A to Z</option>
+          </select>
+          <details class="menu" id="exportMenu">
+            <summary class="btn">Export</summary>
+            <div class="menu-list">
+              <button type="button" data-export="lemmas">Lemma list (CSV)</button>
+              <button type="button" data-export="forms">Every form (CSV)</button>
+              <button type="button" data-export="json">Everything (JSON)</button>
+            </div>
+          </details>
+        </div>
+      </div>
+      <div class="cols" aria-hidden="true"><span>Rank</span><span id="colHead">Lemma</span><span></span><span>Count</span><span>Texts</span><span id="colCover">Coverage</span></div>
+      <ol id="entries" class="entries"></ol>
+      <p id="noMatch" class="muted" hidden>No words match that search.</p>
+      <div id="more" class="more" hidden><button id="moreBtn" class="btn" type="button">Show more</button></div>
+    </div>
+    <div id="empty" class="empty" hidden>
+      <h3>The corpus is empty</h3>
+      <p>Paste a text and press Add to corpus. The bot reads every word in its sentence, sets proper nouns aside, and files each form under its base word: <em>jealousy</em> under <em>jealous</em>, <em>neighbours</em> under <em>neighbor</em>.</p>
+      <p>Every text you add goes into the same counts, and words the bot has already settled are reused, so later texts go faster.</p>
+    </div>
+  </section>
+</main>
+
+<dialog id="settingsDlg" aria-labelledby="setTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="setTitle">Settings</h2>
+    <fieldset>
+      <legend>Supabase project</legend>
+      <div class="connect-form">
+        <label class="field">Project URL or dashboard link<input id="sUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://abcdefghijklmnopqrst.supabase.co"></label>
+        <button type="button" id="sCheck" class="btn">Check</button>
+      </div>
+      <div id="sResult" class="check" role="status" aria-live="polite" hidden></div>
+      <details id="sHelp" class="help">
+        <summary>Setup steps and function code</summary>
+        <div data-steps></div>
+        <div class="code-head"><span>supabase/functions/word-frequency/index.ts</span><button type="button" class="btn small" data-copy-fn>Copy code</button></div>
+        <pre class="code" data-fn-code></pre>
+      </details>
+    </fieldset>
+    <fieldset>
+      <legend>Bot</legend>
+      <div class="grid3">
+        <label class="field">Model<input id="sModel" list="modelList" spellcheck="false" placeholder="gpt-6-luna"></label>
+        <label class="field">Reasoning
+          <select id="sEffort">
+            <option value="none">None (fastest)</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+        <label class="field">Requests at once<input id="sParallel" type="number" min="1" max="8" step="1"></label>
+      </div>
+      <datalist id="modelList">
+        <option value="gpt-6-luna">Fastest and cheapest</option>
+        <option value="gpt-6.1-sol">Balanced</option>
+        <option value="gpt-6-astra">Most capable</option>
+      </datalist>
+      <p class="note">The bot runs on OpenAI through your project's word-frequency function, with the key saved there as the <code>OPENAI_API_KEY</code> secret. gpt-6-luna is OpenAI's model for high-volume work like this. Sol and Astra don't accept None, so Low is used with them.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Lemma rules</legend>
+      <p class="note">The bot follows these when it decides each word's base word. Changes apply to words it reads from now on; to have it redo spellings it has already settled, use Forget settled words below.</p>
+      <textarea id="sRules" spellcheck="false" aria-label="Lemma rules" placeholder="Connect your project to see the default rules."></textarea>
+      <div class="row"><button type="button" id="resetRules" class="btn quiet small">Restore the default rules</button></div>
+      <label class="check-box"><input type="checkbox" id="sUseCache"><span>Reuse the bot's earlier decisions for spellings it has already settled. Turn off to have every word read again.</span></label>
+    </fieldset>
+    <fieldset>
+      <legend>Corpus</legend>
+      <div class="row">
+        <button type="button" id="clearCache" class="btn small">Forget settled words</button>
+        <button type="button" id="clearAll" class="btn small danger">Delete the whole corpus</button>
+      </div>
+      <div id="migrateRow" class="row" hidden><button type="button" id="migrateBtn" class="btn small"></button><span id="migrateMsg" class="note"></span></div>
+    </fieldset>
+    <div class="dlg-actions">
+      <button type="button" class="btn quiet" data-close>Cancel</button>
+      <button value="save" class="btn primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="editDlg" aria-labelledby="editTitle">
+  <form method="dialog" class="dlg">
+    <h2 id="editTitle">Change the lemma</h2>
+    <p id="editInfo" class="note"></p>
+    <label class="field">File this form under<input id="eLemma" required spellcheck="false" autocomplete="off"></label>
+    <label class="check-box"><input type="checkbox" id="eProper"><span>Proper noun, left out of the ranking</span></label>
+    <p class="note">Applies to every text in the corpus. Spellings the bot has already settled follow your choice in new texts too.</p>
+    <div class="dlg-actions">
+      <button type="button" class="btn quiet" data-close>Cancel</button>
+      <button value="save" class="btn primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script type="text/plain" id="fnSource">
+// word-frequency: the Supabase Edge Function behind word-frequency-sorter.html.
+//
+// The page only knows this project's URL. Everything that needs a key happens here:
+// the bot runs on OpenAI with this project's OPENAI_API_KEY secret, and the corpus is
+// kept in this project's database (the function creates its tables the first time).
+//
+// Deploy it once, named word-frequency, with JWT verification turned off:
+//   Dashboard: Edge Functions > Deploy a new function > Via Editor, paste this file,
+//              Deploy function, then switch off JWT verification on its Details tab.
+//   CLI:       supabase functions deploy word-frequency --no-verify-jwt
+//
+// There is no login, so anyone who knows this function's address can use it. That spends
+// your OpenAI credit and can change the corpus, so keep the address to yourself.
+
+import postgres from 'npm:postgres@3.4.5';
+
+const NAME = 'word-frequency';
+const VERSION = 2;
+const OPENAI = 'https://api.openai.com/v1';
+const OPENAI_TIMEOUT_MS = 140_000; // stays under the 150 s limit of the free plan
+const DEFAULT_MODEL = 'gpt-6-luna';
+const EFFORTS = new Set(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']);
+const KEY_NAMES = ['OPENAI_API_KEY', 'OPENAI_KEY', 'OPEN_AI_API_KEY', 'OPEN_AI_KEY'];
+const LANGUAGES: Record<string, string> = {en: 'English'};
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const CORS: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Max-Age': '86400',
+};
+
+// deno-lint-ignore no-explicit-any
+type Body = Record<string, any>;
+type Row = Record<string, unknown>;
+
+class Failure extends Error {
+  code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+const JSON_HEADERS = {...CORS, 'Content-Type': 'application/json; charset=utf-8'};
+const reply = (body: unknown) => new Response(JSON.stringify(body), {headers: JSON_HEADERS});
+const replyRaw = (json: string) => new Response(json, {headers: JSON_HEADERS});
+const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/* ------------------------------------------------------------ the bot's brief */
+
+const DEFAULT_RULES = `- Inflections go under the base word: neighbours → neighbor, went → go, children → child, bigger → big, best → good, is / was / 's → be.
+- A derived word goes under its base when its meaning is simply the base plus the suffix: jealousy → jealous, happiness → happy, quickly → quick, kindness → kind.
+- A derived word keeps its own lemma when its meaning has drifted from the base: business, really, hardly, lately, apartment.
+- A participle used as an ordinary adjective or noun keeps its own lemma: tired, interested, boring, building, meeting.
+- Words with a meaning-changing prefix keep their own lemma: unhappy, disagree, rewrite.
+- Pronoun forms go under the subject pronoun: me, my, mine, myself → I; us, our, ours → we; them, their, theirs, themselves → they.
+- Modal verbs are their own lemmas: would, could, should, might, must.
+- Contractions split into their words: I'm → I + 'm (be); don't → do + n't (not); can't → can + n't; won't → won't (will) + n't (not); it's → it + 's (be, or have as in "it's been"); he'd → he + 'd (would or have, by context); let's → let + 's (we).
+- A possessive 's or ' is not a word of its own: neighbour's is one part, form neighbour, lemma neighbor.
+- Established hyphenated compounds stay whole (mother-in-law, well-known, e-mail → email); loose combinations split into their words (twenty-five → twenty + five).
+- Titles before a name (Mr, Mrs, Dr, President) are ordinary words, not part of the name.
+- Lemmas use American spelling: colour → color, realise → realize.
+- Lemmas are lower-case unless the word is always capitalized (I, Monday, English).`;
+
+function instructions(language: string, rules: string): string {
+  return `You lemmatize words for an ${language} word-frequency corpus.
+
+Each input word has an id, the word exactly as written, and numbered contexts. Contexts are excerpts from the text; "…" marks where an excerpt was cut. In each context the occurrence to analyze is wrapped in ⟦ ⟧. A word may also carry hints: "filed before" lists lemmas this exact spelling was filed under in earlier texts, and "on file" lists lemmas already in the corpus that may be related. When the word belongs to one of them, reuse that lemma's exact spelling so the corpus stays consistent. Ignore hints that don't fit.
+
+For each context, return the occurrence's parts. Most words are a single part; split a word into several parts only where the lemma rules below say to (contractions, loose hyphenated combinations).
+
+Each part has:
+- form: the part as written, lower-cased unless it is a proper noun or a word that is always capitalized (I, Monday, English)
+- lemma: the base word the form belongs to, judged from its meaning in this context, never from spelling patterns alone
+- proper: true when, in this context, the part is or belongs to the name of a specific person, place, organization, brand, product, title, event, ship or pet. Days, months, holidays, languages, nationalities and religions are ordinary vocabulary (proper: false). For a proper part, the lemma is the full name in its usual spelling ("New" and "York" in "New York" both get lemma New York).
+Return an empty parts list when the token is not an ${language} word: stray letters, codes, markup, or text in another language.
+
+For each word also return fixed. Set it to true only when your analysis would be the same in practically every context where this exact spelling, with this capitalization, appears. Set it to false when the lemma depends on context (saw: see or saw; left: leave or left; leaves: leaf or leave; it's: be or have; York: York or New York) or when this capitalized spelling can be a name or an ordinary word (Will, May, Bill, Rose, Apple, Turkey, Mark).
+
+Lemma rules:
+${rules}
+
+Return every id you were given, with one entry in uses for each context, using the context's number as ctx.`;
+}
+
+const SCHEMA = {
+  type: 'object', additionalProperties: false, required: ['words'],
+  properties: {
+    words: {
+      type: 'array',
+      items: {
+        type: 'object', additionalProperties: false, required: ['id', 'fixed', 'uses'],
+        properties: {
+          id: {type: 'string'},
+          fixed: {type: 'boolean'},
+          uses: {
+            type: 'array',
+            items: {
+              type: 'object', additionalProperties: false, required: ['ctx', 'parts'],
+              properties: {
+                ctx: {type: 'integer'},
+                parts: {
+                  type: 'array',
+                  items: {
+                    type: 'object', additionalProperties: false, required: ['form', 'lemma', 'proper'],
+                    properties: {form: {type: 'string'}, lemma: {type: 'string'}, proper: {type: 'boolean'}},
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+interface Item {
+  id: string;
+  surface: string;
+  contexts: string[];
+  seen: {lemma: string; proper: boolean}[];
+  near: string[];
+}
+
+function botInput(items: Item[]): string {
+  const lines = ['Words:'];
+  for (const it of items) {
+    lines.push('', `[${it.id}] ${it.surface}`);
+    if (it.seen.length) lines.push('filed before: ' + it.seen.map((s) => (s.proper ? `${s.lemma} (name)` : s.lemma)).join(', '));
+    if (it.near.length) lines.push('on file: ' + it.near.join(', '));
+    it.contexts.forEach((c, k) => lines.push(`${k + 1}: ${c}`));
+  }
+  return lines.join('\n');
+}
+
+/* ------------------------------------------------------------------ checks */
+
+function text(v: unknown, max: number, what: string, keepSpace = false): string {
+  if (typeof v !== 'string') throw new Failure('bad_request', `${what} must be text.`);
+  const s = keepSpace ? v : v.trim();
+  if (!s) throw new Failure('bad_request', `${what} is empty.`);
+  if (s.length > max) throw new Failure('bad_request', `${what} is longer than ${max} characters.`);
+  return s;
+}
+const optional = (v: unknown, max: number, what: string) => (v == null || v === '' ? null : text(v, max, what));
+function whole(v: unknown, what: string, min = 0): number {
+  const n = Number(v ?? 0);
+  if (!Number.isInteger(n) || n < min || n > 2_000_000_000) throw new Failure('bad_request', `${what} must be a whole number.`);
+  return n;
+}
+function langOf(v: unknown): string {
+  const s = v == null ? 'en' : String(v);
+  if (!Object.hasOwn(LANGUAGES, s)) throw new Failure('bad_request', `The language "${s}" isn't set up.`);
+  return s;
+}
+function modelOf(v: unknown): string {
+  const s = v == null || v === '' ? DEFAULT_MODEL : String(v).trim();
+  if (!/^[A-Za-z0-9][\w.:-]{0,79}$/.test(s)) throw new Failure('bad_request', 'That model name is not valid.');
+  return s;
+}
+function itemsOf(v: unknown): Item[] {
+  if (!Array.isArray(v) || !v.length || v.length > 80) throw new Failure('bad_request', 'Send between 1 and 80 words per request.');
+  return v.map((it: Body) => {
+    if (!it || typeof it !== 'object') throw new Failure('bad_request', 'A word is missing.');
+    const id = String(it.id ?? '');
+    if (!/^[a-z]\d{1,9}$/.test(id)) throw new Failure('bad_request', 'A word has a bad id.');
+    const contexts = Array.isArray(it.contexts) ? it.contexts : [];
+    if (!contexts.length || contexts.length > 3) throw new Failure('bad_request', 'Each word needs one to three contexts.');
+    return {
+      id,
+      surface: text(it.surface, 80, 'A word'),
+      contexts: contexts.map((c: unknown) => text(c, 600, 'A context')),
+      seen: (Array.isArray(it.seen) ? it.seen : []).slice(0, 8).map((s: Body) => ({lemma: text(s?.lemma, 80, 'A hint'), proper: s?.proper === true})),
+      near: (Array.isArray(it.near) ? it.near : []).slice(0, 6).map((s: unknown) => text(s, 80, 'A hint')),
+    };
+  });
+}
+function recordsOf(v: unknown): [string, string, boolean, number][] {
+  if (!Array.isArray(v) || v.length > 500_000) throw new Failure('bad_request', 'The counts are missing or too many.');
+  return v.map((r: unknown): [string, string, boolean, number] => {
+    if (!Array.isArray(r) || r.length !== 4) throw new Failure('bad_request', 'A count is malformed.');
+    return [text(r[0], 80, 'A lemma'), text(r[1], 80, 'A form'), r[2] === true, whole(r[3], 'A count', 1)];
+  });
+}
+function cacheOf(v: unknown): {s: string; e: unknown}[] {
+  if (v == null) return [];
+  if (!Array.isArray(v) || v.length > 50_000) throw new Failure('bad_request', 'Too many remembered words in one request.');
+  return v.map((x: Body) => {
+    const s = text(x?.s, 80, 'A remembered word');
+    if (!x.e || typeof x.e !== 'object' || JSON.stringify(x.e).length > 4000) throw new Failure('bad_request', `The entry for "${s}" is malformed.`);
+    return {s, e: x.e};
+  });
+}
+
+/* ---------------------------------------------------------------- database */
+
+let client: ReturnType<typeof postgres> | null = null;
+function db() {
+  if (!client) {
+    const url = Deno.env.get('SUPABASE_DB_URL');
+    if (!url) throw new Failure('db', 'SUPABASE_DB_URL is missing. Deploy this function to your Supabase project rather than running it elsewhere.');
+    client = postgres(url, {prepare: false, max: 4, idle_timeout: 20, connect_timeout: 15});
+  }
+  return client;
+}
+async function q(sql: string, params: unknown[] = []): Promise<Row[]> {
+  // deno-lint-ignore no-explicit-any
+  return (await db().unsafe(sql, params as any[])) as unknown as Row[];
+}
+
+const TABLES = [
+  `create table if not exists public.wf_texts (
+     id uuid primary key,
+     lang text not null default 'en',
+     title text,
+     body text,
+     hash text,
+     words integer not null default 0,
+     counted integer not null default 0,
+     proper integer not null default 0,
+     skipped integer not null default 0,
+     model text,
+     created_at timestamptz not null default now())`,
+  `create table if not exists public.wf_counts (
+     text_id uuid not null references public.wf_texts(id) on delete cascade,
+     lang text not null default 'en',
+     lemma text not null,
+     form text not null,
+     proper boolean not null default false,
+     n integer not null check (n > 0),
+     primary key (text_id, lemma, form, proper))`,
+  `create index if not exists wf_counts_lang_lemma on public.wf_counts (lang, lemma)`,
+  `create table if not exists public.wf_cache (
+     lang text not null default 'en',
+     surface text not null,
+     entry jsonb not null,
+     updated_at timestamptz not null default now(),
+     primary key (lang, surface))`,
+  // Only this function touches these tables, so the browser-facing API gets no access at all.
+  `alter table public.wf_texts enable row level security`,
+  `alter table public.wf_counts enable row level security`,
+  `alter table public.wf_cache enable row level security`,
+  `drop policy if exists wf_texts_access on public.wf_texts`,
+  `drop policy if exists wf_counts_access on public.wf_counts`,
+  `drop policy if exists wf_cache_access on public.wf_cache`,
+  `revoke all on public.wf_texts, public.wf_counts, public.wf_cache from anon, authenticated`,
+];
+
+let schemaReady: Promise<void> | null = null;
+function ensureSchema(): Promise<void> {
+  if (!schemaReady) {
+    schemaReady = (async () => {
+      const [r] = await q(`select to_regclass('public.wf_texts') is not null
+          and to_regclass('public.wf_counts') is not null
+          and to_regclass('public.wf_cache') is not null as tables,
+        (select count(*)::int from pg_policies where schemaname = 'public'
+          and policyname in ('wf_texts_access', 'wf_counts_access', 'wf_cache_access')) as open_policies`);
+      if (r && r.tables === true && Number(r.open_policies) === 0) return;
+      for (const statement of TABLES) await q(statement);
+    })();
+    schemaReady.catch(() => { schemaReady = null; });
+  }
+  return schemaReady;
+}
+
+const UPSERT_CACHE = `insert into public.wf_cache (lang, surface, entry, updated_at)
+  select distinct on (e.value->>'s') $1::text, e.value->>'s', (e.value->'e')::jsonb, now()
+  from json_array_elements($2::json) with ordinality as e(value, i)
+  order by e.value->>'s', e.i desc
+  on conflict (lang, surface) do update set entry = excluded.entry, updated_at = excluded.updated_at`;
+
+/* ----------------------------------------------------------------- actions */
+
+function openaiKey(): string | null {
+  for (const name of KEY_NAMES) {
+    const v = Deno.env.get(name);
+    if (v && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+async function fetchText(url: string, init: RequestInit, ms: number) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const res = await fetch(url, {...init, signal: ctrl.signal});
+    return {status: res.status, ok: res.ok, statusText: res.statusText, body: await res.text()};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+const parse = (s: string): Body | null => { try { return JSON.parse(s); } catch { return null; } };
+
+async function status(b: Body) {
+  const lang = langOf(b.lang);
+  const model = modelOf(b.model);
+  const key = openaiKey();
+  const out = {
+    ok: true, name: NAME, version: VERSION, model, rules: DEFAULT_RULES,
+    openai: {present: Boolean(key), ok: null as boolean | null, status: 0, message: ''},
+    db: {ok: false, message: ''},
+    texts: 0,
+  };
+  await Promise.all([
+    (async () => {
+      if (!key) return;
+      try {
+        const r = await fetchText(`${OPENAI}/models/${encodeURIComponent(model)}`, {headers: {Authorization: `Bearer ${key}`}}, 15_000);
+        out.openai.status = r.status;
+        out.openai.ok = r.ok;
+        if (!r.ok) out.openai.message = parse(r.body)?.error?.message || r.statusText || `HTTP ${r.status}`;
+      } catch (e) {
+        out.openai.ok = false;
+        out.openai.message = 'The function could not reach OpenAI: ' + errorText(e);
+      }
+    })(),
+    (async () => {
+      try {
+        await ensureSchema();
+        const [r] = await q(`select count(*)::int as n from public.wf_texts where lang = $1::text`, [lang]);
+        out.texts = Number(r?.n ?? 0);
+        out.db.ok = true;
+      } catch (e) {
+        out.db.message = errorText(e);
+      }
+    })(),
+  ]);
+  return out;
+}
+
+async function lemmatize(b: Body) {
+  const key = openaiKey();
+  if (!key) throw new Failure('no_openai_key', 'This Supabase project has no OPENAI_API_KEY secret yet. Add it under Edge Functions, Secrets.');
+  const lang = langOf(b.lang);
+  const items = itemsOf(b.items);
+  const rules = typeof b.rules === 'string' && b.rules.trim() ? text(b.rules, 8000, 'The lemma rules') : DEFAULT_RULES;
+  const effort = b.effort == null || b.effort === '' ? null : String(b.effort);
+  if (effort && !EFFORTS.has(effort)) throw new Failure('bad_request', 'Unknown reasoning effort.');
+  const payload: Body = {
+    model: modelOf(b.model),
+    instructions: instructions(LANGUAGES[lang], rules),
+    input: botInput(items),
+    text: {format: {type: 'json_schema', name: 'lemmatized_words', strict: true, schema: SCHEMA}},
+    max_output_tokens: 16000,
+    store: false,
+  };
+  if (effort) payload.reasoning = {effort};
+  try {
+    const r = await fetchText(`${OPENAI}/responses`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', Authorization: `Bearer ${key}`},
+      body: JSON.stringify(payload),
+    }, OPENAI_TIMEOUT_MS);
+    return {ok: true, status: r.status, data: parse(r.body)};
+  } catch (e) {
+    return {ok: true, status: 0, data: null, network: e instanceof Error && e.name === 'AbortError' ? 'timeout' : 'unreachable'};
+  }
+}
+
+async function snapshot(b: Body) {
+  const lang = langOf(b.lang);
+  await ensureSchema();
+  const [r] = await q(`select json_build_object(
+      'texts', coalesce((
+        select json_agg(json_build_object('id', id, 'title', title, 'hash', hash, 'words', words,
+          'counted', counted, 'proper', proper, 'skipped', skipped, 'model', model, 'created_at', created_at)
+          order by created_at, id)
+        from public.wf_texts where lang = $1::text), '[]'::json),
+      'lemmas', coalesce((
+        select json_agg(json_build_array(lemma, proper, n, texts))
+        from (select lemma, proper, sum(n)::int as n, count(distinct text_id)::int as texts
+              from public.wf_counts where lang = $1::text group by lemma, proper) s), '[]'::json),
+      'forms', coalesce((
+        select json_agg(json_build_array(lemma, form, proper, n, texts))
+        from (select lemma, form, proper, sum(n)::int as n, count(distinct text_id)::int as texts
+              from public.wf_counts where lang = $1::text group by lemma, form, proper) s), '[]'::json)
+    )::text as data`, [lang]);
+  return `{"ok":true,"snapshot":${r.data}}`;
+}
+
+async function cache(b: Body) {
+  const lang = langOf(b.lang);
+  await ensureSchema();
+  const [r] = await q(`select coalesce(json_agg(json_build_array(surface, entry)), '[]'::json)::text as data
+    from public.wf_cache where lang = $1::text`, [lang]);
+  return `{"ok":true,"cache":${r.data}}`;
+}
+
+async function addText(b: Body) {
+  const lang = langOf(b.lang);
+  const t: Body = b.text && typeof b.text === 'object' ? b.text : {};
+  const id = String(t.id ?? '');
+  if (!UUID.test(id)) throw new Failure('bad_request', 'The text needs an id.');
+  const created = t.created_at == null ? null : String(t.created_at);
+  if (created && Number.isNaN(Date.parse(created))) throw new Failure('bad_request', 'The text has a bad date.');
+  const body = typeof b.body === 'string' ? b.body : '';
+  if (body.length > 5_000_000) throw new Failure('bad_request', 'The text is too long to store.');
+  const records = recordsOf(b.records);
+  const remembered = cacheOf(b.cache);
+  await ensureSchema();
+  // One statement, so the text and its counts are saved together or not at all.
+  // Adding the same id twice changes nothing, which makes retries safe.
+  const [r] = await q(`with t as (
+      insert into public.wf_texts (id, lang, title, body, hash, words, counted, proper, skipped, model, created_at)
+      values ($1::uuid, $2::text, $3::text, $4::text, $5::text, $6::int, $7::int, $8::int, $9::int, $10::text,
+              coalesce($11::timestamptz, now()))
+      on conflict (id) do nothing
+      returning id
+    ), c as (
+      insert into public.wf_counts (text_id, lang, lemma, form, proper, n)
+      select t.id, $2::text, r.v->>0, r.v->>1, (r.v->>2)::boolean, sum((r.v->>3)::int)::int
+      from t, json_array_elements($12::json) as r(v)
+      group by t.id, r.v->>0, r.v->>1, (r.v->>2)::boolean
+    ), k as (
+      insert into public.wf_cache (lang, surface, entry, updated_at)
+      select distinct on (e.value->>'s') $2::text, e.value->>'s', (e.value->'e')::jsonb, now()
+      from json_array_elements($13::json) with ordinality as e(value, i)
+      order by e.value->>'s', e.i desc
+      on conflict (lang, surface) do update set entry = excluded.entry, updated_at = excluded.updated_at
+    )
+    select exists (select 1 from t) as added`,
+    [id, lang, optional(t.title, 300, 'The title'), body, optional(t.hash, 64, 'The hash'),
+     whole(t.words, 'words'), whole(t.counted, 'counted'), whole(t.proper, 'proper'), whole(t.skipped, 'skipped'),
+     optional(t.model, 80, 'The model'), created, JSON.stringify(records), JSON.stringify(remembered)]);
+  return {ok: true, added: r?.added === true};
+}
+
+async function deleteText(b: Body) {
+  const lang = langOf(b.lang);
+  const id = String(b.id ?? '');
+  if (!UUID.test(id)) throw new Failure('bad_request', 'Which text? The id is missing.');
+  await ensureSchema();
+  const rows = await q(`delete from public.wf_texts where id = $1::uuid and lang = $2::text returning id`, [id, lang]);
+  return {ok: true, deleted: rows.length > 0};
+}
+
+async function reassign(b: Body) {
+  const lang = langOf(b.lang);
+  const form = text(b.form, 80, 'The form');
+  const from = text(b.from, 80, 'The current lemma');
+  const to = text(b.to, 80, 'The new lemma');
+  const fromProper = b.fromProper === true, toProper = b.toProper === true;
+  if (from === to && fromProper === toProper) return {ok: true, moved: 0};
+  const remembered = cacheOf(b.cache);
+  await ensureSchema();
+  const [r] = await q(`with moved as (
+      delete from public.wf_counts
+      where lang = $1::text and form = $2::text and lemma = $3::text and proper = $4::boolean
+      returning text_id, form, n
+    ), ins as (
+      insert into public.wf_counts as c (text_id, lang, lemma, form, proper, n)
+      select text_id, $1::text, $5::text, form, $6::boolean, n from moved
+      on conflict (text_id, lemma, form, proper) do update set n = c.n + excluded.n
+    ), k as (
+      insert into public.wf_cache (lang, surface, entry, updated_at)
+      select distinct on (e.value->>'s') $1::text, e.value->>'s', (e.value->'e')::jsonb, now()
+      from json_array_elements($7::json) with ordinality as e(value, i)
+      order by e.value->>'s', e.i desc
+      on conflict (lang, surface) do update set entry = excluded.entry, updated_at = excluded.updated_at
+    )
+    select count(*)::int as moved from moved`,
+    [lang, form, from, fromProper, to, toProper, JSON.stringify(remembered)]);
+  return {ok: true, moved: Number(r?.moved ?? 0)};
+}
+
+async function putCache(b: Body) {
+  const lang = langOf(b.lang);
+  const remembered = cacheOf(b.cache);
+  if (!remembered.length) return {ok: true, saved: 0};
+  await ensureSchema();
+  await q(UPSERT_CACHE, [lang, JSON.stringify(remembered)]);
+  return {ok: true, saved: remembered.length};
+}
+
+async function clearCache(b: Body) {
+  const lang = langOf(b.lang);
+  await ensureSchema();
+  await q(`delete from public.wf_cache where lang = $1::text`, [lang]);
+  return {ok: true};
+}
+
+async function clearAll(b: Body) {
+  const lang = langOf(b.lang);
+  await ensureSchema();
+  await q(`with a as (delete from public.wf_texts where lang = $1::text returning 1),
+    b as (delete from public.wf_cache where lang = $1::text returning 1)
+    select (select count(*) from a)::int as texts`, [lang]);
+  return {ok: true};
+}
+
+const ACTIONS: Record<string, (b: Body) => Promise<unknown>> = {
+  status, lemmatize, snapshot, cache, addText, deleteText, reassign, putCache, clearCache, clearAll,
+};
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', {headers: CORS});
+  if (req.method === 'GET') return reply({ok: true, name: NAME, version: VERSION});
+  if (req.method !== 'POST') return reply({ok: false, error: {code: 'bad_request', message: 'Use POST.'}});
+  let b: Body;
+  try {
+    b = JSON.parse(await req.text());
+  } catch {
+    return reply({ok: false, error: {code: 'bad_request', message: 'The request body must be JSON.'}});
+  }
+  const action = b && typeof b.action === 'string' && Object.hasOwn(ACTIONS, b.action) ? ACTIONS[b.action] : null;
+  if (!action) return reply({ok: false, error: {code: 'bad_request', message: 'Unknown action.'}});
+  try {
+    const out = await action(b);
+    return typeof out === 'string' ? replyRaw(out) : reply(out);
+  } catch (e) {
+    if (!(e instanceof Failure)) console.error(b.action, e);
+    return reply({ok: false, error: {code: e instanceof Failure ? e.code : 'error', message: errorText(e)}});
+  }
+});
+</script>
+<script>
+'use strict';
+
+/* ---------------------------------------------------------------- config */
+
+const LANG = 'en';
+const SEP = '\u0001';
+const SETTINGS_KEY = 'wfs.settings.v1';
+const COPIED_KEY = 'wfs.copiedToSupabase.v1';
+const FUNCTION_NAME = 'word-frequency';
+const DEFAULT_MODEL = 'gpt-6-luna';
+const BATCH_WORDS = 30;   // new spellings per request (each with up to CONTEXTS contexts)
+const BATCH_SINGLE = 50;  // single occurrences per request (context-dependent words)
+const BATCH_RETRY = 8;
+const CONTEXTS = 3;
+const MAX_WORD = 60;      // longer "words" are treated as junk rather than sent to the bot
+const LIST_STEP = 200;
+const REQUEST_TIMEOUT = 180000;   // ms per bot request through the function
+
+/* ------------------------------------------------------- project address */
+
+// Turns whatever was pasted (project URL, dashboard link, bare project ref, API URL,
+// even a database connection string) into the project's API origin.
+function parseProject(raw) {
+  let s = String(raw == null ? '' : raw).trim().replace(/^[<"'\s]+|[>"'\s]+$/g, '');
+  if (!s) return {error: "Enter your project's URL first."};
+  let m = /supabase\.com\/dashboard\/project\/([a-z0-9]{15,40})/i.exec(s);
+  if (m) return projectFromRef(m[1]);
+  if (/^[a-z0-9]{15,40}$/i.test(s)) return projectFromRef(s);
+  if (/^postgres(ql)?:\/\//i.test(s)) {
+    m = /@(?:db\.)?([a-z0-9]{15,40})\.supabase\.co\b/i.exec(s) || /\/\/postgres\.([a-z0-9]{15,40})[:@]/i.exec(s);
+    if (m) return Object.assign(projectFromRef(m[1]), {note: 'That was a database connection string, so only the project address was kept from it, not the password.'});
+    return {error: "That's a database connection string. Paste the project URL instead."};
+  }
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(s)) s = 'https://' + s;
+  let u;
+  try { u = new URL(s); } catch { return {error: "That doesn't look like a web address."}; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return {error: "That doesn't look like a web address."};
+  const host = u.hostname.toLowerCase();
+  m = /^(?:db\.)?([a-z0-9]{15,40})\.supabase\.(co|in)$/.exec(host);
+  if (m) return {origin: `https://${m[1]}.supabase.${m[2]}`, ref: m[1], host: `${m[1]}.supabase.${m[2]}`};
+  if (/(^|\.)supabase\.(com|io)$/.test(host)) return {error: "That's a page on supabase.com, not your project."};
+  if (!host.includes('.') && host !== 'localhost') return {error: "That doesn't look like a web address."};
+  return {origin: u.origin, ref: '', host: u.host};   // custom domain or self-hosted
+}
+function projectFromRef(ref) {
+  const r = ref.toLowerCase();
+  return {origin: `https://${r}.supabase.co`, ref: r, host: `${r}.supabase.co`};
+}
+
+/* -------------------------------------------------------------- settings */
+
+function loadSettings() {
+  const d = {projectUrl: '', model: DEFAULT_MODEL, effort: 'low', parallel: 4, rules: '', useCache: true};
+  let s = d;
+  try { s = Object.assign(d, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch {}
+  // Earlier versions kept keys in the browser. They aren't used any more, so they are dropped.
+  if (!s.projectUrl && s.supaUrl) { const p = parseProject(s.supaUrl); if (!p.error) s.projectUrl = p.origin; }
+  if ('openaiKey' in s || 'supaKey' in s || 'supaUrl' in s) {
+    delete s.openaiKey; delete s.supaKey; delete s.supaUrl;
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch {}
+  }
+  return s;
+}
+let settings = loadSettings();
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); return true; } catch { return false; }
+}
+
+/* ------------------------------------------------------------- utilities */
+
+const nf = new Intl.NumberFormat('en-US');
+const fmt = n => nf.format(n);
+const pct = x => (x * 100).toFixed(1) + '%';
+const plural = (n, word, many) => `${fmt(n)} ${n === 1 ? word : (many || word + 's')}`;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const chunk = (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; };
+const abortError = () => new DOMException('Stopped', 'AbortError');
+const isAbort = e => e && e.name === 'AbortError';
+
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal && signal.aborted) return reject(abortError());
+    const t = setTimeout(resolve, ms);
+    if (signal) signal.addEventListener('abort', () => { clearTimeout(t); reject(abortError()); }, {once: true});
+  });
+}
+
+function uuid() {
+  if (window.crypto && crypto.randomUUID) { try { return crypto.randomUUID(); } catch {} }
+  const b = new Uint8Array(16);
+  (window.crypto && crypto.getRandomValues) ? crypto.getRandomValues(b) : b.forEach((_, i) => { b[i] = Math.random() * 256 | 0; });
+  b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+function hash53(str) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+// Runs fn over items with at most `limit` running at once. Stops taking new work after the first failure.
+async function mapLimit(items, limit, fn, signal) {
+  const out = new Array(items.length);
+  let next = 0, failure = null;
+  async function worker() {
+    while (!failure && next < items.length) {
+      if (signal && signal.aborted) { failure = failure || abortError(); break; }
+      const i = next++;
+      try { out[i] = await fn(items[i], i); }
+      catch (e) { failure = failure || e; }
+    }
+  }
+  await Promise.all(Array.from({length: Math.max(1, Math.min(limit, items.length))}, worker));
+  if (failure) throw failure;
+  return out;
+}
+
+function linkedController(signal) {
+  const c = new AbortController();
+  if (signal) {
+    if (signal.aborted) c.abort();
+    else signal.addEventListener('abort', () => c.abort(), {once: true});
+  }
+  return c;
+}
+
+/* -------------------------------------------------------- text handling */
+
+const WORD_RE = /(?<![\p{L}\p{M}\p{N}])[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*(?:-[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*)*(?![\p{L}\p{M}\p{N}])/gu;
+const SENTENCES = (window.Intl && Intl.Segmenter) ? new Intl.Segmenter('en', {granularity: 'sentence'}) : null;
+
+function cleanText(raw) {
+  return raw
+    .replace(/\r\n?/g, '\n')
+    .replace(/[’ʼ＇]/g, "'")
+    .replace(/­/g, '')
+    .replace(/[‐‑]/g, '-')
+    .replace(/\bhttps?:\/\/\S+|\bwww\.\S+|[\w.+-]+@[\w-]+\.[\w.-]+/g, ' ');
+}
+
+function sentenceStarts(line) {
+  if (SENTENCES) return Array.from(SENTENCES.segment(line), s => s.index);
+  const starts = [0], re = /[.!?…]["')\]]*\s+/g;
+  let m;
+  while ((m = re.exec(line))) starts.push(m.index + m[0].length);
+  return starts;
+}
+
+// Every word token with its line, position and whether it opens a sentence.
+function tokenize(text) {
+  const occs = [];
+  for (const line of text.split('\n')) {
+    if (!/\p{L}/u.test(line)) continue;
+    const starts = sentenceStarts(line);
+    let si = 0, lastSentence = -1, m;
+    WORD_RE.lastIndex = 0;
+    while ((m = WORD_RE.exec(line))) {
+      while (si + 1 < starts.length && starts[si + 1] <= m.index) si++;
+      occs.push({s: m[0], line, start: m.index, end: m.index + m[0].length, initial: si !== lastSentence});
+      lastSentence = si;
+    }
+  }
+  return occs;
+}
+
+function countWords(text) {
+  const m = cleanText(text).match(WORD_RE);
+  return m ? m.length : 0;
+}
+
+// The occurrence inside roughly 90 characters of its line, marked with ⟦ ⟧.
+function snippet(o, reach = 90) {
+  const L = o.line;
+  let a = Math.max(0, o.start - reach), b = Math.min(L.length, o.end + reach);
+  if (a > 0) { const sp = L.indexOf(' ', a); if (sp !== -1 && sp < o.start) a = sp + 1; }
+  if (b < L.length) { const sp = L.lastIndexOf(' ', b); if (sp !== -1 && sp >= o.end) b = sp; }
+  const s = (a > 0 ? '…' : '') + L.slice(a, o.start) + '⟦' + L.slice(o.start, o.end) + '⟧' + L.slice(o.end, b) + (b < L.length ? '…' : '');
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+// Up to CONTEXTS occurrences, mixing sentence-opening and mid-sentence uses when both exist.
+function pickContexts(idxs, occs) {
+  if (idxs.length <= CONTEXTS) return idxs.slice();
+  const mid = idxs.filter(i => !occs[i].initial), open = idxs.filter(i => occs[i].initial);
+  const pick = [];
+  if (mid.length) pick.push(mid[0]);
+  if (open.length) pick.push(open[0]);
+  const rest = idxs.filter(i => !pick.includes(i));
+  while (pick.length < CONTEXTS && rest.length) pick.push(rest.splice(Math.floor(rest.length / 2), 1)[0]);
+  return pick;
+}
+
+function autoTitle(text) {
+  const words = text.trim().split(/\s+/).slice(0, 7).join(' ');
+  return words.length > 60 ? words.slice(0, 57) + '…' : words + (text.trim().split(/\s+/).length > 7 ? '…' : '');
+}
+
+/* ------------------------------------------------- the Supabase function */
+
+class FnError extends Error {
+  constructor(kind, message, extra) { super(message); this.kind = kind; Object.assign(this, extra || {}); }
+}
+
+// Talks to the word-frequency Edge Function. Requests go as text/plain so the browser
+// sends them straight away, without a CORS preflight.
+class FnStore {
+  constructor(origin) {
+    this.origin = origin;
+    this.url = origin + '/functions/v1/' + FUNCTION_NAME;
+  }
+  async call(action, payload, opts = {}) {
+    const ctrl = linkedController(opts.signal);
+    const timer = setTimeout(() => ctrl.abort(), opts.timeout || 60000);
+    let res, text;
+    try {
+      res = await fetch(this.url, {
+        method: 'POST',
+        headers: {'Content-Type': 'text/plain;charset=UTF-8'},
+        body: JSON.stringify(Object.assign({action, lang: LANG}, payload || {})),
+        signal: ctrl.signal,
+      });
+      text = await res.text();
+    } catch (e) {
+      if (opts.signal && opts.signal.aborted) throw abortError();
+      if (isAbort(e)) throw new FnError('timeout', 'The word-frequency function took too long to answer.');
+      throw new FnError('network', "Couldn't reach your Supabase project. Check your connection; if this page is open inside an app preview, open the file in your browser instead.");
+    } finally {
+      clearTimeout(timer);
+    }
+    let data = null;
+    try { data = JSON.parse(text); } catch {}
+    if (!res.ok) {
+      const detail = data && (data.message || data.msg || (data.error && (data.error.message || data.error)));
+      const msg = res.status === 404 ? "Your Supabase project has no word-frequency function. Open Settings to set it up."
+        : res.status === 401 || res.status === 403 ? 'The word-frequency function is asking for a login token. Turn off JWT verification for it (see Settings).'
+        : `Supabase answered ${res.status}${detail ? ': ' + detail : ''}.`;
+      throw new FnError('http', msg, {status: res.status, detail: typeof detail === 'string' ? detail : ''});
+    }
+    if (!data || typeof data !== 'object') throw new FnError('bad_json', "Something answered at the function's address, but not with this page's function.");
+    if (data.ok === false) {
+      const err = data.error || {};
+      throw new FnError('app', err.message || 'The word-frequency function reported an error.', {code: err.code || 'error'});
+    }
+    return data;
+  }
+  status(model) { return this.call('status', {model}, {timeout: 30000}); }
+  lemmatize(payload, signal) { return this.call('lemmatize', payload, {signal, timeout: REQUEST_TIMEOUT}); }
+  async loadCache() {
+    const d = await this.call('cache', null, {timeout: 120000});
+    return new Map(Array.isArray(d.cache) ? d.cache : []);
+  }
+  async snapshot() {
+    const d = await this.call('snapshot', null, {timeout: 120000});
+    const s = d.snapshot || {};
+    return {
+      texts: s.texts || [],
+      lemmaRows: (s.lemmas || []).map(([lemma, proper, n, texts]) => ({lemma, proper, n, texts})),
+      formRows: (s.forms || []).map(([lemma, form, proper, n, texts]) => ({lemma, form, proper, n, texts})),
+    };
+  }
+  // The text and its counts are saved in one step; large word memories follow in chunks.
+  async addText(meta, body, records, cacheEntries) {
+    const entries = [...cacheEntries].map(([s, e]) => ({s, e}));
+    const inline = entries.length <= 3000;
+    await this.call('addText', {
+      text: meta, body,
+      records: records.map(r => [r.lemma, r.form, r.proper, r.n]),
+      cache: inline ? entries : [],
+    }, {timeout: 120000});
+    if (inline) return null;
+    try { await this.putCache(cacheEntries); return null; }
+    catch (e) { return "The counts were saved, but the bot's word memory wasn't: " + e.message; }
+  }
+  deleteText(id) { return this.call('deleteText', {id}); }
+  reassign(a, cacheChanges) {
+    return this.call('reassign', {form: a.form, from: a.from, fromProper: a.fromProper, to: a.to, toProper: a.toProper,
+      cache: [...cacheChanges].map(([s, e]) => ({s, e}))});
+  }
+  async putCache(entries) {
+    for (const part of chunk([...entries].map(([s, e]) => ({s, e})), 2000)) await this.call('putCache', {cache: part}, {timeout: 120000});
+  }
+  clearCache() { return this.call('clearCache'); }
+  clearAll() { return this.call('clearAll'); }
+}
+
+// Whether anything answers at the project's address at all. A no-cors request resolves
+// whenever a server responds, even when its reply can't be read from this page.
+async function reachable(origin) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  try { await fetch(origin + '/rest/v1/', {mode: 'no-cors', cache: 'no-store', signal: ctrl.signal}); return true; }
+  catch { return false; }
+  finally { clearTimeout(t); }
+}
+
+// One check of the project: is the function there, does it reach the database and OpenAI.
+async function checkProject(p) {
+  const store = new FnStore(p.origin);
+  const model = (settings.model || '').trim() || DEFAULT_MODEL;
+  let st;
+  try { st = await store.status(model); }
+  catch (e) {
+    if (e.kind === 'http') {
+      if (e.status === 404) return {kind: 'no_function', p};
+      if (e.status === 401 || e.status === 403) return {kind: 'jwt', p};
+      return {kind: 'server', p, status: e.status, detail: e.detail};
+    }
+    if (e.kind === 'bad_json') return {kind: 'not_ours', p};
+    if (e.kind === 'app') return {kind: 'function_error', p, detail: e.message};
+    if (e.kind === 'timeout') return {kind: 'server', p, status: 0, detail: 'The function took too long to answer'};
+    return {kind: (await reachable(p.origin)) ? 'no_answer' : 'unreachable', p};
+  }
+  if (!st || st.name !== FUNCTION_NAME) return {kind: 'not_ours', p};
+  if (!st.db || !st.db.ok) return {kind: 'db', p, detail: st.db && st.db.message};
+  const out = {kind: 'ready', p, st, store, model};
+  const o = st.openai || {};
+  if (!o.present) out.openai = 'missing';
+  else if (o.ok === false) out.openai = o.status === 401 ? 'rejected' : o.status === 404 ? 'model' : 'error';
+  else out.openai = 'ok';
+  out.detail = o.message || '';
+  return out;
+}
+
+/* ------------------------------------------------------------------ bot */
+
+const runtime = {effort: null};   // set when the chosen reasoning effort had to be changed for this model
+
+class BotError extends Error {
+  constructor(message, fatal = true) { super(message); this.fatal = fatal; }
+}
+class Truncated extends Error {}
+
+function effortNow() {
+  const e = runtime.effort || settings.effort;
+  return e && e !== 'off' ? e : null;
+}
+
+async function callBot(items, signal, usage) {
+  const payload = {
+    model: (settings.model || '').trim() || DEFAULT_MODEL,
+    effort: effortNow(),
+    rules: settings.rules || '',   // empty means the function's default rules
+    items: items.map(it => ({id: it.id, surface: it.surface, contexts: it.contexts, seen: it.seen || [], near: it.near || []})),
+  };
+  for (let attempt = 1; ; attempt++) {
+    if (signal.aborted) throw abortError();
+    let env;
+    try {
+      env = await state.store.lemmatize(payload, signal);
+    } catch (e) {
+      if (signal.aborted || isAbort(e)) throw abortError();
+      if (e.kind === 'app') {
+        if (e.code === 'no_openai_key') throw new BotError(e.message);
+        throw new BotError('The word-frequency function refused the request: ' + e.message, e.code !== 'bad_request');
+      }
+      const transient = e.kind === 'network' || e.kind === 'timeout' || (e.kind === 'http' && (e.status >= 500 || e.status === 429));
+      if (!transient || attempt >= 4) throw new BotError(e.message);
+      await sleep(1500 * attempt, signal);
+      continue;
+    }
+    if (!env.status) {   // the function couldn't reach OpenAI
+      if (attempt >= 3) {
+        throw new BotError(env.network === 'timeout'
+          ? "OpenAI didn't answer in time, three times in a row. Try again, or lower Requests at once in Settings."
+          : "The word-frequency function couldn't reach OpenAI. Try again in a moment.");
+      }
+      await sleep(1500 * attempt, signal);
+      continue;
+    }
+    const data = env.data;
+    if (env.status >= 200 && env.status < 300) {
+      if (!data) throw new BotError('OpenAI returned an unreadable answer.', false);
+      if (usage && data.usage) {
+        usage.input += data.usage.input_tokens || 0;
+        usage.output += data.usage.output_tokens || 0;
+      }
+      if (data.status === 'incomplete') {
+        const reason = data.incomplete_details && data.incomplete_details.reason;
+        if (reason === 'max_output_tokens') throw new Truncated();
+        throw new BotError(`OpenAI stopped this request early (${reason || 'incomplete'}).`, false);
+      }
+      const msg = (data.output || []).find(o => o.type === 'message');
+      const part = msg && (msg.content || []).find(c => c.type === 'output_text' || c.type === 'refusal');
+      if (part && part.type === 'refusal') throw new BotError('The model declined part of the text: ' + part.refusal, false);
+      const txt = part ? part.text : data.output_text;
+      if (!txt) throw new BotError('OpenAI returned an empty answer.', false);
+      let parsed;
+      try { parsed = JSON.parse(txt); } catch { throw new BotError('OpenAI returned malformed JSON.', false); }
+      return Array.isArray(parsed.words) ? parsed.words : [];
+    }
+    const err = (data && data.error) || {};
+    const m = err.message || `HTTP ${env.status}`;
+    if (env.status === 400 && payload.effort && /reasoning|effort/i.test(m + ' ' + (err.param || ''))) {
+      payload.effort = payload.effort === 'none' ? 'low' : null;
+      runtime.effort = payload.effort || 'off';
+      continue;
+    }
+    if (env.status === 401) throw new BotError("OpenAI rejected the key saved in your Supabase project as OPENAI_API_KEY. Update that secret, then try again.");
+    if (env.status === 404 || (env.status === 400 && /model/i.test(m) && /exist|not found|access/i.test(m))) {
+      throw new BotError(`The model "${payload.model}" isn't available to your OpenAI key. Choose another model in Settings.`);
+    }
+    if (env.status === 429 && /quota|billing|credit/i.test(m)) throw new BotError('OpenAI says this account is out of credit: ' + m);
+    if (env.status === 429 || env.status >= 500) {
+      if (attempt >= 6) throw new BotError(`OpenAI kept answering ${env.status}: ${m}`);
+      await sleep(Math.min(30000, 1000 * 2 ** attempt) + Math.random() * 600, signal);
+      continue;
+    }
+    throw new BotError(`OpenAI error ${env.status}: ${m}`);
+  }
+}
+
+// A batch that is cut off or garbled is split in half and retried; a single item that still fails is left unplaced.
+async function runBatch(items, signal, usage) {
+  try {
+    return await callBot(items, signal, usage);
+  } catch (e) {
+    if (isAbort(e) || (e instanceof BotError && e.fatal)) throw e;
+    if (items.length <= 1) return [];
+    const mid = Math.ceil(items.length / 2);
+    const a = await runBatch(items.slice(0, mid), signal, usage);
+    const b = await runBatch(items.slice(mid), signal, usage);
+    return a.concat(b);
+  }
+}
+
+function cleanParts(parts, surface) {
+  if (!Array.isArray(parts)) return [];
+  const out = [];
+  for (const p of parts) {
+    if (!p || typeof p !== 'object') continue;
+    const lemma = String(p.lemma == null ? '' : p.lemma).trim().replace(/\s+/g, ' ').slice(0, 80);
+    let form = String(p.form == null ? '' : p.form).trim().replace(/\s+/g, ' ').slice(0, 80);
+    // an ordinary word with a lower-case lemma is listed lower-case even at the start of a sentence
+    if (!p.proper && lemma === lemma.toLowerCase()) form = form.toLowerCase();
+    if (lemma && form) out.push({form, lemma, proper: !!p.proper});
+  }
+  // A one-part answer must keep the word as written (minus a possessive 's), so the form list
+  // shows real usage even if the bot normalized it (e-mail stays e-mail; its lemma may be email).
+  if (out.length === 1 && surface) {
+    const p = out[0], bare = surface.replace(/'s?$/i, '');
+    const f = p.form.toLowerCase();
+    if (f !== surface.toLowerCase() && f !== bare.toLowerCase()) {
+      p.form = p.proper || /^\p{Lu}/u.test(p.form) ? bare : bare.toLowerCase();
+    }
+  }
+  return out;
+}
+
+// Lines up the bot's answers with the contexts that were sent (by ctx number, falling back to order).
+function alignUses(uses, k, surface) {
+  if (!Array.isArray(uses)) return null;
+  const out = new Array(k).fill(null);
+  uses.forEach((u, j) => {
+    if (!u || typeof u !== 'object') return;
+    let idx = Number.isInteger(u.ctx) && u.ctx >= 1 && u.ctx <= k ? u.ctx - 1 : j;
+    if (idx >= k || out[idx] !== null) { idx = out.indexOf(null); if (idx < 0) return; }
+    out[idx] = cleanParts(u.parts, surface);
+  });
+  return out;
+}
+
+const partsKey = p => p.map(x => x.lemma + SEP + x.form + SEP + (x.proper ? 1 : 0)).join('|');
+
+function mergeSeen(prev, uses) {
+  const out = Array.isArray(prev) ? prev.map(s => ({lemma: s.lemma, proper: !!s.proper})) : [];
+  for (const u of uses) {
+    if (!u) continue;
+    for (const p of u) {
+      if (!out.some(s => s.lemma === p.lemma && s.proper === p.proper)) out.push({lemma: p.lemma, proper: p.proper});
+    }
+  }
+  return out.slice(0, 8);
+}
+
+function buildHintIndex() {
+  const idx = new Map();
+  for (const e of state.common) {
+    if (e.lemma.length < 4) continue;
+    const k = e.lemma.toLowerCase().slice(0, 4);
+    const arr = idx.get(k);
+    if (arr) { if (arr.length < 12) arr.push(e.lemma); } else idx.set(k, [e.lemma]);
+  }
+  return idx;
+}
+
+function hintsFor(surface, idx, updates) {
+  const c = updates.get(surface) || state.cache.get(surface);
+  const seen = c && !c.fixed && Array.isArray(c.seen) ? c.seen : [];
+  const low = surface.toLowerCase();
+  const near = low.length >= 4 ? (idx.get(low.slice(0, 4)) || []).filter(l => !seen.some(s => s.lemma === l)).slice(0, 5) : [];
+  return {seen, near};
+}
+
+// Reads one text. If it fails part-way, the decisions already made travel with the error
+// (partialUpdates) so they can be kept and the next attempt is quicker.
+async function analyze(text, signal, onProgress) {
+  const updates = new Map();
+  try { return await readText(text, signal, onProgress, updates); }
+  catch (e) { if (e && typeof e === 'object') e.partialUpdates = updates; throw e; }
+}
+
+// Settled spellings come from memory, new ones go to the bot with a few contexts,
+// and spellings whose lemma depends on the sentence are sent once per occurrence.
+async function readText(text, signal, onProgress, updates) {
+  const occs = tokenize(text);
+  if (!occs.length) throw new BotError('No words found in this text.');
+
+  const groups = new Map();
+  occs.forEach((o, i) => { const g = groups.get(o.s); if (g) g.push(i); else groups.set(o.s, [i]); });
+
+  const parts = new Array(occs.length).fill(null);
+  const fresh = [], single = [];
+  let known = 0;
+  for (const [surface, idxs] of groups) {
+    if (surface.length > MAX_WORD) { for (const i of idxs) parts[i] = []; continue; }
+    const c = settings.useCache ? state.cache.get(surface) : null;
+    if (c && c.fixed) { for (const i of idxs) parts[i] = c.parts; known += idxs.length; }
+    else if (c) single.push(...idxs);
+    else fresh.push({surface, idxs, ctx: pickContexts(idxs, occs)});
+  }
+
+  const hintIdx = buildHintIndex();
+  const usage = {input: 0, output: 0};
+  const prog = {done: 0, total: Math.ceil(fresh.length / BATCH_WORDS) + Math.ceil(single.length / BATCH_SINGLE), words: occs.length, known};
+  onProgress(prog);
+
+  const inner = linkedController(signal);
+  const parallel = Math.min(8, Math.max(1, settings.parallel | 0 || 4));
+  const runAll = (batches, handle) => mapLimit(batches, parallel, async batch => {
+    try {
+      const out = await runBatch(batch, inner.signal, usage);
+      handle(batch, out);
+      prog.done++;
+      onProgress(prog);
+    } catch (e) { inner.abort(); throw e; }
+  }, inner.signal);
+
+  // Pass 1: spellings the bot hasn't settled before. Sorting puts related spellings
+  // (teach, teacher, teachers) in the same request so the bot files them consistently.
+  const byWord = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}) || (a < b ? -1 : a > b ? 1 : 0);
+  fresh.sort((a, b) => byWord(a.surface, b.surface));
+  let seq = 0;
+  const firstItems = fresh.map(g => Object.assign(
+    {id: 'w' + (++seq), surface: g.surface, g, contexts: g.ctx.map(i => snippet(occs[i]))},
+    hintsFor(g.surface, hintIdx, updates)));
+  const retryFirst = [];
+  const handleFirst = (batch, out) => {
+    const byId = new Map((out || []).filter(w => w && typeof w === 'object').map(w => [String(w.id), w]));
+    for (const it of batch) {
+      const w = byId.get(it.id);
+      const uses = w ? alignUses(w.uses, it.contexts.length, it.surface) : null;
+      if (!uses || uses.every(u => u === null)) { retryFirst.push(it); continue; }
+      const answered = uses.filter(u => u !== null);
+      const agree = answered.every(u => partsKey(u) === partsKey(answered[0]));
+      if (w.fixed && agree && answered.length === uses.length) {
+        for (const i of it.g.idxs) parts[i] = uses[0];
+        updates.set(it.surface, {fixed: true, parts: uses[0]});
+      } else {
+        it.g.ctx.forEach((oi, k) => { if (uses[k] !== null) parts[oi] = uses[k]; });
+        for (const i of it.g.idxs) if (parts[i] === null) single.push(i);
+        const prev = state.cache.get(it.surface);
+        updates.set(it.surface, {fixed: false, seen: mergeSeen(prev && !prev.fixed ? prev.seen : null, uses)});
+      }
+    }
+  };
+  await runAll(chunk(firstItems, BATCH_WORDS), handleFirst);
+  if (retryFirst.length) {
+    const again = retryFirst.splice(0);
+    prog.total += Math.ceil(again.length / BATCH_RETRY);
+    await runAll(chunk(again, BATCH_RETRY), handleFirst);
+  }
+
+  // Pass 2: one request item per occurrence of a context-dependent spelling.
+  single.sort((a, b) => byWord(occs[a].s, occs[b].s) || a - b);
+  const singleItems = single.map(i => Object.assign(
+    {id: 'o' + i, surface: occs[i].s, occ: i, contexts: [snippet(occs[i])]},
+    hintsFor(occs[i].s, hintIdx, updates)));
+  prog.total = prog.done + Math.ceil(singleItems.length / BATCH_SINGLE);
+  onProgress(prog);
+  const retrySingle = [];
+  const handleSingle = (batch, out) => {
+    const byId = new Map((out || []).filter(w => w && typeof w === 'object').map(w => [String(w.id), w]));
+    for (const it of batch) {
+      const w = byId.get(it.id);
+      const uses = w ? alignUses(w.uses, 1, it.surface) : null;
+      if (!uses || uses[0] === null) { retrySingle.push(it); continue; }
+      parts[it.occ] = uses[0];
+      const prev = updates.get(it.surface) || state.cache.get(it.surface);
+      if (!prev || !prev.fixed) updates.set(it.surface, {fixed: false, seen: mergeSeen(prev ? prev.seen : null, uses)});
+    }
+  };
+  await runAll(chunk(singleItems, BATCH_SINGLE), handleSingle);
+  if (retrySingle.length) {
+    const again = retrySingle.splice(0);
+    prog.total += Math.ceil(again.length / BATCH_RETRY);
+    await runAll(chunk(again, BATCH_RETRY), handleSingle);
+  }
+
+  // Count lemma / form pairs for this text.
+  const recs = new Map();
+  let counted = 0, proper = 0, skipped = 0, unresolved = 0;
+  occs.forEach((o, i) => {
+    const p = parts[i];
+    if (p === null) { unresolved++; return; }
+    if (!p.length) { skipped++; return; }
+    for (const x of p) {
+      const k = x.lemma + SEP + x.form + SEP + (x.proper ? 1 : 0);
+      recs.set(k, (recs.get(k) || 0) + 1);
+      if (x.proper) proper++; else counted++;
+    }
+  });
+  const records = [...recs].map(([k, n]) => { const [lemma, form, p] = k.split(SEP); return {lemma, form, proper: p === '1', n}; });
+  return {records, updates, stats: {words: occs.length, counted, proper, skipped, unresolved, known, usage}};
+}
+
+/* ---------------------------------------- a corpus left in this browser */
+
+// The first version of this page could keep its corpus in the browser. If one is here,
+// Settings offers to copy it into Supabase.
+function idbGet(key) {
+  return new Promise(resolve => {
+    let req;
+    try { req = indexedDB.open('word-frequency-sorter', 1); } catch { return resolve(undefined); }
+    req.onupgradeneeded = () => { try { req.result.createObjectStore('kv'); } catch {} };
+    req.onerror = () => resolve(undefined);
+    req.onblocked = () => resolve(undefined);
+    req.onsuccess = () => {
+      const db = req.result;
+      try {
+        const g = db.transaction('kv', 'readonly').objectStore('kv').get(key);
+        g.onsuccess = () => { resolve(g.result); db.close(); };
+        g.onerror = () => { resolve(undefined); db.close(); };
+      } catch { resolve(undefined); db.close(); }
+    };
+  });
+}
+
+async function readBrowserCorpus() {
+  const ok = d => d && d.v === 1 && Array.isArray(d.texts) && d.texts.length > 0 && Array.isArray(d.records);
+  let d = null, fromLs = false;
+  try { d = await idbGet('corpus:' + LANG); } catch {}
+  if (!ok(d)) {
+    try { const raw = localStorage.getItem('wfs.corpus:' + LANG); d = raw ? JSON.parse(raw) : null; fromLs = true; } catch { d = null; }
+  }
+  if (!ok(d)) return null;
+  for (const t of d.texts) {
+    let body = '';
+    try { body = fromLs ? JSON.parse(localStorage.getItem('wfs.body:' + t.id) || '""') : await idbGet('body:' + t.id); } catch {}
+    t.body = typeof body === 'string' ? body : '';
+  }
+  return d;
+}
+
+function browserCopied() { try { return localStorage.getItem(COPIED_KEY) === '1'; } catch { return false; } }
+
+/* ---------------------------------------------------------------- state */
+
+const state = {
+  mode: 'setup',        // setup, checking, problem or ready
+  check: null,          // what the last check found (shown in the connect card and Settings)
+  conn: null,           // the check behind the working connection
+  showCard: true,       // whether the connect card is on screen
+  store: null,
+  defaultRules: '',
+  browserTexts: 0,      // texts found in this browser from the first version of the page
+  texts: [], common: [], propers: [], cache: new Map(),
+  totals: {counted: 0, proper: 0}, thresholds: [],
+  tab: 'lemmas', query: '', sort: 'freq', shown: LIST_STEP, view: [],
+};
+let job = null;       // the text currently being read
+let pending = null;   // a finished analysis whose save failed
+
+function rankAndCover(list) {
+  const total = list.reduce((s, e) => s + e.n, 0) || 1;
+  let cum = 0, prev = null, rank = 0;
+  list.forEach((e, i) => {
+    if (e.n !== prev) { rank = i + 1; prev = e.n; }
+    e.rank = rank;
+    cum += e.n;
+    e.cum = cum / total;
+  });
+  return total;
+}
+
+function applySnapshot(snap) {
+  state.texts = snap.texts.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  const map = new Map();
+  for (const r of snap.lemmaRows) map.set(r.lemma + SEP + (r.proper ? 1 : 0), {lemma: r.lemma, proper: !!r.proper, n: r.n, texts: r.texts, forms: []});
+  for (const f of snap.formRows) {
+    const e = map.get(f.lemma + SEP + (f.proper ? 1 : 0));
+    if (e) e.forms.push({form: f.form, n: f.n, texts: f.texts});
+  }
+  const all = [...map.values()].filter(e => e.n > 0);
+  for (const e of all) e.forms.sort((a, b) => b.n - a.n || a.form.localeCompare(b.form));
+  const byFreq = (a, b) => b.n - a.n || b.texts - a.texts || a.lemma.localeCompare(b.lemma);
+  state.common = all.filter(e => !e.proper).sort(byFreq);
+  state.propers = all.filter(e => e.proper).sort(byFreq);
+  state.totals.counted = state.common.length ? rankAndCover(state.common) : 0;
+  state.totals.proper = state.propers.length ? rankAndCover(state.propers) : 0;
+  state.thresholds = [0.9, 0.95, 0.98].map(t => ({t, k: state.common.findIndex(e => e.cum >= t - 1e-9) + 1}));
+}
+
+const emptySnapshot = () => ({texts: [], lemmaRows: [], formRows: []});
+
+// Checks the project at `raw` and, if its function works, loads the corpus from it.
+// Every call ends with a visible result in the connect card and in Settings.
+let connectSeq = 0;
+async function connectTo(raw, opts = {}) {
+  if (job) { toast('Wait until the current text is finished.'); return false; }
+  const p = parseProject(raw);
+  if (p.error) {
+    state.check = {kind: 'bad_url', p};
+    if (state.mode !== 'ready') { state.mode = 'setup'; state.showCard = true; }
+    render();
+    return false;
+  }
+  const mine = ++connectSeq;
+  const wasReady = state.mode === 'ready';
+  settings.projectUrl = p.origin;
+  saveSettings();
+  els.cUrl.value = p.origin;
+  els.sUrl.value = p.origin;
+  state.mode = 'checking';
+  state.store = null;
+  // A check started from the connect card keeps the card up; re-checking a working
+  // project (banner, Settings) leaves the list in place while it runs.
+  state.showCard = opts.fromCard ? true : wasReady ? false : state.showCard;
+  state.check = {kind: 'busy', p};
+  render();
+  console.info('[word-frequency] checking', p.origin);
+  let c = await checkProject(p);
+  if (mine !== connectSeq) return false;
+  if (c.kind === 'ready') {
+    try {
+      const [cache, snap] = await Promise.all([c.store.loadCache(), c.store.snapshot()]);
+      if (mine !== connectSeq) return false;
+      state.cache = cache;
+      applySnapshot(snap);
+      state.store = c.store;
+      state.defaultRules = c.st.rules || '';
+      state.mode = 'ready';
+      state.showCard = false;
+    } catch (e) {
+      c = {kind: 'load_failed', p, detail: e.message};
+    }
+  }
+  if (c.kind !== 'ready') {
+    state.mode = 'problem';
+    state.showCard = true;
+    state.cache = new Map();
+    applySnapshot(emptySnapshot());
+  }
+  state.check = c;
+  state.conn = c.kind === 'ready' ? c : null;
+  console.info('[word-frequency] result', c.kind, c.openai || '', c.detail || '');
+  state.shown = LIST_STEP;
+  render();
+  return c.kind === 'ready';
+}
+
+async function refresh() {
+  applySnapshot(await state.store.snapshot());
+  render();
+}
+
+/* ------------------------------------------------------------ rendering */
+
+const $ = id => document.getElementById(id);
+const els = {layout: document.querySelector('main.layout')};
+['status', 'statusText', 'settingsBtn', 'banner', 'bannerText', 'bannerCheck', 'connectNote', 'titleIn', 'paste', 'pasteCount', 'addBtn',
+ 'run', 'runText', 'runBar', 'cancelBtn', 'result', 'texts', 'loading', 'connect', 'connectForm', 'cUrl', 'cBtn', 'cResult', 'cHelp',
+ 'summary', 'listArea', 'entries', 'more', 'moreBtn', 'noMatch', 'empty', 'search', 'sort', 'nLemmas', 'nProper', 'colHead', 'colCover',
+ 'exportMenu', 'settingsDlg', 'sUrl', 'sCheck', 'sResult', 'sHelp', 'sModel', 'sEffort', 'sParallel', 'sRules', 'resetRules', 'sUseCache',
+ 'clearCache', 'clearAll', 'migrateRow', 'migrateBtn', 'migrateMsg', 'editDlg', 'editInfo', 'eLemma', 'eProper', 'toast'].forEach(id => { els[id] = $(id); });
+
+const FN_SOURCE = $('fnSource').textContent.replace(/^\n/, '');
+const shortHost = c => (c && c.p && (c.p.ref || c.p.host)) || '';
+
+function dashboardLink(path) {
+  const c = state.check && state.check.p && state.check.p.ref ? state.check : state.conn;
+  const ref = c && c.p && c.p.ref;
+  return `https://supabase.com/dashboard/project/${ref || '_'}${path}`;
+}
+
+function stepsHTML() {
+  return `<ol class="steps">
+    <li><strong>Add the function.</strong> In your Supabase dashboard, open <a href="${dashboardLink('/functions')}" target="_blank" rel="noopener">Edge Functions</a>, choose Deploy a new function, then Via Editor. Name it <code>word-frequency</code>, replace the sample code with the code below, and click Deploy function.</li>
+    <li><strong>Let this page call it.</strong> On the function's Details tab, switch off JWT verification (the switch mentions Verify JWT) and save. If you use the Supabase CLI instead, <code>supabase functions deploy word-frequency --no-verify-jwt</code> covers steps 1 and 2.</li>
+    <li><strong>Give it your OpenAI key.</strong> Under <a href="${dashboardLink('/functions/secrets')}" target="_blank" rel="noopener">Edge Function Secrets</a>, add <code>OPENAI_API_KEY</code> with your key as its value. If the project already has that secret, there's nothing to add.</li>
+    <li><strong>Connect.</strong> Paste the project URL or your project's dashboard link, and press Connect. The function creates its tables the first time.</li>
+  </ol>`;
+}
+
+// What the last check means, in words: {cls, title, body (HTML), help (open the setup steps)}.
+function checkView(c) {
+  if (!c) return null;
+  const host = esc(c.p && c.p.host || '');
+  const fnHost = esc((c.p && c.p.host || '') + '/functions/v1/' + FUNCTION_NAME);
+  const note = c.p && c.p.note ? ` ${esc(c.p.note)}` : '';
+  switch (c.kind) {
+    case 'busy': return {cls: 'busy', title: `Checking ${host}…`, body: ''};
+    case 'bad_url': return {cls: 'bad', title: esc(c.p.error), body: "Paste your project's dashboard link (supabase.com/dashboard/project/…) or its project URL, which looks like https://abcdefghijklmnopqrst.supabase.co."};
+    case 'unreachable': return {cls: 'bad', title: `Nothing answered at ${host}.`, body: "Check the address for typos. If it's right, the project may be paused: open it in the Supabase dashboard, restore it, then press Connect again." + note};
+    case 'no_function': return {cls: 'bad', title: 'Your project answered, but it has no word-frequency function yet.', body: 'Follow the setup steps below, then press Connect again.' + note, help: true};
+    case 'jwt': return {cls: 'bad', title: "The word-frequency function is there, but it's asking for a login token.", body: 'Turn off JWT verification for it (step 2 below), then press Connect again.' + note, help: true};
+    case 'no_answer': return {cls: 'bad', title: "Your project is there, but the word-frequency function didn't answer.", body: "Either it isn't deployed yet, or JWT verification is still on for it. Steps 1 and 2 below cover both; then press Connect again." + note, help: true};
+    case 'server': return {cls: 'bad', title: c.status ? `Supabase answered with an error (${c.status}).` : "Supabase didn't answer in time.", body: `${c.detail ? esc(c.detail) + '. ' : ''}If the project was paused, it can take a minute to wake up. Press Connect again shortly.`};
+    case 'not_ours': return {cls: 'bad', title: `Something answered at ${fnHost}, but it isn't this page's function.`, body: 'Redeploy word-frequency with the code below, then press Connect again.', help: true};
+    case 'function_error': return {cls: 'bad', title: 'The word-frequency function hit an error.', body: esc(c.detail || '')};
+    case 'db': return {cls: 'bad', title: "The function is running, but it couldn't open the database.", body: esc(c.detail || '')};
+    case 'load_failed': return {cls: 'bad', title: "Connected, but the corpus didn't load.", body: esc(c.detail || '') + ' Press Connect to try again.'};
+    case 'ready': {
+      const ref = esc(shortHost(c));
+      const extra = state.browserTexts && !browserCopied()
+        ? ` This browser also holds ${plural(state.browserTexts, 'text')} from before; Settings can copy ${state.browserTexts === 1 ? 'it' : 'them'} into Supabase.` : '';
+      if (c.openai === 'missing') return {cls: 'warn', title: `Connected to ${ref}, but the project has no OpenAI key yet.`, body: `Add a secret named <code>OPENAI_API_KEY</code> under <a href="${dashboardLink('/functions/secrets')}" target="_blank" rel="noopener">Edge Function Secrets</a>, then press Check again. No redeploy needed.` + extra, help: true};
+      if (c.openai === 'rejected') return {cls: 'warn', title: 'Connected, but OpenAI rejected the key in OPENAI_API_KEY.', body: `${esc(c.detail)} Update the secret, then press Check again.` + extra};
+      if (c.openai === 'model') return {cls: 'warn', title: `Connected. Your OpenAI key works, but ${esc(c.model)} isn't available to it.`, body: 'Choose another model under Bot in Settings.' + extra};
+      if (c.openai === 'error') return {cls: 'warn', title: "Connected, but the function couldn't check your OpenAI key.", body: esc(c.detail) + extra};
+      const n = state.conn === c ? state.texts.length : (c.st.texts || 0);
+      return {cls: 'ok', title: `Connected to ${ref}.`, body: `${plural(n, 'text')} in the corpus. The bot uses the project's OPENAI_API_KEY secret.` + note + extra};
+    }
+  }
+  return null;
+}
+
+let stepsFor = null;
+function renderCheck() {
+  const c = state.check;
+  const v = checkView(c);
+  // The setup steps open (or fold away, once everything works) once per result, so the
+  // person's own choice sticks after that.
+  const toggle = v && !c.helpShown && (v.help || v.cls === 'ok');
+  for (const [box, help] of [[els.cResult, els.cHelp], [els.sResult, els.sHelp]]) {
+    box.hidden = !v;
+    if (!v) continue;
+    box.className = 'check ' + v.cls;
+    box.innerHTML = `<strong>${v.title}</strong>${v.body ? `<p>${v.body}</p>` : ''}`;
+    if (toggle) help.open = !!v.help;
+  }
+  if (toggle) c.helpShown = true;
+  const steps = stepsHTML();
+  if (steps !== stepsFor) {
+    stepsFor = steps;
+    document.querySelectorAll('[data-steps]').forEach(el => { el.innerHTML = steps; });
+  }
+}
+
+function render() {
+  renderStatus();
+  renderConnect();
+  renderTexts();
+  renderSummary();
+  renderList();
+  renderIntake();
+}
+
+function renderStatus() {
+  const c = state.conn;
+  let text = 'Not connected', cls = state.mode === 'problem' ? 'err' : '';
+  if (state.mode === 'checking') { text = 'Connecting…'; cls = ''; }
+  else if (state.mode === 'ready') {
+    text = `Connected to ${shortHost(c)}`;
+    cls = c && c.openai && c.openai !== 'ok' ? 'warn' : 'ok';
+  }
+  els.status.className = 'status ' + cls;
+  els.statusText.textContent = text;
+  els.status.title = text;
+  const v = state.mode === 'ready' && c && c.openai !== 'ok' ? checkView(c) : null;
+  els.banner.hidden = !v;
+  if (v) els.bannerText.innerHTML = v.title;
+}
+
+function renderConnect() {
+  const card = state.mode !== 'ready' && state.showCard;
+  els.connect.hidden = !card;
+  els.layout.classList.toggle('connecting', card);   // on phones the card then comes first
+  els.loading.hidden = !(state.mode === 'checking' && !card);
+  if (!els.loading.hidden) els.loading.textContent = `Connecting to ${shortHost(state.check)}…`;
+  els.cBtn.disabled = state.mode === 'checking';
+  els.sCheck.disabled = state.mode === 'checking';
+  renderCheck();
+  els.migrateRow.hidden = !(state.mode === 'ready' && state.browserTexts && !browserCopied());
+  if (!els.migrateRow.hidden && !els.migrateBtn.disabled) els.migrateBtn.textContent = `Copy the ${plural(state.browserTexts, 'text')} saved in this browser into Supabase`;
+}
+
+function renderIntake() {
+  const ready = state.mode === 'ready';
+  els.connectNote.hidden = ready || state.mode === 'checking';
+  els.addBtn.disabled = !!job || !ready;
+}
+
+function shortDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const opts = {month: 'short', day: 'numeric'};
+  if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString('en-US', opts);
+}
+
+function renderTexts() {
+  if (!state.texts.length) {
+    els.texts.innerHTML = `<li><span class="none">${state.mode === 'ready' ? 'None yet.' : 'Connect your project to see them.'}</span></li>`;
+    return;
+  }
+  els.texts.innerHTML = state.texts.map(t => {
+    const bits = [shortDate(t.created_at), plural(t.words || 0, 'word')];
+    if (t.proper) bits.push(`${fmt(t.proper)} in proper nouns`);
+    return `<li><div class="t-main"><span class="t-title" title="${esc(t.title || '')}">${esc(t.title || 'Untitled')}</span><span class="t-meta">${esc(bits.filter(Boolean).join(', '))}</span></div><button type="button" class="btn quiet small" data-remove="${esc(t.id)}">Remove</button></li>`;
+  }).join('');
+}
+
+function renderSummary() {
+  const has = state.texts.length > 0;
+  els.summary.hidden = !has;
+  els.listArea.hidden = !has;
+  els.empty.hidden = has || state.mode !== 'ready';
+  if (!has) return;
+  const t = state.totals;
+  let html = `<p class="lead">${fmt(t.counted)} words counted across ${plural(state.texts.length, 'text')}, filed under ${plural(state.common.length, 'lemma')}.</p>`;
+  const notes = [];
+  if (t.proper) notes.push(`${plural(t.proper, 'word')} in ${plural(state.propers.length, 'proper noun')} set aside.`);
+  if (state.common.length) {
+    const [a, b, c] = state.thresholds;
+    notes.push(`The top ${fmt(a.k)} lemmas cover 90% of the counted words, the top ${fmt(b.k)} cover 95%, and the top ${fmt(c.k)} cover 98%.`);
+  }
+  if (notes.length) html += `<p class="muted">${notes.join(' ')}</p>`;
+  els.summary.innerHTML = html;
+}
+
+function currentList() {
+  const src = state.tab === 'proper' ? state.propers : state.common;
+  const q = state.query.trim().toLowerCase();
+  let list = q ? src.filter(e => e.lemma.toLowerCase().includes(q) || e.forms.some(f => f.form.toLowerCase().includes(q))) : src;
+  if (state.sort === 'spread') list = list.slice().sort((a, b) => b.texts - a.texts || b.n - a.n || a.lemma.localeCompare(b.lemma));
+  else if (state.sort === 'alpha') list = list.slice().sort((a, b) => a.lemma.localeCompare(b.lemma, 'en', {sensitivity: 'base'}) || b.n - a.n);
+  return list;
+}
+
+function formsHTML(e, limit) {
+  let h = e.forms.slice(0, limit).map((f, j) =>
+    `<button type="button" class="form" data-f="${j}" title="Change the lemma for “${esc(f.form)}”">${esc(f.form)}<b>${fmt(f.n)}</b></button>`).join('');
+  if (e.forms.length > limit) h += `<button type="button" class="more-forms" data-more>+${e.forms.length - limit} more</button>`;
+  return h;
+}
+
+function entryHTML(e, i, max) {
+  const w = Math.max(1.5, Math.sqrt(e.n / max) * 100).toFixed(1);
+  return `<li class="entry${e.proper ? ' is-proper' : ''}" data-i="${i}">` +
+    `<div class="line"><span class="rank">${e.rank}</span><span class="head">${esc(e.lemma)}</span>` +
+    `<span class="bar" aria-hidden="true"><i style="width:${w}%"></i></span>` +
+    `<span class="count">${fmt(e.n)}</span>` +
+    `<span class="spread" title="Appears in ${plural(e.texts, 'text')}">${fmt(e.texts)}</span>` +
+    `<span class="cover" title="Share of counted words covered by the lemmas down to this one">${e.proper ? '' : pct(e.cum)}</span></div>` +
+    `<div class="forms">${formsHTML(e, 8)}</div></li>`;
+}
+
+function renderList() {
+  els.nLemmas.textContent = state.common.length ? fmt(state.common.length) : '';
+  els.nProper.textContent = state.propers.length ? fmt(state.propers.length) : '';
+  document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === state.tab)));
+  els.colHead.textContent = state.tab === 'proper' ? 'Name' : 'Lemma';
+  els.colCover.textContent = state.tab === 'proper' ? '' : 'Coverage';
+  const list = currentList();
+  state.view = list;
+  const src = state.tab === 'proper' ? state.propers : state.common;
+  const max = src.length ? src[0].n : 1;
+  els.entries.innerHTML = list.slice(0, state.shown).map((e, i) => entryHTML(e, i, max)).join('');
+  els.noMatch.hidden = list.length > 0 || !src.length;
+  if (!src.length && state.texts.length) {
+    els.noMatch.hidden = false;
+    els.noMatch.textContent = state.tab === 'proper' ? 'No proper nouns so far.' : 'No words counted yet.';
+  } else {
+    els.noMatch.textContent = 'No words match that search.';
+  }
+  const left = list.length - state.shown;
+  els.more.hidden = left <= 0;
+  if (left > 0) els.moreBtn.textContent = `Show ${fmt(Math.min(LIST_STEP, left))} more of ${fmt(left)}`;
+}
+
+let toastTimer = null;
+function toast(msg) {
+  els.toast.textContent = msg;
+  els.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => els.toast.classList.remove('show'), 4200);
+}
+
+/* ------------------------------------------------------------- adding */
+
+function setRun(text, fraction) {
+  els.runText.textContent = text;
+  els.runBar.style.width = Math.round(Math.max(0, Math.min(1, fraction)) * 100) + '%';
+}
+
+function showResult(html, isError, withRetry) {
+  els.result.hidden = false;
+  els.result.className = 'result' + (isError ? ' error' : '');
+  els.result.innerHTML = html + (withRetry ? '<div><button type="button" class="btn small" id="retrySave">Try saving again</button></div>' : '');
+}
+
+function resultHTML(title, st) {
+  const bits = [`${fmt(st.counted)} words counted`, `${plural(st.proper, 'word')} in proper nouns set aside`];
+  if (st.skipped) bits.push(`${plural(st.skipped, 'non-word')} skipped`);
+  if (st.unresolved) bits.push(`${fmt(st.unresolved)} the bot couldn't place`);
+  let h = `<strong>Added “${esc(title)}”.</strong> ${bits.join(', ')}.`;
+  if (st.known) h += ` ${fmt(st.known)} of its ${fmt(st.words)} words were already settled from earlier texts.`;
+  const tokens = st.usage.input + st.usage.output;
+  if (tokens) h += ` <span class="muted">${fmt(tokens)} tokens used.</span>`;
+  return h;
+}
+
+// Saves what the bot settled during a run that didn't finish; returns how many spellings were kept.
+async function keepLearned(updates) {
+  if (!updates || !updates.size || !state.store) return 0;
+  try {
+    await state.store.putCache(updates);
+    for (const [s, e] of updates) state.cache.set(s, e);
+    return updates.size;
+  } catch { return 0; }
+}
+
+async function saveAnalysis(p) {
+  const warning = await state.store.addText(p.meta, p.text, p.result.records, p.result.updates);
+  for (const [s, e] of p.result.updates) state.cache.set(s, e);
+  pending = null;
+  els.paste.value = '';
+  els.titleIn.value = '';
+  updatePasteCount();
+  showResult(resultHTML(p.meta.title, p.result.stats));
+  if (warning) toast(warning);
+  try { await refresh(); }
+  catch (e) { toast('Saved, but the list could not be reloaded: ' + e.message); }
+}
+
+function goConnect() {
+  state.showCard = true;
+  render();
+  (state.mode === 'checking' ? els.cBtn : els.cUrl).focus();
+}
+
+async function addText() {
+  if (job) return;
+  if (state.mode !== 'ready') { toast('Connect your Supabase project first.'); goConnect(); return; }
+  const raw = els.paste.value;
+  if (!raw.trim()) { toast('Paste a text first.'); els.paste.focus(); return; }
+  if (state.conn && state.conn.openai === 'missing') {
+    showResult("Your Supabase project doesn't have the OPENAI_API_KEY secret yet, so the bot can't run. Add it under Edge Function Secrets, then press Check again in the banner.", true);
+    return;
+  }
+
+  const text = cleanText(raw).trim();
+  const hash = hash53(text.replace(/\s+/g, ' '));
+  const dup = state.texts.find(t => t.hash === hash);
+  if (dup && !confirm(`This text is already in the corpus as “${dup.title}”. Add it again?`)) return;
+  const title = (els.titleIn.value.trim() || autoTitle(text)).slice(0, 300);
+
+  job = {controller: new AbortController()};
+  pending = null;
+  els.result.hidden = true;
+  els.run.hidden = false;
+  setRun('Reading the text…', 0);
+  renderIntake();
+
+  let result;
+  try {
+    result = await analyze(text, job.controller.signal, p => {
+      if (!p.total) setRun('Every word was already settled. Counting…', 1);
+      else setRun(`Asking the bot: ${fmt(p.done)} of ${fmt(p.total)} requests`, p.done / p.total);
+    });
+  } catch (e) {
+    const kept = await keepLearned(e && e.partialUpdates);
+    const note = kept ? ` The bot's decisions on ${plural(kept, 'spelling')} are kept, so adding the text again is quicker.` : '';
+    if (isAbort(e)) showResult('Stopped. Nothing was added.' + note);
+    else showResult(esc(e.message || String(e)) + note, true);
+    job = null; els.run.hidden = true; renderIntake();
+    return;
+  }
+
+  setRun('Saving…', 1);
+  const meta = {
+    id: uuid(), title, hash,
+    words: result.stats.words, counted: result.stats.counted, proper: result.stats.proper,
+    skipped: result.stats.skipped + result.stats.unresolved,
+    model: ((settings.model || '').trim() || DEFAULT_MODEL).slice(0, 80), created_at: new Date().toISOString(),
+  };
+  pending = {meta, text, result};
+  try { await saveAnalysis(pending); }
+  catch (e) { showResult(`The text was read but not saved: ${esc(e.message || String(e))}`, true, true); }
+  job = null;
+  els.run.hidden = true;
+  renderIntake();
+}
+
+async function retrySave() {
+  if (!pending || job || !state.store) return;
+  const btn = document.getElementById('retrySave');
+  if (btn) btn.disabled = true;
+  try { await saveAnalysis(pending); }
+  catch (e) { showResult(`Still not saved: ${esc(e.message || String(e))}`, true, true); }
+}
+
+let countTimer = null;
+function updatePasteCount() {
+  clearTimeout(countTimer);
+  countTimer = setTimeout(() => {
+    const n = countWords(els.paste.value);
+    els.pasteCount.textContent = n ? plural(n, 'word') : 'No text yet';
+  }, 120);
+}
+
+/* ------------------------------------------------------------ editing */
+
+let editing = null;
+
+function openEdit(entry, form) {
+  if (job) { toast('Wait until the current text is finished.'); return; }
+  editing = {entry, form};
+  els.editInfo.textContent = `“${form.form}” appears ${plural(form.n, 'time')} in ${plural(form.texts, 'text')} and is filed under “${entry.lemma}”${entry.proper ? ' as a proper noun' : ''}.`;
+  els.eLemma.value = entry.lemma;
+  els.eProper.checked = entry.proper;
+  els.editDlg.returnValue = '';
+  els.editDlg.showModal();
+  els.eLemma.select();
+}
+
+function cacheAfterReassign(form, from, fromProper, to, toProper) {
+  const changed = new Map();
+  for (const [s, e] of state.cache) {
+    if (e && e.fixed && Array.isArray(e.parts)) {
+      let hit = false;
+      const p2 = e.parts.map(p => {
+        if (p.form === form && p.lemma === from && !!p.proper === fromProper) { hit = true; return {form: p.form, lemma: to, proper: toProper}; }
+        return p;
+      });
+      if (hit) changed.set(s, {fixed: true, parts: p2, byYou: true});
+    } else if (e && Array.isArray(e.seen) && e.seen.some(x => x.lemma === from && !!x.proper === fromProper)) {
+      const seen = e.seen.filter(x => !(x.lemma === from && !!x.proper === fromProper));
+      if (!seen.some(x => x.lemma === to && !!x.proper === toProper)) seen.push({lemma: to, proper: toProper});
+      changed.set(s, {fixed: false, seen});
+    }
+  }
+  return changed;
+}
+
+async function saveEdit() {
+  if (!editing || !state.store) return;
+  const {entry, form} = editing;
+  editing = null;
+  const to = els.eLemma.value.trim().replace(/\s+/g, ' ').slice(0, 80);
+  const toProper = els.eProper.checked;
+  if (!to || (to === entry.lemma && toProper === entry.proper)) return;
+  try {
+    const changed = cacheAfterReassign(form.form, entry.lemma, entry.proper, to, toProper);
+    await state.store.reassign({form: form.form, from: entry.lemma, fromProper: entry.proper, to, toProper}, changed);
+    for (const [s, e] of changed) state.cache.set(s, e);
+    await refresh();
+    toast(`Filed “${form.form}” under ${to}${toProper ? ' as a proper noun' : ''}.`);
+  } catch (e) {
+    toast(e.message || String(e));
+  }
+}
+
+/* ------------------------------------------------------------ settings */
+
+function openSettings() {
+  els.sUrl.value = settings.projectUrl || '';
+  els.sModel.value = settings.model;
+  els.sEffort.value = settings.effort;
+  els.sParallel.value = settings.parallel;
+  els.sRules.value = settings.rules || state.defaultRules;
+  els.sUseCache.checked = !!settings.useCache;
+  els.migrateMsg.textContent = '';
+  render();
+  els.settingsDlg.returnValue = '';
+  els.settingsDlg.showModal();
+  if (!settings.projectUrl) els.sUrl.focus();
+}
+
+async function applySettingsDialog() {
+  const before = settings.projectUrl + '\n' + settings.model;
+  settings.model = els.sModel.value.trim() || DEFAULT_MODEL;
+  settings.effort = els.sEffort.value;
+  settings.parallel = Math.min(8, Math.max(1, parseInt(els.sParallel.value, 10) || 4));
+  const rules = els.sRules.value.trim();
+  settings.rules = rules && rules !== state.defaultRules.trim() ? rules : '';   // empty means the function's default rules
+  settings.useCache = els.sUseCache.checked;
+  runtime.effort = null;
+  if (!saveSettings()) toast("This browser won't keep settings here; they last until the page is closed.");
+  const typed = els.sUrl.value.trim();
+  const p = typed ? parseProject(typed) : null;
+  const url = p && !p.error ? p.origin : settings.projectUrl;
+  if (typed && p && p.error) { toast(p.error); return; }
+  if (url && (url + '\n' + settings.model !== before || state.mode !== 'ready')) await connectTo(url);
+  else render();
+}
+
+async function copyBrowserCorpus() {
+  if (!state.store) return;
+  els.migrateBtn.disabled = true;
+  try {
+    const d = await readBrowserCorpus();
+    if (!d) { els.migrateMsg.textContent = 'Nothing left to copy.'; return; }
+    const byText = new Map();
+    for (const r of d.records) {
+      if (!byText.has(r.t)) byText.set(r.t, []);
+      byText.get(r.t).push({lemma: String(r.l).slice(0, 80), form: String(r.f).slice(0, 80), proper: !!r.p, n: r.n});
+    }
+    let i = 0;
+    for (const t of d.texts) {
+      els.migrateMsg.textContent = `Copying ${++i} of ${d.texts.length}…`;
+      const meta = {id: t.id, title: String(t.title || 'Untitled').slice(0, 300), hash: t.hash || null, words: t.words | 0, counted: t.counted | 0,
+        proper: t.proper | 0, skipped: t.skipped | 0, model: t.model ? String(t.model).slice(0, 80) : null, created_at: t.created_at || null};
+      await state.store.addText(meta, t.body || '', byText.get(t.id) || [], new Map());
+    }
+    const remembered = new Map(Object.entries(d.cache || {}).filter(([s]) => s.length <= 80));
+    if (remembered.size) await state.store.putCache(remembered);
+    try { localStorage.setItem(COPIED_KEY, '1'); } catch {}
+    state.cache = await state.store.loadCache();
+    await refresh();
+    els.migrateMsg.textContent = `Copied ${plural(d.texts.length, 'text')} into Supabase.`;
+    toast(`Copied ${plural(d.texts.length, 'text')} into Supabase.`);
+  } catch (e) {
+    els.migrateMsg.textContent = e.message || String(e);
+  } finally {
+    els.migrateBtn.disabled = false;
+  }
+}
+
+/* ------------------------------------------------------------- export */
+
+function csvCell(v) {
+  const s = String(v == null ? '' : v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function csv(rows) { return '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n'; }
+function download(name, content, type) {
+  const url = URL.createObjectURL(new Blob([content], {type}));
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+function exportData(kind) {
+  const day = new Date().toISOString().slice(0, 10);
+  const total = state.totals.counted || 1;
+  if (kind === 'lemmas') {
+    const rows = [['rank', 'lemma', 'count', 'per_million', 'texts', 'coverage', 'forms']];
+    for (const e of state.common) rows.push([e.rank, e.lemma, e.n, Math.round(e.n / total * 1e6), e.texts, (e.cum * 100).toFixed(2), e.forms.map(f => `${f.form} ${f.n}`).join('; ')]);
+    download(`word-frequency-lemmas-${day}.csv`, csv(rows), 'text/csv;charset=utf-8');
+  } else if (kind === 'forms') {
+    const rows = [['lemma', 'form', 'count', 'texts', 'proper_noun']];
+    for (const e of state.common.concat(state.propers)) for (const f of e.forms) rows.push([e.lemma, f.form, f.n, f.texts, e.proper ? 'yes' : 'no']);
+    download(`word-frequency-forms-${day}.csv`, csv(rows), 'text/csv;charset=utf-8');
+  } else {
+    const pack = e => ({rank: e.rank, lemma: e.lemma, count: e.n, texts: e.texts, forms: e.forms.map(f => ({form: f.form, count: f.n, texts: f.texts}))});
+    const data = {
+      exported_at: new Date().toISOString(), language: LANG,
+      totals: {texts: state.texts.length, counted: state.totals.counted, proper_noun_uses: state.totals.proper},
+      texts: state.texts.map(t => ({id: t.id, title: t.title, added: t.created_at, words: t.words, counted: t.counted, proper: t.proper, skipped: t.skipped, model: t.model})),
+      lemmas: state.common.map(e => Object.assign(pack(e), {coverage: +(e.cum * 100).toFixed(3)})),
+      proper_nouns: state.propers.map(pack),
+    };
+    download(`word-frequency-${day}.json`, JSON.stringify(data, null, 2), 'application/json');
+  }
+}
+
+/* ------------------------------------------------------------- events */
+
+els.paste.addEventListener('input', updatePasteCount);
+els.paste.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); addText(); } });
+els.addBtn.addEventListener('click', addText);
+els.cancelBtn.addEventListener('click', () => { if (job) job.controller.abort(); });
+els.result.addEventListener('click', e => { if (e.target.closest('#retrySave')) retrySave(); });
+
+els.connectForm.addEventListener('submit', e => { e.preventDefault(); connectTo(els.cUrl.value, {fromCard: true}); });
+els.sCheck.addEventListener('click', () => connectTo(els.sUrl.value));
+els.sUrl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); connectTo(els.sUrl.value); } });
+for (const [input, opts] of [[els.cUrl, {fromCard: true}], [els.sUrl, {}]]) {
+  input.addEventListener('paste', () => setTimeout(() => { if (input.value.trim()) connectTo(input.value, opts); }, 30));
+}
+els.bannerCheck.addEventListener('click', () => connectTo(settings.projectUrl));
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-open-settings]')) openSettings();
+  const copy = e.target.closest('[data-copy-fn]');
+  if (copy) {
+    navigator.clipboard.writeText(FN_SOURCE).then(() => toast('Function code copied.'), () => {
+      const pre = copy.closest('details').querySelector('[data-fn-code]');
+      const r = document.createRange(); r.selectNodeContents(pre);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      toast('Press Ctrl+C (or Cmd+C) to copy the selected code.');
+    });
+  }
+});
+document.querySelectorAll('[data-fn-code]').forEach(pre => { pre.textContent = FN_SOURCE; });
+
+els.settingsBtn.addEventListener('click', openSettings);
+els.settingsDlg.addEventListener('close', () => { if (els.settingsDlg.returnValue === 'save') applySettingsDialog(); });
+document.querySelectorAll('dialog [data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close('cancel')));
+els.resetRules.addEventListener('click', () => { els.sRules.value = state.defaultRules; });
+els.migrateBtn.addEventListener('click', copyBrowserCorpus);
+els.clearCache.addEventListener('click', async () => {
+  if (!state.store) { toast('Connect your Supabase project first.'); return; }
+  if (!confirm('Forget every spelling the bot has settled? Counts stay as they are; new texts will be read in full again.')) return;
+  try { await state.store.clearCache(); state.cache = new Map(); toast('Settled words forgotten.'); }
+  catch (e) { toast(e.message); }
+});
+els.clearAll.addEventListener('click', async () => {
+  if (!state.store) { toast('Connect your Supabase project first.'); return; }
+  if (!confirm("Delete every text, count and settled word from your Supabase project? This can't be undone.")) return;
+  try { await state.store.clearAll(); state.cache = new Map(); els.settingsDlg.close('cancel'); await refresh(); toast('The corpus is empty.'); }
+  catch (e) { toast(e.message); }
+});
+
+els.editDlg.addEventListener('close', () => { if (els.editDlg.returnValue === 'save') saveEdit(); else editing = null; });
+
+els.texts.addEventListener('click', async e => {
+  const b = e.target.closest('[data-remove]');
+  if (!b || !state.store) return;
+  if (job) { toast('Wait until the current text is finished.'); return; }
+  const t = state.texts.find(x => x.id === b.dataset.remove);
+  if (!t || !confirm(`Remove “${t.title}” and its counts from the corpus?`)) return;
+  b.disabled = true;
+  try { await state.store.deleteText(t.id); await refresh(); toast(`Removed “${t.title}”.`); }
+  catch (err) { b.disabled = false; toast(err.message); }
+});
+
+els.entries.addEventListener('click', e => {
+  const li = e.target.closest('[data-i]');
+  if (!li) return;
+  const entry = state.view[+li.dataset.i];
+  if (!entry) return;
+  const fb = e.target.closest('[data-f]');
+  if (fb) { openEdit(entry, entry.forms[+fb.dataset.f]); return; }
+  if (e.target.closest('[data-more]')) li.querySelector('.forms').innerHTML = formsHTML(entry, Infinity);
+});
+
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+  state.tab = b.dataset.tab;
+  state.shown = LIST_STEP;
+  renderList();
+}));
+els.search.addEventListener('input', () => { state.query = els.search.value; state.shown = LIST_STEP; renderList(); });
+els.sort.addEventListener('change', () => { state.sort = els.sort.value; state.shown = LIST_STEP; renderList(); });
+els.moreBtn.addEventListener('click', () => { state.shown += LIST_STEP; renderList(); });
+els.exportMenu.addEventListener('click', e => {
+  const b = e.target.closest('[data-export]');
+  if (!b) return;
+  els.exportMenu.open = false;
+  exportData(b.dataset.export);
+});
+document.addEventListener('click', e => { if (els.exportMenu.open && !els.exportMenu.contains(e.target)) els.exportMenu.open = false; });
+window.addEventListener('beforeunload', e => { if (job) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------------------------------------------------------------- start */
+
+readBrowserCorpus().then(d => { state.browserTexts = d ? d.texts.length : 0; if (state.mode === 'ready') render(); }).catch(() => {});
+if (settings.projectUrl) {
+  state.showCard = false;
+  connectTo(settings.projectUrl);
+} else {
+  state.mode = 'setup';
+  state.check = null;
+  render();
+  els.cUrl.focus();
+}
+</script>
+</body>
+</html>
